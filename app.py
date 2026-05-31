@@ -4,7 +4,8 @@ import plotly.graph_objects as go
 import plotly.express as px
 import sys, os
 sys.path.append(os.path.dirname(__file__))
-from sheets_db import verify_login, load_bookings
+from sheets_db import load_bookings
+from login import show_login
 from style import apply_style, sidebar_logo
 
 st.set_page_config(
@@ -37,34 +38,7 @@ if "hotel" not in st.session_state:
 # LOGIN PAGE
 # ══════════════════════════════════════════════════════════
 if not st.session_state.logged_in:
-
-    _, col, _ = st.columns([1, 1.2, 1])
-    with col:
-        st.markdown("<br><br>", unsafe_allow_html=True)
-        sidebar_logo()
-        st.markdown("<br>", unsafe_allow_html=True)
-        st.markdown("<p class='page-title'>Welcome back</p>", unsafe_allow_html=True)
-        st.markdown("<p class='page-sub'>Sign in to your hotel dashboard</p>",
-                    unsafe_allow_html=True)
-        st.markdown("<br>", unsafe_allow_html=True)
-
-        with st.form("login_form"):
-            username = st.text_input("Username")
-            password = st.text_input("Password", type="password")
-            submit   = st.form_submit_button("Sign In", use_container_width=True)
-
-        if submit:
-            if not username or not password:
-                st.error("Please enter both username and password.")
-            else:
-                # ── No spinner here — avoids showing function name ──
-                hotel = verify_login(username, password)
-                if hotel:
-                    st.session_state.logged_in = True
-                    st.session_state.hotel     = hotel
-                    st.rerun()
-                else:
-                    st.error("❌ Incorrect username or password.")
+    show_login()
     st.stop()
 
 # ══════════════════════════════════════════════════════════
