@@ -68,3 +68,15 @@ def save_booking(booking: dict):
         booking["Notes"],
         booking["Hotel ID"]
     ])
+    # --- Register a new hotel ---
+def register_hotel(name, username, password, email, plan="basic"):
+    sheet = get_hotels_sheet()
+    data  = sheet.get_all_records()
+    # Check if username already exists
+    for row in data:
+        if row["username"] == username:
+            return "exists"
+    # Auto-generate hotel ID
+    hotel_id = f"HOTEL{str(len(data) + 1).zfill(3)}"
+    sheet.append_row([hotel_id, name, username, password, email, plan])
+    return "success"

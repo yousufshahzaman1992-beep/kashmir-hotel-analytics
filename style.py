@@ -78,6 +78,8 @@ def apply_style():
         background: rgba(148,163,184,0.2);
         margin: 20px 0;
     }
+
+    /* Metric cards */
     [data-testid="metric-container"] {
         background: var(--secondary-background-color);
         border: 1px solid rgba(148,163,184,0.2);
@@ -86,6 +88,8 @@ def apply_style():
         padding: 16px 20px !important;
         box-shadow: 0 1px 4px rgba(0,0,0,0.05);
     }
+
+    /* Hand cursor on dropdowns */
     [data-testid="stSelectbox"] *,
     [data-testid="stMultiSelect"] *,
     [data-baseweb="select"] *,
@@ -97,13 +101,8 @@ def apply_style():
     .stMultiSelect div {
         cursor: pointer !important;
     }
-    button, [role="button"],
-    .stButton > button,
-    [data-testid="stFormSubmitButton"] > button,
-    [data-testid="stDownloadButton"] > button {
-        cursor: pointer !important;
-    }
-    /* Hand cursor rules */
+
+    /* Hand cursor on buttons */
     button, [role="button"],
     .stButton > button,
     [data-testid="stFormSubmitButton"] > button,
@@ -111,12 +110,35 @@ def apply_style():
         cursor: pointer !important;
     }
 
-    /* Hide function name from spinner  ← ADD THIS AT THE END */
+    /* Hide function name from spinner */
     [data-testid="stSpinner"] p::before {
         content: "" !important;
     }
     div[data-testid="stSpinner"] > div > div > p {
         display: none !important;
+    }
+
+    /* Hide "Press Enter to submit form" tooltip */
+    [data-baseweb="input"] + div,
+    [data-baseweb="base-input"] + div,
+    small[class*="instructions"] {
+        display: none !important;
+    }
+
+    /* Clean input borders */
+    [data-baseweb="input"] {
+        border: 1px solid rgba(148,163,184,0.3) !important;
+        border-radius: 8px !important;
+    }
+    [data-baseweb="input"]:focus-within {
+        border: 1px solid #3b82f6 !important;
+        box-shadow: 0 0 0 3px rgba(59,130,246,0.15) !important;
+    }
+
+    /* Remove border from password inner wrapper */
+    [data-baseweb="base-input"] {
+        border: none !important;
+        box-shadow: none !important;
     }
 
     </style>
