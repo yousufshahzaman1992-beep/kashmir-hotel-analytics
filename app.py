@@ -3,7 +3,12 @@ import pandas as pd
 import plotly.graph_objects as go
 import plotly.express as px
 import sys, os
-sys.path.append(os.path.dirname(__file__))
+
+# Absolute path to the directory containing app.py
+DIRPATH = os.path.dirname(os.path.abspath(__file__))
+if DIRPATH not in sys.path:
+    sys.path.insert(0, DIRPATH)
+
 from sheets_db import load_bookings
 from login import show_login
 from style import apply_style, sidebar_logo

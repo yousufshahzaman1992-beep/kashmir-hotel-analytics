@@ -1,6 +1,10 @@
 import streamlit as st
 import sys, os
-sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+
+parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if parent_dir not in sys.path:
+    sys.path.insert(0, parent_dir)
+
 from sheets_db import load_bookings
 from style import apply_style, sidebar_logo
 
