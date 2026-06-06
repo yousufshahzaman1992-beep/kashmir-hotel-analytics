@@ -1,13 +1,15 @@
+import streamlit as st
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 import pandas as pd
 
+@st.cache_resource
 def get_client():
     scope = [
         "https://spreadsheets.google.com/feeds",
         "https://www.googleapis.com/auth/drive"
     ]
-    creds  = ServiceAccountCredentials.from_json_keyfile_name("credentials.json", scope)
+    creds = ServiceAccountCredentials.from_json_keyfile_name("credentials.json", scope)
     return gspread.authorize(creds)
 
 def get_bookings_sheet():
@@ -26,10 +28,18 @@ def load_hotels():
 
 # --- Verify login ---
 def verify_login(username, password):
-    df = load_hotels()
+    df    = load_hotels()
     match = df[(df["username"] == username) & (df["password"] == password)]
     if len(match) > 0:
-        return match.iloc[0].to_dict()  # returns hotel info dict
+        return match.iloc[0].to_dict()
+    return None
+
+# --- Get hotel by ID ---
+def get_hotel_by_id(hotel_id):
+    df    = load_hotels()
+    match = df[df["hotel_id"] == hotel_id]
+    if len(match) > 0:
+        return match.iloc[0].to_dict()
     return None
 
 # --- Load bookings filtered by hotel_id ---
@@ -68,15 +78,14 @@ def save_booking(booking: dict):
         booking["Notes"],
         booking["Hotel ID"]
     ])
-    # --- Register a new hotel ---
+
+# --- Register a new hotel ---
 def register_hotel(name, username, password, email, plan="basic"):
     sheet = get_hotels_sheet()
     data  = sheet.get_all_records()
-    # Check if username already exists
     for row in data:
         if row["username"] == username:
             return "exists"
-    # Auto-generate hotel ID
     hotel_id = f"HOTEL{str(len(data) + 1).zfill(3)}"
     sheet.append_row([hotel_id, name, username, password, email, plan])
     return "success"

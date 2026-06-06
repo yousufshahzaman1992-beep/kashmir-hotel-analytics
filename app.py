@@ -4,12 +4,7 @@ import plotly.graph_objects as go
 import plotly.express as px
 import sys, os
 
-# Absolute path to the directory containing app.py
-DIRPATH = os.path.dirname(os.path.abspath(__file__))
-if DIRPATH not in sys.path:
-    sys.path.insert(0, DIRPATH)
-
-from sheets_db import load_bookings
+from sheets_db import load_bookings, get_hotel_by_id
 from login import show_login
 from style import apply_style, sidebar_logo
 
@@ -39,6 +34,13 @@ if "logged_in" not in st.session_state:
 if "hotel" not in st.session_state:
     st.session_state.hotel = None
 
+# ── Session Recovery ──────────────────────────────────────
+if not st.session_state.logged_in and "hid" in st.query_params:
+    recovered_hotel = get_hotel_by_id(st.query_params["hid"])
+    if recovered_hotel:
+        st.session_state.logged_in = True
+        st.session_state.hotel = recovered_hotel
+
 # ══════════════════════════════════════════════════════════
 # LOGIN PAGE
 # ══════════════════════════════════════════════════════════
@@ -52,6 +54,9 @@ if not st.session_state.logged_in:
 hotel      = st.session_state.hotel
 hotel_id   = hotel["hotel_id"]
 hotel_name = hotel["name"]
+
+# Ensure query param is set for persistence
+st.query_params["hid"] = hotel_id
 
 # ── Sidebar ───────────────────────────────────────────────
 with st.sidebar:
@@ -83,11 +88,12 @@ with st.sidebar:
     if st.button("🚪 Logout", use_container_width=True):
         st.session_state.logged_in = False
         st.session_state.hotel     = None
+        st.query_params.clear()
         st.cache_data.clear()
         st.rerun()
 
 # ── Load data for THIS hotel only ────────────────────────
-@st.cache_data(ttl=60,show_spinner=False)
+@st.cache_data(ttl=300,show_spinner=False)
 def get_data(hid):
     return load_bookings(hid)
 

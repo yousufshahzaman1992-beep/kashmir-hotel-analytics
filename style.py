@@ -23,7 +23,8 @@ def apply_style():
     }
     .page-title {
         font-family: 'Inter', sans-serif;
-        font-size: 1.6rem;
+        
+        font-size: 2.9rem;
         font-weight: 700;
         color: var(--text-color);
         margin: 0;

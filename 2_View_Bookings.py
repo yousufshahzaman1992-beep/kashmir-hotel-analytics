@@ -1,20 +1,13 @@
 import streamlit as st
 import sys, os
 
-from sheets_db import load_bookings, get_hotel_by_id
+from sheets_db import load_bookings
 from style import apply_style, sidebar_logo
 
 st.set_page_config(page_title="View Bookings", page_icon="📋", layout="wide")
 apply_style()
 
 # ── Login guard ───────────────────────────────────────────
-# Try to recover session from URL if state is lost
-if not st.session_state.get("logged_in") and "hid" in st.query_params:
-    recovered_hotel = get_hotel_by_id(st.query_params["hid"])
-    if recovered_hotel:
-        st.session_state.logged_in = True
-        st.session_state.hotel = recovered_hotel
-
 if not st.session_state.get("logged_in"):
     st.warning("Please log in first.")
     st.page_link("app.py", label="Go to Login", icon="🔐")
@@ -40,7 +33,6 @@ with st.sidebar:
     if st.button("🚪 Logout", use_container_width=True):
         st.session_state.logged_in = False
         st.session_state.hotel     = None
-        st.query_params.clear()
         st.rerun()
 
 # ── Header ────────────────────────────────────────────────

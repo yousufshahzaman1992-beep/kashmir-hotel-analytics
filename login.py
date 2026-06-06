@@ -113,9 +113,9 @@ def show_login():
 
     /* Inputs */
     input[type="text"], input[type="password"] {
-        background: rgba(255,255,255,0.07) !important;
+        background: var(--secondary-background-color) !important;
         border: 1px solid rgba(255,255,255,0.12) !important;
-        color: rgb(0,0,0) !important;
+        color: var(--text-color) !important;
         border-radius: 10px !important;
     }
     input[type="text"]:focus, input[type="password"]:focus {
@@ -162,7 +162,8 @@ def show_login():
     /* Footer */
     .lg-footer {
         text-align: center; font-size: 0.72rem;
-        color: #334155; margin-top: 20px; line-height: 2;
+        color: #64748b; margin-top: 20px; 
+        line-height: 2;
     }
     </style>
     """, unsafe_allow_html=True)
