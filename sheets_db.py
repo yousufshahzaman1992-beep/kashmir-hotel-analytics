@@ -33,14 +33,31 @@ def get_hotels_sheet():
 def load_hotels():
     sheet = get_hotels_sheet()
     data  = sheet.get_all_records()
-    return pd.DataFrame(data) if data else pd.DataFrame(
+    if data:
+        df = pd.DataFrame(data)
+        # Normalize column names to lowercase and replace spaces with underscores
+        df.columns = [c.lower().replace(" ", "_") for c in df.columns]
+        return df
+    return pd.DataFrame(
         columns=["hotel_id","name","username","password","email","plan"]
     )
 
 # --- Verify login ---
 def verify_login(username, password):
     df    = load_hotels()
-    match = df[(df["username"] == username) & (df["password"] == password)]
+    if df.empty:
+        return None
+    
+    # Clean inputs and ensure string comparison with stripped whitespace
+    u_input = str(username).strip()
+    p_input = str(password).strip()
+    
+    # Compare against cleaned data
+    match = df[
+        (df["username"].astype(str).str.strip() == u_input) & 
+        (df["password"].astype(str).str.strip() == p_input)
+    ]
+    
     if len(match) > 0:
         return match.iloc[0].to_dict()
     return None
