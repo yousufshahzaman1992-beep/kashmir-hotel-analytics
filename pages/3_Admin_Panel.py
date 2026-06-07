@@ -5,6 +5,9 @@ import sys, os
 from sheets_db import get_hotels_sheet, get_bookings_sheet, get_hotel_by_id
 from style import apply_style, sidebar_logo
 
+st.set_page_config(page_title="Admin Panel", page_icon="⚙️", layout="wide")
+apply_style()
+
 # ── Restore session from query params on refresh ──────────
 if not st.session_state.get("logged_in"):
     hid = st.query_params.get("hid")
@@ -14,14 +17,11 @@ if not st.session_state.get("logged_in"):
             st.session_state["logged_in"] = True
             st.session_state["hotel"]     = hotel
 
-st.set_page_config(page_title="Admin Panel", page_icon="⚙️", layout="wide")
-apply_style()
-
 # ── Guard: must be logged in AND be admin ─────────────────
 if not st.session_state.get("logged_in"):
     st.switch_page("app.py")
 
-if st.session_state.hotel["hotel_id"] != "ADMIN":
+if str(st.session_state.hotel.get("hotel_id", "")).strip().upper() != "ADMIN":
     st.switch_page("app.py")
 
 # Persist session in URL
