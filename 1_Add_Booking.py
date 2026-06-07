@@ -1,21 +1,14 @@
 import streamlit as st
 from datetime import date
 import sys, os
-
-from sheets_db import save_booking, get_hotel_by_id
+sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+from sheets_db import save_booking
 from style import apply_style, sidebar_logo
 
 st.set_page_config(page_title="Add Booking", page_icon="📝", layout="centered")
 apply_style()
 
 # ── Login guard ───────────────────────────────────────────
-# Try to recover session from URL if state is lost
-if not st.session_state.get("logged_in") and "hid" in st.query_params:
-    recovered_hotel = get_hotel_by_id(st.query_params["hid"])
-    if recovered_hotel:
-        st.session_state.logged_in = True
-        st.session_state.hotel = recovered_hotel
-
 if not st.session_state.get("logged_in"):
     st.warning("Please log in first.")
     st.page_link("app.py", label="Go to Login", icon="🔐")
@@ -41,12 +34,10 @@ with st.sidebar:
     if st.button("🚪 Logout", use_container_width=True):
         st.session_state.logged_in = False
         st.session_state.hotel     = None
-        st.query_params.clear()
         st.rerun()
 
 # ── Header ────────────────────────────────────────────────
-st.markdown("<p class='page-title'>📝 Add New Booking</p>",
-            unsafe_allow_html=True)
+st.markdown("<p class='page-title'>📝 Add New Booking</p>", unsafe_allow_html=True)
 st.markdown("<p class='page-sub'>Fill in the details to record a new booking.</p>",
             unsafe_allow_html=True)
 st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
@@ -91,9 +82,13 @@ if submit:
             "Amount (₹)":  amount,
             "Status":      status,
             "Notes":       notes,
-            "Hotel ID":    hotel_id      # ← uses logged-in hotel's ID
+            "Hotel ID":    hotel_id
         }
-        with st.spinner("Saving to database..."):
+        with st.spinner("Saving..."):
             save_booking(booking)
+
+        # ── Clear cache so dashboard shows new booking immediately ──
+        st.cache_data.clear()
+
         st.success(f"✅ Booking saved for **{guest_name}**!")
         st.balloons()

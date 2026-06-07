@@ -2,20 +2,24 @@ import streamlit as st
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 import pandas as pd
+import os
 
-@st.cache_resource
+@st.cache_resource(show_spinner=False)
 def get_client():
     scope = [
         "https://spreadsheets.google.com/feeds",
         "https://www.googleapis.com/auth/drive"
     ]
-    try:
-        # Streamlit Cloud — reads from secrets
-        creds_dict = dict(st.secrets["gcp_service_account"])
-        creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
-    except:
-        # Local — reads from credentials.json file
+    
+    # Check if we are running locally with a file or on the cloud with secrets
+    # Check for local file, otherwise use Streamlit Secrets (for GitHub/Cloud)
+    if os.path.exists("credentials.json"):
         creds = ServiceAccountCredentials.from_json_keyfile_name("credentials.json", scope)
+    else:
+        # This uses the Secrets management in Streamlit Cloud
+        creds_info = st.secrets["gcp_service_account"]
+        creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_info, scope)
+        
     return gspread.authorize(creds)
 
 def get_bookings_sheet():
@@ -25,6 +29,7 @@ def get_hotels_sheet():
     return get_client().open("Kashmir Hotel Bookings").worksheet("Hotels")
 
 # --- Load hotels for login ---
+@st.cache_data(ttl=600, show_spinner=False)
 def load_hotels():
     sheet = get_hotels_sheet()
     data  = sheet.get_all_records()
@@ -49,6 +54,7 @@ def get_hotel_by_id(hotel_id):
     return None
 
 # --- Load bookings filtered by hotel_id ---
+@st.cache_data(ttl=300, show_spinner=False)
 def load_bookings(hotel_id):
     sheet = get_bookings_sheet()
     data  = sheet.get_all_records()

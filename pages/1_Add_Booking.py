@@ -24,6 +24,9 @@ if not st.session_state.get("logged_in"):
 hotel    = st.session_state.hotel
 hotel_id = hotel["hotel_id"]
 
+# Ensure query param is set for persistence on refresh
+st.query_params["hid"] = hotel_id
+
 # ── Sidebar ───────────────────────────────────────────────
 with st.sidebar:
     sidebar_logo()

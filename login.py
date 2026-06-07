@@ -182,7 +182,7 @@ def show_login():
     st.markdown("""
     <div class='lg-logo'>
         <div class='lg-icon'>🏔️</div>
-        <div class='lg-name'>Kashmir Analytics</div>
+        <div class='lg-name'>Kashmir Hotel Analytics</div>
         <div class='lg-tagline'>Hotel Intelligence Platform</div>
     </div>
     """, unsafe_allow_html=True)
