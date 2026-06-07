@@ -34,9 +34,11 @@ if "logged_in" not in st.session_state:
 if "hotel" not in st.session_state:
     st.session_state.hotel = None
 
-# ── Session Recovery ──────────────────────────────────────
-if not st.session_state.logged_in and "hid" in st.query_params:
-    recovered_hotel = get_hotel_by_id(st.query_params["hid"])
+# ── Session Recovery (URL persistence) ────────────────────
+if not st.session_state.get("logged_in") and "hid" in st.query_params:
+    # Get hid robustly as a string
+    hid = st.query_params.get("hid")
+    recovered_hotel = get_hotel_by_id(hid)
     if recovered_hotel:
         st.session_state.logged_in = True
         st.session_state.hotel = recovered_hotel
