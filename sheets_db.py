@@ -48,13 +48,13 @@ def verify_login(username, password):
     if df.empty:
         return None
     
-    # Clean inputs: username is case-insensitive, password is case-sensitive
-    u_input = str(username).strip().lower()
+    # Clean inputs and ensure string comparison with stripped whitespace
+    u_input = str(username).strip()
     p_input = str(password).strip()
     
     # Compare against cleaned data
     match = df[
-        (df["username"].astype(str).str.strip().str.lower() == u_input) & 
+        (df["username"].astype(str).str.strip() == u_input) & 
         (df["password"].astype(str).str.strip() == p_input)
     ]
     
@@ -68,9 +68,9 @@ def get_hotel_by_id(hotel_id):
     if df.empty:
         return None
     
-    # Ensure robust string comparison (stripping whitespace, case-insensitive ID)
-    search_id = str(hotel_id).strip().upper()
-    match = df[df["hotel_id"].astype(str).str.strip().str.upper() == search_id]
+    # Ensure robust string comparison (stripping whitespace)
+    search_id = str(hotel_id).strip()
+    match = df[df["hotel_id"].astype(str).str.strip() == search_id]
     
     if len(match) > 0:
         return match.iloc[0].to_dict()
