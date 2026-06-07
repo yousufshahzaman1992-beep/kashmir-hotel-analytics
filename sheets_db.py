@@ -101,3 +101,14 @@ def register_hotel(name, username, password, email, plan="basic"):
     hotel_id = f"HOTEL{str(len(data) + 1).zfill(3)}"
     sheet.append_row([hotel_id, name, username, password, email, plan])
     return "success"
+def get_bookings_sheet():
+    return get_client().open("Kashmir Hotel Bookings").sheet1
+
+def get_hotels_sheet():
+    return get_client().open("Kashmir Hotel Bookings").worksheet("Hotels")
+def get_hotel_by_id(hotel_id):
+    df = load_hotels()
+    match = df[df["hotel_id"] == hotel_id]
+    if len(match) > 0:
+        return match.iloc[0].to_dict()
+    return None

@@ -5,7 +5,7 @@ DIRPATH = os.path.dirname(os.path.abspath(__file__))
 if DIRPATH not in sys.path:
     sys.path.insert(0, DIRPATH)
 
-from sheets_db import verify_login, register_hotel
+from sheets_db import verify_login
 from style import apply_style
 
 def show_login():
@@ -18,7 +18,6 @@ def show_login():
         background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 50%, #0f172a 100%) !important;
         min-height: 100vh;
     }
-
     .block-container {
         max-width: 440px !important;
         padding-top: 4vh !important;
@@ -67,32 +66,6 @@ def show_login():
     }
     .lg-tagline { font-size: 0.82rem; color: #64748b; letter-spacing: 0.3px; }
 
-    /* Tab switcher */
-    .lg-tabs {
-        display: flex;
-        background: rgba(255,255,255,0.05);
-        border: 1px solid rgba(255,255,255,0.08);
-        border-radius: 12px;
-        padding: 4px;
-        margin-bottom: 24px;
-        gap: 4px;
-    }
-    .lg-tab {
-        flex: 1;
-        text-align: center;
-        padding: 8px;
-        border-radius: 8px;
-        font-size: 0.85rem;
-        font-weight: 600;
-        cursor: pointer;
-        color: #64748b;
-    }
-    .lg-tab-active {
-        background: linear-gradient(135deg, #1d4ed8, #3b82f6);
-        color: #ffffff;
-        box-shadow: 0 2px 8px rgba(59,130,246,0.4);
-    }
-
     /* Glass card */
     .lg-card {
         background: rgba(255,255,255,0.05);
@@ -110,6 +83,31 @@ def show_login():
         color: #f1f5f9; margin-bottom: 4px; letter-spacing: -0.2px;
     }
     .lg-card-sub { font-size: 0.8rem; color: #64748b; margin-bottom: 20px; }
+
+    /* Contact box */
+    .lg-contact {
+        background: rgba(59,130,246,0.07);
+        border: 1px solid rgba(59,130,246,0.2);
+        border-radius: 12px;
+        padding: 16px 20px;
+        text-align: center;
+        margin-top: 20px;
+    }
+    .lg-contact-title {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #93c5fd;
+        margin-bottom: 6px;
+    }
+    .lg-contact-text {
+        font-size: 0.78rem;
+        color: #64748b;
+        line-height: 1.6;
+    }
+    .lg-contact-email {
+        color: #3b82f6;
+        font-weight: 500;
+    }
 
     /* Inputs */
     input[type="text"], input[type="password"] {
@@ -162,7 +160,7 @@ def show_login():
     /* Footer */
     .lg-footer {
         text-align: center; font-size: 0.72rem;
-        color: #64748b; margin-top: 20px; 
+        color: #64748b; margin-top: 20px;
         line-height: 2;
     }
     </style>
@@ -187,99 +185,45 @@ def show_login():
     </div>
     """, unsafe_allow_html=True)
 
-    # ── Tab toggle via session state ──────────────────────
-    if "auth_tab" not in st.session_state:
-        st.session_state.auth_tab = "signin"
+    # ── Sign In Form ──────────────────────────────────────
+    st.markdown("""
+    <div class='lg-card'>
+        <div class='lg-card-title'>Sign in to your account</div>
+        <div class='lg-card-sub'>Enter your credentials to continue</div>
+    </div>
+    """, unsafe_allow_html=True)
 
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("Sign In", use_container_width=True,
-                     type="primary" if st.session_state.auth_tab == "signin" else "secondary"):
-            st.session_state.auth_tab = "signin"
-            st.rerun()
-    with col2:
-        if st.button("Register", use_container_width=True,
-                     type="primary" if st.session_state.auth_tab == "register" else "secondary"):
-            st.session_state.auth_tab = "register"
-            st.rerun()
+    with st.form("login_form"):
+        username = st.text_input("Username", placeholder="your username")
+        password = st.text_input("Password", type="password",
+                                 placeholder="••••••••")
+        submit   = st.form_submit_button("Sign In  →", use_container_width=True)
 
-    st.markdown("<br>", unsafe_allow_html=True)
-
-    # ══════════════════════════════════════════════════════
-    # SIGN IN
-    # ══════════════════════════════════════════════════════
-    if st.session_state.auth_tab == "signin":
-        st.markdown("""
-        <div class='lg-card'>
-            <div class='lg-card-title'>Sign in to your account</div>
-            <div class='lg-card-sub'>Enter your credentials to continue</div>
-        </div>
-        """, unsafe_allow_html=True)
-
-        with st.form("login_form"):
-            username = st.text_input("Username", placeholder="your username")
-            password = st.text_input("Password", type="password",
-                                     placeholder="••••••••")
-            submit   = st.form_submit_button("Sign In  →", use_container_width=True)
-
-        if submit:
-            if not username or not password:
-                st.error("Please enter both username and password.")
+    if submit:
+        if not username or not password:
+            st.error("Please enter both username and password.")
+        else:
+            hotel = verify_login(username, password)
+            if hotel:
+                st.session_state["logged_in"] = True
+                st.session_state["hotel"]     = hotel
+                st.query_params["hid"]        = hotel["hotel_id"]
+                st.rerun()
             else:
-                hotel = verify_login(username, password)
-                if hotel:
-                    st.session_state["logged_in"] = True
-                    st.session_state["hotel"]     = hotel
-                    st.query_params["hid"] = hotel["hotel_id"]
-                    st.rerun()
-                else:
-                    st.error("❌ Incorrect username or password.")
+                st.error("❌ Incorrect username or password.")
 
-    # ══════════════════════════════════════════════════════
-    # REGISTER
-    # ══════════════════════════════════════════════════════
-    else:
-        st.markdown("""
-        <div class='lg-card'>
-            <div class='lg-card-title'>Create your account</div>
-            <div class='lg-card-sub'>Get your hotel dashboard in seconds</div>
+    # ── Contact box instead of Register ──────────────────
+    st.markdown("""
+    <div class='lg-contact'>
+        <div class='lg-contact-title'>Want to get started?</div>
+        <div class='lg-contact-text'>
+            Contact us to set up your hotel account.<br>
+            <span class='lg-contact-email'>Kashmirhotels6@email.com</span>
+            &nbsp;·&nbsp;
+            WhatsApp: +91 8491828292
         </div>
-        """, unsafe_allow_html=True)
-
-        with st.form("register_form"):
-            reg_hotel  = st.text_input("Hotel Name",        placeholder="Dal Lake Resort")
-            reg_email  = st.text_input("Email",             placeholder="you@hotel.com")
-            reg_user   = st.text_input("Choose Username",   placeholder="dallake")
-            reg_pass   = st.text_input("Choose Password",   type="password", placeholder="••••••••")
-            reg_pass2  = st.text_input("Confirm Password",  type="password", placeholder="••••••••")
-            reg_submit = st.form_submit_button("Create Account  →", use_container_width=True)
-
-        if "reg_success" not in st.session_state:
-            st.session_state.reg_success = False
-
-        if reg_submit:
-            if not all([reg_hotel, reg_email, reg_user, reg_pass, reg_pass2]):
-                st.error("❌ Please fill in all fields.")
-                st.session_state.reg_success = False
-            elif reg_pass != reg_pass2:
-                st.error("❌ Passwords do not match.")
-                st.session_state.reg_success = False
-            elif len(reg_pass) < 6:
-                st.error("❌ Password must be at least 6 characters.")
-                st.session_state.reg_success = False
-            else:
-                result = register_hotel(reg_hotel, reg_user, reg_pass, reg_email)
-                if result == "exists":
-                    st.error("❌ Username already taken. Choose another.")
-                    st.session_state.reg_success = False
-                else:
-                    st.session_state.reg_success = True
-                    st.session_state.reg_name = reg_hotel
-                    st.rerun()
-
-    if st.session_state.get("reg_success"):
-        st.success(f"✅ Account created for **{st.session_state.reg_name}**!")
-        st.info("👆 Click Sign In above to log in with your new account.")
+    </div>
+    """, unsafe_allow_html=True)
 
     # ── Feature chips ─────────────────────────────────────
     st.markdown("""

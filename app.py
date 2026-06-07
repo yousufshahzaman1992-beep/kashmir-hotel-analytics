@@ -8,6 +8,15 @@ from sheets_db import load_bookings, get_hotel_by_id
 from login import show_login
 from style import apply_style, sidebar_logo
 
+# ── Restore session from query params on refresh ──────────
+if not st.session_state.get("logged_in"):
+    hid = st.query_params.get("hid")
+    if hid:
+        hotel = get_hotel_by_id(hid)
+        if hotel:
+            st.session_state["logged_in"] = True
+            st.session_state["hotel"]     = hotel
+
 st.set_page_config(
     page_title="Kashmir Hotel Analytics",
     page_icon="🏔️",
@@ -34,15 +43,6 @@ if "logged_in" not in st.session_state:
 if "hotel" not in st.session_state:
     st.session_state.hotel = None
 
-# ── Session Recovery (URL persistence) ────────────────────
-if not st.session_state.get("logged_in") and "hid" in st.query_params:
-    # Get hid robustly as a string
-    hid = st.query_params.get("hid")
-    recovered_hotel = get_hotel_by_id(hid)
-    if recovered_hotel:
-        st.session_state.logged_in = True
-        st.session_state.hotel = recovered_hotel
-
 # ══════════════════════════════════════════════════════════
 # LOGIN PAGE
 # ══════════════════════════════════════════════════════════
@@ -57,7 +57,7 @@ hotel      = st.session_state.hotel
 hotel_id   = hotel["hotel_id"]
 hotel_name = hotel["name"]
 
-# Ensure query param is set for persistence
+# Persist session in URL
 st.query_params["hid"] = hotel_id
 
 # ── Sidebar ───────────────────────────────────────────────
@@ -95,7 +95,7 @@ with st.sidebar:
         st.rerun()
 
 # ── Load data for THIS hotel only ────────────────────────
-@st.cache_data(ttl=300,show_spinner=False)
+@st.cache_data(ttl=300, show_spinner=False)
 def get_data(hid):
     return load_bookings(hid)
 
@@ -112,7 +112,6 @@ with hc2:
 
 st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
 
-# ── Filter ────────────────────────────────────────────────
 SM = {
     "Full Year":        [1,2,3,4,5,6,7,8,9,10,11,12],
     "Winter (Jan–Mar)": [1,2,3],
@@ -127,15 +126,13 @@ if len(df) == 0:
 
 fdf = df[df["Month_Num"].isin(SM[season])]
 
-# ── KPIs ──────────────────────────────────────────────────
 total_rev    = int(fdf["Amount (₹)"].sum())
 total_book   = len(fdf)
 total_nights = int(fdf["Nights"].sum())
 avg_nights   = round(fdf["Nights"].mean(), 1) if total_book else 0
 avg_book     = int(fdf["Amount (₹)"].mean())  if total_book else 0
 
-st.markdown("<div class='section-title'>Performance Overview</div>",
-            unsafe_allow_html=True)
+st.markdown("<div class='section-title'>Performance Overview</div>", unsafe_allow_html=True)
 
 k1,k2,k3,k4,k5 = st.columns(5)
 k1.metric("📋 Bookings",    str(total_book),       "+3 this week")
@@ -150,12 +147,9 @@ if total_book == 0:
     st.info("No bookings for this season.")
     st.stop()
 
-# ── Row 1: Revenue + Origins ──────────────────────────────
 c1, c2 = st.columns([3,2])
-
 with c1:
-    st.markdown("<div class='section-title'>Monthly Revenue</div>",
-                unsafe_allow_html=True)
+    st.markdown("<div class='section-title'>Monthly Revenue</div>", unsafe_allow_html=True)
     rev = (fdf.groupby(["Month_Num","Month"])["Amount (₹)"]
               .sum().reset_index().sort_values("Month_Num"))
     fig1 = go.Figure(go.Bar(
@@ -167,8 +161,7 @@ with c1:
     st.plotly_chart(fig1, use_container_width=True)
 
 with c2:
-    st.markdown("<div class='section-title'>Guest Origins</div>",
-                unsafe_allow_html=True)
+    st.markdown("<div class='section-title'>Guest Origins</div>", unsafe_allow_html=True)
     src = fdf["Source"].value_counts().reset_index()
     src.columns = ["Source","Guests"]
     fig2 = px.pie(src, names="Source", values="Guests", hole=0.55,
@@ -181,12 +174,9 @@ with c2:
 
 st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
 
-# ── Row 2: Room Type + Trend ──────────────────────────────
 c3, c4 = st.columns([2,3])
-
 with c3:
-    st.markdown("<div class='section-title'>Room Type</div>",
-                unsafe_allow_html=True)
+    st.markdown("<div class='section-title'>Room Type</div>", unsafe_allow_html=True)
     rooms = fdf["Room Type"].value_counts().reset_index()
     rooms.columns = ["Room Type","Count"]
     fig3 = go.Figure(go.Bar(
@@ -198,8 +188,7 @@ with c3:
     st.plotly_chart(fig3, use_container_width=True)
 
 with c4:
-    st.markdown("<div class='section-title'>Bookings Over Time</div>",
-                unsafe_allow_html=True)
+    st.markdown("<div class='section-title'>Bookings Over Time</div>", unsafe_allow_html=True)
     trend = (fdf.groupby(["Month_Num","Month"])
                 .size().reset_index(name="Bookings").sort_values("Month_Num"))
     fig4 = go.Figure(go.Scatter(
@@ -215,12 +204,9 @@ with c4:
 
 st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
 
-# ── Insights + Recent Bookings ────────────────────────────
 ci1, ci2 = st.columns([1,2])
-
 with ci1:
-    st.markdown("<div class='section-title'>Quick Insights</div>",
-                unsafe_allow_html=True)
+    st.markdown("<div class='section-title'>Quick Insights</div>", unsafe_allow_html=True)
     top_src  = src.iloc[0]["Source"] if len(src) else "—"
     top_room = rooms.iloc[0]["Room Type"] if len(rooms) else "—"
     foreign  = src[src["Source"]=="Foreign"]["Guests"].sum() \
@@ -244,7 +230,6 @@ with ci1:
     st.markdown(html, unsafe_allow_html=True)
 
 with ci2:
-    st.markdown("<div class='section-title'>Recent Bookings</div>",
-                unsafe_allow_html=True)
+    st.markdown("<div class='section-title'>Recent Bookings</div>", unsafe_allow_html=True)
     recent = fdf.sort_values("Check-in", ascending=False).head(8)
     st.dataframe(recent, use_container_width=True, hide_index=True)

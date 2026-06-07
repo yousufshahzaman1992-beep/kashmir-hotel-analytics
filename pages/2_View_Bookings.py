@@ -4,29 +4,25 @@ import sys, os
 from sheets_db import load_bookings, get_hotel_by_id
 from style import apply_style, sidebar_logo
 
+# ── Restore session from query params on refresh ──────────
+if not st.session_state.get("logged_in"):
+    hid = st.query_params.get("hid")
+    if hid:
+        hotel = get_hotel_by_id(hid)
+        if hotel:
+            st.session_state["logged_in"] = True
+            st.session_state["hotel"]     = hotel
+
 st.set_page_config(page_title="View Bookings", page_icon="📋", layout="wide")
 apply_style()
 
-# ── Login guard ───────────────────────────────────────────
-# Try to recover session from URL if state is lost
-if not st.session_state.get("logged_in") and "hid" in st.query_params:
-    recovered_hotel = get_hotel_by_id(st.query_params["hid"])
-    if recovered_hotel:
-        st.session_state.logged_in = True
-        st.session_state.hotel = recovered_hotel
-
 if not st.session_state.get("logged_in"):
-    st.warning("Please log in first.")
-    st.page_link("app.py", label="Go to Login", icon="🔐")
-    st.stop()
+    st.switch_page("app.py")
 
 hotel    = st.session_state.hotel
 hotel_id = hotel["hotel_id"]
-
-# Ensure query param is set for persistence on refresh
 st.query_params["hid"] = hotel_id
 
-# ── Sidebar ───────────────────────────────────────────────
 with st.sidebar:
     sidebar_logo()
     st.divider()
@@ -46,21 +42,16 @@ with st.sidebar:
         st.query_params.clear()
         st.rerun()
 
-# ── Header ────────────────────────────────────────────────
 st.markdown("<p class='page-title'>📋 All Bookings</p>", unsafe_allow_html=True)
-st.markdown("<p class='page-sub'>View, filter and export your booking records.</p>",
-            unsafe_allow_html=True)
+st.markdown("<p class='page-sub'>View, filter and export your booking records.</p>", unsafe_allow_html=True)
 st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
 
-# ── Load data for THIS hotel only ─────────────────────────
-with st.spinner("Loading bookings..."):
-    df = load_bookings(hotel_id)
+df = load_bookings(hotel_id)
 
 if df is None or len(df) == 0:
     st.info("No bookings yet. Go to **Add Booking** to enter your first one.")
     st.stop()
 
-# ── KPIs ──────────────────────────────────────────────────
 st.markdown("<div class='section-title'>Overview</div>", unsafe_allow_html=True)
 k1,k2,k3,k4 = st.columns(4)
 k1.metric("Total Bookings", len(df))
@@ -69,34 +60,22 @@ k3.metric("Avg Nights",     f"{round(df['Nights'].mean(),1)}")
 k4.metric("Avg Booking",    f"₹{int(df['Amount (₹)'].mean()):,}")
 
 st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
-
-# ── Filters ───────────────────────────────────────────────
 st.markdown("<div class='section-title'>Filters</div>", unsafe_allow_html=True)
+
 col1,col2,col3 = st.columns(3)
 with col1:
-    sf = st.multiselect("Status",
-         options=df["Status"].unique(), default=df["Status"].unique())
+    sf  = st.multiselect("Status",    options=df["Status"].unique(),    default=df["Status"].unique())
 with col2:
-    rf = st.multiselect("Source",
-         options=df["Source"].unique(), default=df["Source"].unique())
+    rf  = st.multiselect("Source",    options=df["Source"].unique(),    default=df["Source"].unique())
 with col3:
-    rmf = st.multiselect("Room Type",
-          options=df["Room Type"].unique(), default=df["Room Type"].unique())
+    rmf = st.multiselect("Room Type", options=df["Room Type"].unique(), default=df["Room Type"].unique())
 
-filtered = df[
-    df["Status"].isin(sf) &
-    df["Source"].isin(rf) &
-    df["Room Type"].isin(rmf)
-]
+filtered = df[df["Status"].isin(sf) & df["Source"].isin(rf) & df["Room Type"].isin(rmf)]
 
 st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
-st.markdown(f"<div class='section-title'>Showing {len(filtered)} of {len(df)} bookings</div>",
-            unsafe_allow_html=True)
-
-# ── Table ─────────────────────────────────────────────────
+st.markdown(f"<div class='section-title'>Showing {len(filtered)} of {len(df)} bookings</div>", unsafe_allow_html=True)
 st.dataframe(filtered, use_container_width=True, hide_index=True)
 
-# ── Download ──────────────────────────────────────────────
 st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
 csv_data = filtered.to_csv(index=False).encode("utf-8")
 st.download_button(
