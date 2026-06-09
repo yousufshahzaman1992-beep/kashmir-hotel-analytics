@@ -23,8 +23,6 @@ def show_login():
         padding-top: 4vh !important;
         margin: 0 auto !important;
     }
-
-    /* Top badge */
     .lg-badge { text-align: center; margin-bottom: 24px; }
     .lg-badge-inner {
         display: inline-flex;
@@ -45,8 +43,6 @@ def show_login():
         display: inline-block;
         box-shadow: 0 0 6px #3b82f6;
     }
-
-    /* Logo */
     .lg-logo { text-align: center; margin-bottom: 32px; }
     .lg-icon {
         display: inline-flex;
@@ -65,8 +61,6 @@ def show_login():
         color: #f8fafc; letter-spacing: -0.5px; margin-bottom: 4px;
     }
     .lg-tagline { font-size: 0.82rem; color: #64748b; letter-spacing: 0.3px; }
-
-    /* Glass card */
     .lg-card {
         background: rgba(255,255,255,0.05);
         backdrop-filter: blur(20px);
@@ -83,8 +77,6 @@ def show_login():
         color: #f1f5f9; margin-bottom: 4px; letter-spacing: -0.2px;
     }
     .lg-card-sub { font-size: 0.8rem; color: #64748b; margin-bottom: 20px; }
-
-    /* Contact box */
     .lg-contact {
         background: rgba(59,130,246,0.07);
         border: 1px solid rgba(59,130,246,0.2);
@@ -104,12 +96,7 @@ def show_login():
         color: #64748b;
         line-height: 1.6;
     }
-    .lg-contact-email {
-        color: #3b82f6;
-        font-weight: 500;
-    }
-
-    /* Inputs */
+    .lg-contact-email { color: #3b82f6; font-weight: 500; }
     input[type="text"], input[type="password"] {
         background: var(--secondary-background-color) !important;
         border: 1px solid rgba(255,255,255,0.12) !important;
@@ -125,8 +112,6 @@ def show_login():
         font-size: 0.8rem !important;
         font-weight: 500 !important;
     }
-
-    /* Buttons */
     .stFormSubmitButton > button {
         background: linear-gradient(135deg, #1d4ed8, #3b82f6) !important;
         color: #ffffff !important;
@@ -143,8 +128,6 @@ def show_login():
         box-shadow: 0 6px 24px rgba(59,130,246,0.55) !important;
         transform: translateY(-1px) !important;
     }
-
-    /* Features */
     .lg-features {
         display: flex; justify-content: center;
         gap: 6px; margin-top: 20px;
@@ -156,8 +139,6 @@ def show_login():
         border-radius: 100px; padding: 5px 12px;
         font-size: 0.72rem; color: #64748b;
     }
-
-    /* Footer */
     .lg-footer {
         text-align: center; font-size: 0.72rem;
         color: #64748b; margin-top: 20px;
@@ -185,7 +166,7 @@ def show_login():
     </div>
     """, unsafe_allow_html=True)
 
-    # ── Sign In Form ──────────────────────────────────────
+    # ── Sign In Card ──────────────────────────────────────
     st.markdown("""
     <div class='lg-card'>
         <div class='lg-card-title'>Sign in to your account</div>
@@ -212,15 +193,27 @@ def show_login():
             else:
                 st.error("❌ Incorrect username or password.")
 
-    # ── Contact box instead of Register ──────────────────
+    # ── Privacy + Contact boxes ───────────────────────────
     st.markdown("""
+    <div class='lg-contact'>
+        <div class='lg-contact-title'>🔒 Your Data is Private</div>
+        <div class='lg-contact-text'>
+            Only you can see your hotel's bookings and revenue.<br>
+            We never share your data with anyone.
+        </div>
+    </div>
+
+    <br>
+
     <div class='lg-contact'>
         <div class='lg-contact-title'>Want to get started?</div>
         <div class='lg-contact-text'>
-            Contact us to set up your hotel account.<br>
-            <span class='lg-contact-email'>Kashmirhotels6@email.com</span>
-            &nbsp;·&nbsp;
-            WhatsApp: +91 8491828292
+            Contact us to set up your free account.<br><br>
+            📧 <span class='lg-contact-email'>Kashmirhotels6@gmail.com</span><br>
+            💬 WhatsApp: <span class='lg-contact-email'>+91 8491828292</span><br><br>
+            <span style='font-size:0.72rem;color:#475569'>
+            Need help? We respond within 2 hours on WhatsApp.
+            </span>
         </div>
     </div>
     """, unsafe_allow_html=True)

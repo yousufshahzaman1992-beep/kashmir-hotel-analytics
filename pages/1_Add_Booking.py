@@ -1,7 +1,6 @@
 import streamlit as st
 from datetime import date
 import sys, os
-
 from sheets_db import save_booking, get_hotel_by_id
 from style import apply_style, sidebar_logo
 
@@ -24,6 +23,7 @@ hotel    = st.session_state.hotel
 hotel_id = hotel["hotel_id"]
 st.query_params["hid"] = hotel_id
 
+# ── Sidebar ───────────────────────────────────────────────
 with st.sidebar:
     sidebar_logo()
     st.divider()
@@ -43,27 +43,40 @@ with st.sidebar:
         st.query_params.clear()
         st.rerun()
 
+# ── Header ────────────────────────────────────────────────
 st.markdown("<p class='page-title'>📝 Add New Booking</p>", unsafe_allow_html=True)
 st.markdown("<p class='page-sub'>Fill in the details to record a new booking.</p>", unsafe_allow_html=True)
 st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
 
+# ── Form ──────────────────────────────────────────────────
 with st.form("booking_form"):
+    # Required fields
     col1, col2 = st.columns(2)
     with col1:
-        guest_name = st.text_input("Guest Name")
-        checkin    = st.date_input("Check-in Date", value=date.today())
-        room_type  = st.selectbox("Room Type", ["Standard","Deluxe","Suite","Houseboat"])
-        source     = st.selectbox("Guest Source",
-                        ["Delhi","Mumbai","Punjab","Gujarat","Foreign","Local","Other"])
+        guest_name = st.text_input("Guest Name *")
+        checkin    = st.date_input("Check-in *", value=date.today())
+        checkout   = st.date_input("Check-out *", value=date.today())
     with col2:
-        guests   = st.number_input("Number of Guests", min_value=1, max_value=10, value=2)
-        checkout = st.date_input("Check-out Date", value=date.today())
-        amount   = st.number_input("Amount Paid (₹)", min_value=0, step=500, value=5000)
-        status   = st.selectbox("Booking Status", ["Confirmed","Pending","Cancelled"])
+        amount    = st.number_input("Amount Paid (₹) *", min_value=0, step=500, value=5000)
+        room_type = st.selectbox("Room Type",
+                        ["Standard","Deluxe","Suite","Houseboat"])
+        status    = st.selectbox("Status",
+                        ["Confirmed","Pending","Cancelled"])
 
-    notes  = st.text_area("Notes (optional)")
+    # Optional fields collapsed
+    with st.expander("➕ More Details (optional)"):
+        col3, col4 = st.columns(2)
+        with col3:
+            guests = st.number_input("Number of Guests", min_value=1, max_value=10, value=2)
+            source = st.selectbox("Guest Source",
+                        ["Delhi","Mumbai","Punjab","Gujarat",
+                         "Foreign","Local","Other"])
+        with col4:
+            notes = st.text_area("Notes", height=80)
+
     submit = st.form_submit_button("💾 Save Booking", use_container_width=True)
 
+# ── Save Logic ────────────────────────────────────────────
 if submit:
     if not guest_name:
         st.error("❌ Please enter guest name.")
