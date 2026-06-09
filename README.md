@@ -151,7 +151,7 @@ Streamlit can be deployed on:
 
 ## Contact
 
-📧 **Email:** Kashmirhotels6@email.com  
+📧 **Email:** Kashmirhotels6@gmail.com  
 📱 **WhatsApp:** +91 8491828292
 
 ## License
