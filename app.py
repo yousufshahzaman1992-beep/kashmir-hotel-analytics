@@ -2,20 +2,7 @@
 import pandas as pd
 import plotly.graph_objects as go
 import plotly.express as px
-import sys, os
-
-from sheets_db import load_bookings, get_hotel_by_id
-from login import show_login
-from style import apply_style, sidebar_logo
-
-# ── Restore session from query params on refresh ──────────
-if not st.session_state.get("logged_in"):
-    hid = st.query_params.get("hid")
-    if hid:
-        hotel = get_hotel_by_id(hid)
-        if hotel:
-            st.session_state["logged_in"] = True
-            st.session_state["hotel"]     = hotel
+import os
 
 st.set_page_config(
     page_title="Kashmir Hotel Analytics",
@@ -23,6 +10,12 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
+
+from sheets_db import load_bookings, get_hotel_by_id, init_session
+from login import show_login
+from style import apply_style, sidebar_logo
+
+init_session()
 
 apply_style()
 
@@ -36,12 +29,6 @@ CHART = dict(
 )
 BLUES = [[0,"#bfdbfe"],[1,"#2563eb"]]
 BLUE  = "#3b82f6"
-
-# ── Init session state ────────────────────────────────────
-if "logged_in" not in st.session_state:
-    st.session_state.logged_in = False
-if "hotel" not in st.session_state:
-    st.session_state.hotel = None
 
 # ══════════════════════════════════════════════════════════
 # LOGIN PAGE

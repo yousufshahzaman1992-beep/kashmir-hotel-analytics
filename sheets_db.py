@@ -1,26 +1,18 @@
 import streamlit as st
 import gspread
-from oauth2client.service_account import ServiceAccountCredentials
 import pandas as pd
 import os
 
 @st.cache_resource(show_spinner=False)
 def get_client():
-    scope = [
-        "https://spreadsheets.google.com/feeds",
-        "https://www.googleapis.com/auth/drive"
-    ]
-    
-    # Check if we are running locally with a file or on the cloud with secrets
-    # Check for local file, otherwise use Streamlit Secrets (for GitHub/Cloud)
+    """Modernized gspread authentication using service account methods."""
     if os.path.exists("credentials.json"):
-        creds = ServiceAccountCredentials.from_json_keyfile_name("credentials.json", scope)
+        # Local development: Use service_account directly
+        return gspread.service_account(filename="credentials.json")
     else:
-        # This uses the Secrets management in Streamlit Cloud
-        creds_info = st.secrets["gcp_service_account"]
-        creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_info, scope)
-        
-    return gspread.authorize(creds)
+        # Streamlit Cloud: Use service_account_from_dict with Secrets
+        # Casting to dict ensures compatibility with internal Google auth libraries
+        return gspread.service_account_from_dict(dict(st.secrets["gcp_service_account"]))
 
 def get_bookings_sheet():
     return get_client().open("Kashmir Hotel Bookings").sheet1
@@ -88,11 +80,17 @@ def load_bookings(hotel_id):
             "Status","Notes","Hotel ID"
         ])
     df = pd.DataFrame(data)
-    df = df[df["Hotel ID"] == hotel_id]
+    # Robust filtering: ignore case and whitespace in Hotel IDs
+    search_id = str(hotel_id).strip().upper()
+    df = df[df["Hotel ID"].astype(str).str.strip().str.upper() == search_id]
+    
     if len(df) == 0:
         return df
-    df["Check-in"]  = pd.to_datetime(df["Check-in"])
-    df["Check-out"] = pd.to_datetime(df["Check-out"])
+    # Handle malformed dates gracefully
+    df["Check-in"]  = pd.to_datetime(df["Check-in"], errors='coerce')
+    df["Check-out"] = pd.to_datetime(df["Check-out"], errors='coerce')
+    df = df.dropna(subset=["Check-in", "Check-out"])
+    
     df["Month"]     = df["Check-in"].dt.strftime("%b")
     df["Month_Num"] = df["Check-in"].dt.month
     return df
@@ -113,6 +111,8 @@ def save_booking(booking: dict):
         booking["Notes"],
         booking["Hotel ID"]
     ])
+    # Clear the specific cache for this hotel so the dashboard updates immediately
+    load_bookings.clear(booking["Hotel ID"])
 
 # --- Register a new hotel ---
 def register_hotel(name, username, password, email, plan="basic"):
@@ -124,3 +124,18 @@ def register_hotel(name, username, password, email, plan="basic"):
     hotel_id = f"HOTEL{str(len(data) + 1).zfill(3)}"
     sheet.append_row([hotel_id, name, username, password, email, plan])
     return "success"
+
+def init_session():
+    """Centralized session management for multi-page apps."""
+    if "logged_in" not in st.session_state:
+        st.session_state.logged_in = False
+    if "hotel" not in st.session_state:
+        st.session_state.hotel = None
+
+    if not st.session_state.logged_in:
+        hid = st.query_params.get("hid")
+        if hid:
+            hotel = get_hotel_by_id(hid)
+            if hotel:
+                st.session_state.logged_in = True
+                st.session_state.hotel = hotel

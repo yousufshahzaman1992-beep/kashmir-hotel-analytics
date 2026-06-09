@@ -1,19 +1,12 @@
 import streamlit as st
-import sys, os
-
-from sheets_db import load_bookings, get_hotel_by_id
-from style import apply_style, sidebar_logo
-
-# ── Restore session from query params on refresh ──────────
-if not st.session_state.get("logged_in"):
-    hid = st.query_params.get("hid")
-    if hid:
-        hotel = get_hotel_by_id(hid)
-        if hotel:
-            st.session_state["logged_in"] = True
-            st.session_state["hotel"]     = hotel
 
 st.set_page_config(page_title="View Bookings", page_icon="📋", layout="wide")
+
+import sys, os
+from sheets_db import load_bookings, get_hotel_by_id, init_session
+from style import apply_style, sidebar_logo
+
+init_session()
 apply_style()
 
 if not st.session_state.get("logged_in"):

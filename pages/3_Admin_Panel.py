@@ -1,21 +1,14 @@
 import streamlit as st
-import pandas as pd
-import sys, os
-
-from sheets_db import get_hotels_sheet, get_bookings_sheet, get_hotel_by_id
-from style import apply_style, sidebar_logo
 
 st.set_page_config(page_title="Admin Panel", page_icon="⚙️", layout="wide")
-apply_style()
 
-# ── Restore session from query params on refresh ──────────
-if not st.session_state.get("logged_in"):
-    hid = st.query_params.get("hid")
-    if hid:
-        hotel = get_hotel_by_id(hid)
-        if hotel:
-            st.session_state["logged_in"] = True
-            st.session_state["hotel"]     = hotel
+import pandas as pd
+import sys, os
+from sheets_db import get_hotels_sheet, get_bookings_sheet, get_hotel_by_id, init_session
+from style import apply_style, sidebar_logo
+
+init_session()
+apply_style()
 
 # ── Guard: must be logged in AND be admin ─────────────────
 if not st.session_state.get("logged_in"):

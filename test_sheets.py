@@ -1,15 +1,7 @@
 import gspread
-from oauth2client.service_account import ServiceAccountCredentials
 
-# Define permissions
-scope = [
-    "https://spreadsheets.google.com/feeds",
-    "https://www.googleapis.com/auth/drive"
-]
-
-# Connect using credentials
-creds  = ServiceAccountCredentials.from_json_keyfile_name("credentials.json", scope)
-client = gspread.authorize(creds)
+# Modernized connection for local testing
+client = gspread.service_account(filename="credentials.json")
 
 # Open your sheet
 sheet = client.open("Kashmir Hotel Bookings").sheet1
