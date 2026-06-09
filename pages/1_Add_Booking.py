@@ -79,10 +79,11 @@ with st.form("booking_form"):
 # ── Save Logic ────────────────────────────────────────────
 if submit:
     if not guest_name:
-        st.error("❌ Please enter guest name.")
+        st.session_state["form_error"] = "❌ Please enter guest name."
     elif checkout <= checkin:
-        st.error("❌ Check-out must be after check-in.")
+        st.session_state["form_error"] = "❌ Check-out must be after check-in."
     else:
+        st.session_state["form_error"] = None
         nights  = (checkout - checkin).days
         booking = {
             "Guest Name":  guest_name,
@@ -98,5 +99,13 @@ if submit:
             "Hotel ID":    hotel_id
         }
         save_booking(booking)
-        st.success(f"✅ Booking saved for **{guest_name}**!")
+        st.session_state["form_success"] = guest_name
         st.balloons()
+
+# ── Show persistent messages ──────────────────────────────
+if st.session_state.get("form_error"):
+    st.error(st.session_state["form_error"])
+
+if st.session_state.get("form_success"):
+    st.success(f"✅ Booking saved for **{st.session_state['form_success']}**!")
+    st.session_state["form_success"] = None
