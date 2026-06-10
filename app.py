@@ -82,7 +82,7 @@ with st.sidebar:
         st.rerun()
 
 # ── Load data for THIS hotel only ────────────────────────
-@st.cache_data(ttl=300, show_spinner=False)
+@st.cache_data(ttl=600, show_spinner=False)
 def get_data(hid):
     return load_bookings(hid)
 
