@@ -44,6 +44,11 @@ st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
 
 # ── Form ──────────────────────────────────────────────────
 with st.form("booking_form"):
+    # Initialize optional variables to prevent potential errors
+    guests = 2
+    source = "Delhi"
+    notes = ""
+
     # Required fields
     col1, col2 = st.columns(2)
     with col1:
