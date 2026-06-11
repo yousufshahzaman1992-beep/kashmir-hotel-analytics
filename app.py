@@ -121,10 +121,10 @@ avg_book     = int(fdf["Amount (₹)"].mean())  if total_book else 0
 
 st.markdown("<div class='section-title'>Performance Overview</div>", unsafe_allow_html=True)
 
-k1,k2,k3,k4,k5 = st.columns(5)
-k1.metric("📋 Bookings",    str(total_book),       "+3 this week")
-k2.metric("💰 Revenue",     f"₹{total_rev:,}",     "+12%")
-k3.metric("🌙 Nights Sold", str(total_nights))
+k1, k2, k3, k4, k5 = st.columns(5)
+k1.metric("📋 Bookings",    f"{total_book}",   "+3 this week")
+k2.metric("💰 Revenue",     f"₹{total_rev:,}", "+12%")
+k3.metric("🌙 Nights Sold", f"{total_nights}")
 k4.metric("📅 Avg Stay",    f"{avg_nights} nights")
 k5.metric("💵 Avg Booking", f"₹{avg_book:,}")
 

@@ -98,6 +98,8 @@ if submit:
             "Hotel ID":    hotel_id
         }
         save_booking(booking)
+        if "form_error" in st.session_state:
+            del st.session_state["form_error"]
         st.session_state["form_success"] = guest_name
         st.balloons()
 

@@ -86,9 +86,13 @@ def load_bookings(hotel_id):
     
     if len(df) == 0:
         return df
-    # Handle malformed dates gracefully
-    df["Check-in"]  = pd.to_datetime(df["Check-in"], errors='coerce')
-    df["Check-out"] = pd.to_datetime(df["Check-out"], errors='coerce')
+
+    # Handle malformed dates and ensure numeric types
+    date_cols = ["Check-in", "Check-out"]
+    for col in date_cols:
+        df[col] = pd.to_datetime(df[col], errors='coerce')
+    
+    df["Amount (₹)"] = pd.to_numeric(df["Amount (₹)"], errors='coerce').fillna(0)
     df = df.dropna(subset=["Check-in", "Check-out"])
     
     df["Month"]     = df["Check-in"].dt.strftime("%b")
