@@ -4,7 +4,7 @@ st.set_page_config(page_title="Admin Panel", page_icon="⚙️", layout="wide")
 
 import pandas as pd
 import sys, os
-from sheets_db import get_hotels_sheet, get_bookings_sheet, get_hotel_by_id, init_session
+from sheets_db import get_hotels_sheet, get_bookings_sheet, get_hotel_by_id, init_session, prepare_bookings_df
 from style import apply_style, sidebar_logo
 
 init_session()
@@ -18,7 +18,8 @@ if str(st.session_state.hotel.get("hotel_id", "")).strip().upper() != "ADMIN":
     st.switch_page("app.py")
 
 # Persist session in URL
-st.query_params["hid"] = "ADMIN"
+if st.query_params.get("hid") != "ADMIN":
+    st.query_params["hid"] = "ADMIN"
 
 # ── Sidebar ───────────────────────────────────────────────
 with st.sidebar:
@@ -50,7 +51,8 @@ st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
 @st.cache_data(ttl=30, show_spinner=False)
 def load_all():
     hotels   = pd.DataFrame(get_hotels_sheet().get_all_records())
-    bookings = pd.DataFrame(get_bookings_sheet().get_all_records())
+    raw_bookings = pd.DataFrame(get_bookings_sheet().get_all_records())
+    bookings = prepare_bookings_df(raw_bookings)
     return hotels, bookings
 
 hotels_df, bookings_df = load_all()

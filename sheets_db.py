@@ -68,6 +68,22 @@ def get_hotel_by_id(hotel_id):
         return match.iloc[0].to_dict()
     return None
 
+def prepare_bookings_df(df):
+    """Standardizes types and adds time-based features to bookings dataframe."""
+    if df.empty:
+        return df
+    # Handle malformed dates and ensure numeric types
+    date_cols = ["Check-in", "Check-out"]
+    for col in date_cols:
+        df[col] = pd.to_datetime(df[col], errors='coerce')
+    
+    df["Amount (₹)"] = pd.to_numeric(df["Amount (₹)"], errors='coerce').fillna(0)
+    df = df.dropna(subset=["Check-in", "Check-out"])
+    
+    df["Month"]     = df["Check-in"].dt.strftime("%b")
+    df["Month_Num"] = df["Check-in"].dt.month
+    return df
+
 # --- Load bookings filtered by hotel_id ---
 @st.cache_data(ttl=300, show_spinner=False)
 def load_bookings(hotel_id):
@@ -87,17 +103,7 @@ def load_bookings(hotel_id):
     if len(df) == 0:
         return df
 
-    # Handle malformed dates and ensure numeric types
-    date_cols = ["Check-in", "Check-out"]
-    for col in date_cols:
-        df[col] = pd.to_datetime(df[col], errors='coerce')
-    
-    df["Amount (₹)"] = pd.to_numeric(df["Amount (₹)"], errors='coerce').fillna(0)
-    df = df.dropna(subset=["Check-in", "Check-out"])
-    
-    df["Month"]     = df["Check-in"].dt.strftime("%b")
-    df["Month_Num"] = df["Check-in"].dt.month
-    return df
+    return prepare_bookings_df(df)
 
 # --- Save booking ---
 def save_booking(booking: dict):

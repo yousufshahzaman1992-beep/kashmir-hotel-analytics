@@ -188,7 +188,8 @@ def show_login():
             if hotel:
                 st.session_state["logged_in"] = True
                 st.session_state["hotel"]     = hotel
-                st.query_params["hid"]        = hotel["hotel_id"]
+                if st.query_params.get("hid") != hotel["hotel_id"]:
+                    st.query_params["hid"] = hotel["hotel_id"]
                 st.rerun()
             else:
                 st.error("❌ Incorrect username or password.")

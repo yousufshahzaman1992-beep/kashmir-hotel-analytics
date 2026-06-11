@@ -1,5 +1,11 @@
+# Credentials and Secrets
 credentials.json
-bookings.csv
+.streamlit/secrets.toml
+
+# Python artifacts
 __pycache__/
-*.pyc
-.env
+*.py[cod]
+*$py.class
+.venv
+env/
+build/

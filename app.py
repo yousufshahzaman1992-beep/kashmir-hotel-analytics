@@ -45,7 +45,8 @@ hotel_id   = hotel["hotel_id"]
 hotel_name = hotel["name"]
 
 # Persist session in URL
-st.query_params["hid"] = hotel_id
+if st.query_params.get("hid") != hotel_id:
+    st.query_params["hid"] = hotel_id
 
 # ── Sidebar ───────────────────────────────────────────────
 with st.sidebar:

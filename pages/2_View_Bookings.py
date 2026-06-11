@@ -14,7 +14,8 @@ if not st.session_state.get("logged_in"):
 
 hotel    = st.session_state.hotel
 hotel_id = hotel["hotel_id"]
-st.query_params["hid"] = hotel_id
+if st.query_params.get("hid") != hotel_id:
+    st.query_params["hid"] = hotel_id
 
 with st.sidebar:
     sidebar_logo()
