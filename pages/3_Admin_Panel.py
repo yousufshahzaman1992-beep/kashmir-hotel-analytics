@@ -1,25 +1,31 @@
 import streamlit as st
-
-st.set_page_config(page_title="Admin Panel", page_icon="⚙️", layout="wide")
-
 import pandas as pd
 import sys, os
-from sheets_db import get_hotels_sheet, get_bookings_sheet, get_hotel_by_id, init_session, prepare_bookings_df
+
+from sheets_db import get_hotel_by_id, load_hotels, load_all_bookings, add_hotel
 from style import apply_style, sidebar_logo
 
-init_session()
+# ── Restore session from query params on refresh ──────────
+if not st.session_state.get("logged_in"):
+    hid = st.query_params.get("hid")
+    if hid:
+        hotel = get_hotel_by_id(hid)
+        if hotel:
+            st.session_state["logged_in"] = True
+            st.session_state["hotel"]     = hotel
+
+st.set_page_config(page_title="Admin Panel", page_icon="⚙️", layout="wide")
 apply_style()
 
 # ── Guard: must be logged in AND be admin ─────────────────
 if not st.session_state.get("logged_in"):
     st.switch_page("app.py")
 
-if str(st.session_state.hotel.get("hotel_id", "")).strip().upper() != "ADMIN":
+if st.session_state.hotel["hotel_id"] != "ADMIN":
     st.switch_page("app.py")
 
 # Persist session in URL
-if st.query_params.get("hid") != "ADMIN":
-    st.query_params["hid"] = "ADMIN"
+st.query_params["hid"] = "ADMIN"
 
 # ── Sidebar ───────────────────────────────────────────────
 with st.sidebar:
@@ -48,15 +54,9 @@ st.markdown("<p class='page-sub'>Manage all hotels and accounts.</p>", unsafe_al
 st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
 
 # ── Load all data ─────────────────────────────────────────
-@st.cache_data(ttl=30, show_spinner=False)
-def load_all():
-    hotels   = pd.DataFrame(get_hotels_sheet().get_all_records())
-    raw_bookings = pd.DataFrame(get_bookings_sheet().get_all_records())
-    bookings = prepare_bookings_df(raw_bookings)
-    return hotels, bookings
-
-hotels_df, bookings_df = load_all()
-hotels_df = hotels_df[hotels_df["hotel_id"] != "ADMIN"]
+hotels_df   = load_hotels()
+bookings_df = load_all_bookings()
+hotels_df   = hotels_df[hotels_df["hotel_id"] != "ADMIN"]
 
 # ── Platform KPIs ─────────────────────────────────────────
 st.markdown("<div class='section-title'>Platform Overview</div>", unsafe_allow_html=True)
@@ -123,8 +123,6 @@ if add:
     elif new_id in hotels_df["hotel_id"].values:
         st.error("❌ Hotel ID already exists.")
     else:
-        get_hotels_sheet().append_row(
-            [new_id, new_name, new_username, new_password, new_email, new_plan])
+        add_hotel(new_id, new_name, new_username, new_password, new_email, new_plan)
         st.success(f"✅ Hotel **{new_name}** added successfully!")
-        st.cache_data.clear()
         st.rerun()
