@@ -4,18 +4,31 @@ import plotly.graph_objects as go
 import plotly.express as px
 import os
 
+from sheets_db import load_bookings, get_hotel_by_id
+from login import show_login
+from style import apply_style, sidebar_logo
+
+# ── Restore session from query params on refresh ──────────
+if not st.session_state.get("logged_in"):
+    hid = st.query_params.get("hid")
+    if hid:
+        hotel = get_hotel_by_id(hid)
+        if hotel:
+            st.session_state["logged_in"] = True
+            st.session_state["hotel"]     = hotel
+
+# ── Init session state ────────────────────────────────────
+if "logged_in" not in st.session_state:
+    st.session_state.logged_in = False
+if "hotel" not in st.session_state:
+    st.session_state.hotel = None
+
 st.set_page_config(
     page_title="Kashmir Hotel Analytics",
     page_icon="🏔️",
     layout="wide",
     initial_sidebar_state="expanded"
 )
-
-from sheets_db import load_bookings, get_hotel_by_id, init_session
-from login import show_login
-from style import apply_style, sidebar_logo
-
-init_session()
 
 apply_style()
 
@@ -33,7 +46,7 @@ BLUE  = "#3b82f6"
 # ══════════════════════════════════════════════════════════
 # LOGIN PAGE
 # ══════════════════════════════════════════════════════════
-if not st.session_state.logged_in:
+if not st.session_state.get("logged_in"):
     show_login()
     st.stop()
 
@@ -45,8 +58,7 @@ hotel_id   = hotel["hotel_id"]
 hotel_name = hotel["name"]
 
 # Persist session in URL
-if st.query_params.get("hid") != hotel_id:
-    st.query_params["hid"] = hotel_id
+st.query_params["hid"] = hotel_id
 
 # ── Sidebar ───────────────────────────────────────────────
 with st.sidebar:
@@ -122,10 +134,10 @@ avg_book     = int(fdf["Amount (₹)"].mean())  if total_book else 0
 
 st.markdown("<div class='section-title'>Performance Overview</div>", unsafe_allow_html=True)
 
-k1, k2, k3, k4, k5 = st.columns(5)
-k1.metric("📋 Bookings",    f"{total_book}",   "+3 this week")
-k2.metric("💰 Revenue",     f"₹{total_rev:,}", "+12%")
-k3.metric("🌙 Nights Sold", f"{total_nights}")
+k1,k2,k3,k4,k5 = st.columns(5)
+k1.metric("📋 Bookings",    str(total_book),       "+3 this week")
+k2.metric("💰 Revenue",     f"₹{total_rev:,}",     "+12%")
+k3.metric("🌙 Nights Sold", str(total_nights))
 k4.metric("📅 Avg Stay",    f"{avg_nights} nights")
 k5.metric("💵 Avg Booking", f"₹{avg_book:,}")
 

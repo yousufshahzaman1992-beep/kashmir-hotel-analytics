@@ -10,13 +10,13 @@ A modern hotel analytics dashboard built with **Streamlit** for hotel managers t
 - 🛏️ **Room Management** - Monitor room type occupancy
 - 📈 **Performance Metrics** - KPIs for bookings, revenue, and occupancy
 - 🔐 **Multi-Hotel Support** - Secure login for multiple hotels
-- 💾 **Cloud Integration** - Syncs data with Google Sheets
+- 💾 **Cloud Integration** - Powered by Firebase Firestore
 - 🌙 **Dark Mode** - Modern, sleek UI
 
 ## Tech Stack
 
 - **Frontend**: Streamlit
-- **Database**: Google Sheets
+- **Database**: Firebase Firestore
 - **Charts**: Plotly
 - **Authentication**: Session-based login
 
@@ -24,8 +24,7 @@ A modern hotel analytics dashboard built with **Streamlit** for hotel managers t
 
 ### Prerequisites
 - Python 3.8+
-- Google Service Account credentials
-- Google Sheets API enabled
+* Firebase Service Account credentials
 
 ### Setup
 
@@ -40,34 +39,23 @@ cd kashmir-hotel-analytics
 pip install -r requirements.txt
 ```
 
-3. **Set up Google Sheets credentials:**
-   - Create a Google Cloud project
-   - Enable Google Sheets API
-   - Download service account JSON credentials
-   - Save as `credentials.json` in the project root
-   - OR add to Streamlit Cloud secrets as `gcp_service_account`
+3. **Set up Firebase credentials:**
+   - Create a Firebase project
+   - Generate a New Private Key from Project Settings > Service Accounts
+   - Save as `firebase_credentials.json` in the project root
+   - OR add to Streamlit Cloud secrets under the `[firebase]` section
 
 4. **Run the app:**
 ```bash
 streamlit run app.py
 ```
 
-## Google Sheets Structure
-
-Your Google Sheet "Kashmir Hotel Bookings" should have:
-
-### Sheet 1: Bookings
-Columns: `Guest Name`, `Check-in`, `Check-out`, `Nights`, `Room Type`, `Guests`, `Source`, `Amount (₹)`, `Status`, `Notes`, `Hotel ID`
-
-### Sheet 2: Hotels
-Columns: `hotel_id`, `name`, `username`, `password`, `email`, `plan`
-
 ## Usage
 
 1. **Login** with your hotel credentials
 2. **View Dashboard** - See all your analytics
 3. **Select Season** - Filter by season (Winter, Spring, Summer, Autumn)
-4. **Refresh Data** - Update bookings from Google Sheets
+4. **Refresh Data** - Sync latest records from Firebase
 5. **Logout** - Secure session end
 
 ## File Structure
@@ -76,10 +64,10 @@ Columns: `hotel_id`, `name`, `username`, `password`, `email`, `plan`
 kashmir-hotel-analytics/
 ├── app.py              # Main dashboard app
 ├── login.py            # Login page component
-├── sheets_db.py        # Google Sheets integration
+├── sheets_db.py        # Firebase Firestore integration
 ├── style.py            # UI styling
 ├── requirements.txt    # Python dependencies
-├── credentials.json    # Google Service Account (local only)
+├── firebase_credentials.json # Firebase Service Account (local only)
 └── README.md           # This file
 ```
 
