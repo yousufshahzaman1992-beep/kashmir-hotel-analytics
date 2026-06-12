@@ -1,7 +1,6 @@
 # Credentials and Secrets
 credentials.json
-streamlit==1.42.0
-secrets.toml
+.streamlit/secrets.toml
 firebase_credentials.json
 # Python artifacts
 __pycache__/

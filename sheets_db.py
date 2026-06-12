@@ -136,6 +136,7 @@ def add_hotel(hotel_id, name, username, password, email, plan):
     load_hotels.clear()
 
 # ── Load all bookings (admin only) ───────────────────────
+# ── Load all bookings (admin only) ───────────────────────
 @st.cache_data(ttl=300, show_spinner=False)
 def load_all_bookings():
     db = get_db()
@@ -161,3 +162,9 @@ def load_all_bookings():
             ]
         )
     )
+
+
+# ── Compatibility Wrapper ────────────────────────────────
+def init_session():
+    """Ensures Firebase is initialized."""
+    return get_db()
