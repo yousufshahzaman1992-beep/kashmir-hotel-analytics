@@ -4,10 +4,18 @@ st.set_page_config(page_title="Add Booking", page_icon="📝", layout="centered"
 
 from datetime import date
 import sys, os
-from sheets_db import save_booking, get_hotel_by_id, init_session
+from sheets_db import save_booking, get_hotel_by_id
 from style import apply_style, sidebar_logo
 
-init_session()
+# ── Restore session from query params on refresh ──────────
+if not st.session_state.get("logged_in"):
+    hid = st.query_params.get("hid")
+    if hid:
+        hotel = get_hotel_by_id(hid)
+        if hotel:
+            st.session_state["logged_in"] = True
+            st.session_state["hotel"]     = hotel
+
 apply_style()
 
 if not st.session_state.get("logged_in"):
@@ -15,6 +23,7 @@ if not st.session_state.get("logged_in"):
 
 hotel    = st.session_state.hotel
 hotel_id = hotel["hotel_id"]
+
 if st.query_params.get("hid") != hotel_id:
     st.query_params["hid"] = hotel_id
 
@@ -45,16 +54,15 @@ st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
 
 # ── Form ──────────────────────────────────────────────────
 with st.form("booking_form"):
-    # Initialize optional variables to prevent potential errors
+    # Initialize optional variables
     guests = 2
     source = "Delhi"
-    notes = ""
+    notes  = ""
 
-    # Required fields
     col1, col2 = st.columns(2)
     with col1:
         guest_name = st.text_input("Guest Name *")
-        checkin    = st.date_input("Check-in *", value=date.today())
+        checkin    = st.date_input("Check-in *",  value=date.today())
         checkout   = st.date_input("Check-out *", value=date.today())
     with col2:
         amount    = st.number_input("Amount Paid (₹) *", min_value=0, step=500, value=5000)
@@ -63,7 +71,6 @@ with st.form("booking_form"):
         status    = st.selectbox("Status",
                         ["Confirmed","Pending","Cancelled"])
 
-    # Optional fields collapsed
     with st.expander("➕ More Details (optional)"):
         col3, col4 = st.columns(2)
         with col3:
@@ -96,7 +103,7 @@ if submit:
             "Amount (₹)":  amount,
             "Status":      status,
             "Notes":       notes,
-            "Hotel ID":    hotel_id
+            "hotel_id":    hotel_id    # ← lowercase, no space
         }
         save_booking(booking)
         if "form_error" in st.session_state:
@@ -104,7 +111,7 @@ if submit:
         st.session_state["form_success"] = guest_name
         st.balloons()
 
-# ── Show persistent messages ──────────────────────────────
+# ── Show messages ─────────────────────────────────────────
 if st.session_state.get("form_error"):
     st.error(st.session_state["form_error"])
 
