@@ -37,23 +37,22 @@ def get_hotel_by_id(hotel_id):
 @st.cache_data(ttl=600, show_spinner=False)
 def verify_login(username, password):
     db   = get_db()
-    docs = (db.collection("hotels")
-              .where(filter=firestore.FieldFilter("username", "==", username))
-              .where(filter=firestore.FieldFilter("password", "==", password))
-              .limit(1)
-              .stream())
+    docs = db.collection("hotels").stream()
     for doc in docs:
-        return doc.to_dict()
+        data = doc.to_dict()
+        if data.get("username") == username and data.get("password") == password:
+            return data
     return None
 
-# ── Load bookings for a hotel ─────────────────────────────
+# ── Load bookings for a hotel — no index needed ───────────
 @st.cache_data(ttl=300, show_spinner=False)
 def load_bookings(hotel_id):
     db   = get_db()
-    docs = (db.collection("bookings")
-              .where(filter=firestore.FieldFilter("hotel_id", "==", hotel_id))
-              .stream())
+    docs = db.collection("bookings").stream()
     data = [doc.to_dict() for doc in docs]
+
+    # Filter in Python — no Firestore index needed
+    data = [d for d in data if d.get("hotel_id") == hotel_id]
 
     if not data:
         return pd.DataFrame(columns=[
@@ -72,7 +71,7 @@ def load_bookings(hotel_id):
 # ── Save a new booking ────────────────────────────────────
 def save_booking(booking: dict):
     db = get_db()
-    # Rename Hotel ID → hotel_id before saving
+    # Ensure field name is hotel_id not Hotel ID
     if "Hotel ID" in booking:
         booking["hotel_id"] = booking.pop("Hotel ID")
     db.collection("bookings").add(booking)
