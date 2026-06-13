@@ -3,10 +3,8 @@ import streamlit as st
 st.set_page_config(page_title="View Bookings", page_icon="📋", layout="wide")
 
 import sys, os
-from sheets_db import load_bookings, get_hotel_by_id, init_session
+from sheets_db import load_bookings, get_hotel_by_id
 from style import apply_style, sidebar_logo
-
-init_session()
 apply_style()
 
 if not st.session_state.get("logged_in"):
