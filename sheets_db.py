@@ -51,10 +51,12 @@ def verify_login(username, password):
 @st.cache_data(ttl=300, show_spinner=False)
 def load_bookings(hotel_id):
     db   = get_db()
-    # We remove order_by from the Firestore query to bypass the requirement for a Composite Index.
-    # Sorting is handled in Python/Pandas below.
     docs = db.collection("bookings").where(filter=FieldFilter("hotel_id", "==", hotel_id)).get()
-    data = [doc.to_dict() for doc in docs]
+    data = []
+    for doc in docs:
+        d = doc.to_dict()
+        d["id"] = doc.id
+        data.append(d)
 
     df = _process_bookings_dataframe(data)
     if not df.empty and "Check-in" in df.columns:
@@ -64,6 +66,7 @@ def load_bookings(hotel_id):
 def _process_bookings_dataframe(data):
     """Helper to standardize booking data processing."""
     cols = [
+        "id",
         "Guest Name", "Phone", "Check-in", "Check-out", "Nights",
         "Room Type", "Guests", "Source", "Amount (₹)",
         "Status", "Notes", "hotel_id"
@@ -91,8 +94,19 @@ def save_booking(booking: dict):
     if "Hotel ID" in booking:
         booking["hotel_id"] = booking.pop("Hotel ID")
     db.collection("bookings").add(booking)
-    # Targeted cache clearing is more efficient than st.cache_data.clear()
     load_bookings.clear(booking.get("hotel_id"))
+
+def update_booking(doc_id, updated_data, hotel_id):
+    db = get_db()
+    db.collection("bookings").document(doc_id).update(updated_data)
+    load_bookings.clear(hotel_id)
+    load_all_bookings.clear()
+
+def delete_booking(doc_id, hotel_id):
+    db = get_db()
+    db.collection("bookings").document(doc_id).delete()
+    load_bookings.clear(hotel_id)
+    load_all_bookings.clear()
 
 # ── Add a new hotel ───────────────────────────────────────
 def add_hotel(hotel_id, name, username, password, email, plan):
@@ -114,5 +128,9 @@ def load_all_bookings():
     # Suggestion: Add .limit(500) or filter by date to prevent 
     # performance degradation as data grows.
     docs = db.collection("bookings").order_by("`Check-in`", direction="DESCENDING").limit(1000).get()
-    data = [doc.to_dict() for doc in docs]
+    data = []
+    for doc in docs:
+        d = doc.to_dict()
+        d["id"] = doc.id
+        data.append(d)
     return _process_bookings_dataframe(data)

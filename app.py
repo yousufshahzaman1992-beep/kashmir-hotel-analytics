@@ -3,6 +3,7 @@ import pandas as pd
 import plotly.graph_objects as go
 import plotly.express as px
 import os
+import urllib.parse
 
 from sheets_db import load_bookings, get_hotel_by_id
 from login import show_login
@@ -260,4 +261,15 @@ with ci1:
 with ci2:
     st.markdown("<div class='section-title'>Recent Bookings</div>", unsafe_allow_html=True)
     recent = fdf.sort_values("Check-in", ascending=False).head(8)
-    st.dataframe(recent, use_container_width=True, hide_index=True)
+
+    def generate_wa_link(row):
+        phone = str(row.get("Phone", "")).replace('+', '').strip()
+        if not phone or phone == "nan": return None
+        guest = row.get("Guest Name", "Guest")
+        msg = f"Hello {guest}, this is {hotel_name} regarding your booking."
+        return f"https://wa.me/{phone}?text={urllib.parse.quote(msg)}"
+
+    recent["WhatsApp"] = recent.apply(generate_wa_link, axis=1)
+    st.dataframe(recent, use_container_width=True, hide_index=True, column_config={
+        "WhatsApp": st.column_config.LinkColumn("Contact", display_text="💬 WhatsApp")
+    })

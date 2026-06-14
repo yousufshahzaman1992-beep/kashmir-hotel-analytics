@@ -171,7 +171,7 @@ def show_login():
 
     # ── Sign In Card ──────────────────────────────────────
     st.markdown("""
-    <div class='lg-card'>
+    <div class='lg-card' >
         <div class='lg-card-title'>Sign in to your account</div>
         <div class='lg-card-sub'>Enter your credentials to continue</div>
     </div>
