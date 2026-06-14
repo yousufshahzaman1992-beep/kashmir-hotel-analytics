@@ -1,39 +1,27 @@
 ﻿import streamlit as st
 import pandas as pd
-import plotly.graph_objects as go
-import plotly.express as px
-import os
-import urllib.parse
+import sys, os
 
-from sheets_db import load_bookings, get_hotel_by_id
-from login import show_login
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
+
+from sheets_db import get_hotel_by_id, load_hotels, load_all_bookings, add_hotel, get_db
 from style import apply_style, sidebar_logo
 
-# ── Init session state ────────────────────────────────────
-if "logged_in" not in st.session_state:
-    st.session_state.logged_in = False
-if "hotel" not in st.session_state:
-    st.session_state.hotel = None
-
-st.set_page_config(
-    page_title="Kashmir Hotel Analytics",
-    page_icon="🏔️",
-    layout="wide",
-    initial_sidebar_state="expanded" if st.session_state.get("logged_in") else "collapsed"
-)
+st.set_page_config(page_title="Admin Panel", page_icon="⚙️", layout="wide")
+apply_style()
 
 # ── Aggressively hide sidebar if not logged in ────────────
 if not st.session_state.get("logged_in"):
     st.markdown("""
         <style>
-            /* Hide entire sidebar and the collapse button (hamburger menu) */
-            section[data-testid="stSidebar"], 
+            section[data-testid="stSidebar"],
             [data-testid="stSidebarNav"] { display: none !important; }
             button[kind="headerNoPadding"] { display: none !important; }
         </style>
     """, unsafe_allow_html=True)
 
-    # ── Restore session from query params AFTER layout is hidden ──
     hid = st.query_params.get("hid")
     if hid:
         if hid == "ADMIN":
@@ -41,235 +29,217 @@ if not st.session_state.get("logged_in"):
             st.session_state["hotel"]     = {"hotel_id": "ADMIN", "name": "Administrator"}
             st.rerun()
         else:
-            hotel = get_hotel_by_id(hid) # UI stays hidden while this runs
+            hotel = get_hotel_by_id(hid)
             if hotel:
                 st.session_state["logged_in"] = True
                 st.session_state["hotel"]     = hotel
-                st.rerun() # Force instant update to show sidebar properly
+                st.rerun()
 
-apply_style()
-
-CHART = dict(
-    paper_bgcolor="rgba(0,0,0,0)",
-    plot_bgcolor="rgba(0,0,0,0)",
-    font=dict(family="Inter, sans-serif", color="#64748b", size=11),
-    xaxis=dict(gridcolor="rgba(148,163,184,0.15)", linecolor="rgba(148,163,184,0.2)"),
-    yaxis=dict(gridcolor="rgba(148,163,184,0.15)", linecolor="rgba(148,163,184,0.2)"),
-    margin=dict(t=20, b=20, l=10, r=10)
-)
-BLUES = [[0,"#bfdbfe"],[1,"#2563eb"]]
-BLUE  = "#3b82f6"
-
-# ══════════════════════════════════════════════════════════
-# LOGIN PAGE
-# ══════════════════════════════════════════════════════════
 if not st.session_state.get("logged_in"):
-    show_login()
-    st.stop()
+    st.switch_page("app.py")
 
-# ══════════════════════════════════════════════════════════
-# DASHBOARD (only reaches here if logged in)
-# ══════════════════════════════════════════════════════════
-hotel      = st.session_state.hotel
-hotel_id   = hotel["hotel_id"]
-hotel_name = hotel["name"]
+if st.session_state.hotel["hotel_id"] != "ADMIN":
+    st.switch_page("app.py")
 
-# Persist session in URL
-st.query_params["hid"] = hotel_id
+st.query_params["hid"] = "ADMIN"
 
 # ── Sidebar ───────────────────────────────────────────────
 with st.sidebar:
     sidebar_logo()
     st.divider()
-
-    st.markdown(f"""
+    st.markdown("""
     <div style='background:var(--secondary-background-color);
                 border:1px solid rgba(148,163,184,0.2);
                 border-radius:10px;padding:12px 14px;margin-bottom:12px'>
         <div style='font-size:0.7rem;color:#64748b;text-transform:uppercase;
                     letter-spacing:1px;margin-bottom:4px'>Logged in as</div>
         <div style='font-size:0.95rem;font-weight:600;
-                    color:var(--text-color)'>{hotel_name}</div>
-        <div style='font-size:0.75rem;color:#3b82f6'>
-            {hotel.get("plan", "Full Access").title()}{" Plan" if "plan" in hotel else ""}</div>
+                    color:var(--text-color)'>Administrator</div>
+        <div style='font-size:0.75rem;color:#3b82f6'>Full Access</div>
     </div>
     """, unsafe_allow_html=True)
 
-    if st.button("↻ Refresh Data", use_container_width=True):
-        st.cache_data.clear() # Already present, good.
-        st.rerun()
-
-    season = st.selectbox("Season",
-        ["Full Year","Winter (Jan–Mar)","Spring (Apr–Jun)",
-         "Summer (Jul–Sep)","Autumn (Oct–Dec)"])
-
     st.divider()
-
     st.markdown("<div class='section-title'>Support</div>", unsafe_allow_html=True)
-    support_no = "918491828292"
+    support_no   = "918491828292"
     support_link = f"https://wa.me/{support_no}?text=Hello, I need help with my hotel analytics dashboard."
     st.markdown(f"""
         <a href='{support_link}' target='_blank' style='text-decoration:none;'>
-            <button style='width:100%; border-radius:10px; padding:10px; background:#25d366; color:white; border:none; cursor:pointer; font-weight:600;'>
+            <button style='width:100%;border-radius:10px;padding:10px;
+                           background:#25d366;color:white;border:none;
+                           cursor:pointer;font-weight:600;'>
                 💬 Contact Support
             </button>
         </a>
     """, unsafe_allow_html=True)
-
     st.divider()
 
     if st.button("🚪 Logout", use_container_width=True):
-        st.session_state.logged_in = False # Already present, good.
-        st.session_state.hotel     = None # Already present, good.
-        st.query_params.clear() # Already present, good.
-        st.cache_data.clear() # Already present, good.
+        st.session_state.logged_in = False
+        st.session_state.hotel     = None
+        st.query_params.clear()
+        st.cache_data.clear()
         st.rerun()
 
-# ── Load data for THIS hotel only ────────────────────────
-df = load_bookings(hotel_id)
-
 # ── Header ────────────────────────────────────────────────
-hc1, hc2 = st.columns([5,1])
-with hc1:
-    st.markdown(f"<p class='page-title'>{hotel_name}</p>", unsafe_allow_html=True)
-    st.markdown("<p class='page-sub'>Revenue & Occupancy Dashboard</p>",
-                unsafe_allow_html=True)
-with hc2:
-    st.markdown(f"<br><span class='badge'>{season}</span>", unsafe_allow_html=True)
+st.markdown("<p class='page-title'>⚙️ Admin Panel</p>", unsafe_allow_html=True)
+st.markdown("<p class='page-sub'>Manage all hotels and accounts.</p>", unsafe_allow_html=True)
+st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
+
+# ── Load data ─────────────────────────────────────────────
+hotels_df   = load_hotels()
+bookings_df = load_all_bookings()
+hotels_df   = hotels_df[hotels_df["hotel_id"] != "ADMIN"]
+
+# ── Platform KPIs ─────────────────────────────────────────
+st.markdown("<div class='section-title'>Platform Overview</div>", unsafe_allow_html=True)
+
+total_hotels   = len(hotels_df)
+total_bookings = len(bookings_df)
+total_revenue  = int(bookings_df["Amount (₹)"].sum()) \
+                 if "Amount (₹)" in bookings_df.columns and len(bookings_df) > 0 else 0
+active_hotels  = len(bookings_df["hotel_id"].unique()) \
+                 if "hotel_id" in bookings_df.columns and len(bookings_df) > 0 else 0
+
+k1,k2,k3,k4 = st.columns(4)
+k1.metric("🏨 Total Hotels",   total_hotels)
+k2.metric("📋 Total Bookings", total_bookings)
+k3.metric("💰 Total Revenue",  f"₹{total_revenue:,}")
+k4.metric("✅ Active Hotels",  active_hotels)
 
 st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
 
-SM = {
-    "Full Year":        [1,2,3,4,5,6,7,8,9,10,11,12],
-    "Winter (Jan–Mar)": [1,2,3],
-    "Spring (Apr–Jun)": [4,5,6],
-    "Summer (Jul–Sep)": [7,8,9],
-    "Autumn (Oct–Dec)": [10,11,12],
-}
+# ── Hotel Breakdown ───────────────────────────────────────
+st.markdown("<div class='section-title'>Hotel Breakdown</div>", unsafe_allow_html=True)
 
-if len(df) == 0:
-    st.info("No bookings yet. Go to **Add Booking** to add your first booking.")
-    st.stop()
-
-fdf = df[df["Month_Num"].isin(SM[season])]
-
-total_rev    = int(fdf["Amount (₹)"].sum())
-total_book   = len(fdf)
-total_nights = int(fdf["Nights"].sum())
-avg_nights   = round(fdf["Nights"].mean(), 1) if total_book else 0
-avg_book     = int(fdf["Amount (₹)"].mean())  if total_book else 0
-
-st.markdown("<div class='section-title'>Performance Overview</div>", unsafe_allow_html=True)
-
-# Using a container for metrics helps with layout stability
-with st.container():
-    k1,k2,k3,k4,k5 = st.columns(5)
-    k1.metric("📋 Bookings",    str(total_book))
-    k2.metric("💰 Revenue",     f"₹{total_rev:,}")
-    k3.metric("🌙 Nights Sold", str(total_nights))
-    k4.metric("📅 Avg Stay",    f"{avg_nights} nights")
-    k5.metric("💵 Avg Booking", f"₹{avg_book:,}")
-
-st.markdown("<br>", unsafe_allow_html=True)
-
-if total_book == 0:
-    st.info("No bookings for this season.")
-    st.stop()
-
-c1, c2 = st.columns([3,2])
-with c1:
-    st.markdown("<div class='section-title'>Monthly Revenue</div>", unsafe_allow_html=True)
-    rev = (fdf.groupby(["Month_Num","Month"])["Amount (₹)"]
-              .sum().reset_index().sort_values("Month_Num"))
-    fig1 = go.Figure(go.Bar(
-        x=rev["Month"], y=rev["Amount (₹)"],
-        marker=dict(color=rev["Amount (₹)"], colorscale=BLUES, line=dict(width=0)),
-        hovertemplate="<b>%{x}</b><br>₹%{y:,}<extra></extra>"
-    ))
-    fig1.update_layout(**CHART)
-    st.plotly_chart(fig1, use_container_width=True)
-
-with c2:
-    st.markdown("<div class='section-title'>Guest Origins</div>", unsafe_allow_html=True)
-    src = fdf["Source"].value_counts().reset_index()
-    src.columns = ["Source","Guests"]
-    fig2 = px.pie(src, names="Source", values="Guests", hole=0.55,
-                  color_discrete_sequence=["#2563eb","#3b82f6","#60a5fa",
-                                            "#93c5fd","#bfdbfe","#1e40af","#dbeafe"])
-    fig2.update_traces(textposition="outside", textinfo="percent+label",
-                       textfont=dict(size=10))
-    fig2.update_layout(**CHART, showlegend=False)
-    st.plotly_chart(fig2, use_container_width=True)
+if len(bookings_df) > 0 and "hotel_id" in bookings_df.columns:
+    summary = (
+        bookings_df.groupby("hotel_id")
+        .agg(Bookings=("hotel_id","count"),
+             Revenue=("Amount (₹)","sum"),
+             Avg_Nights=("Nights","mean"))
+        .reset_index()
+    )
+    merged = hotels_df[["hotel_id","name","plan","email"]].merge(
+        summary, on="hotel_id", how="left").fillna(0)
+    merged["Revenue"]    = merged["Revenue"].astype(int)
+    merged["Bookings"]   = merged["Bookings"].astype(int)
+    merged["Avg_Nights"] = merged["Avg_Nights"].round(1)
+    merged.columns       = ["Hotel ID","Name","Plan","Email",
+                             "Bookings","Revenue (₹)","Avg Nights"]
+    st.dataframe(merged, use_container_width=True, hide_index=True)
+else:
+    st.dataframe(hotels_df[["hotel_id","name","plan","email"]],
+                 use_container_width=True, hide_index=True)
 
 st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
 
-c3, c4 = st.columns([2,3])
-with c3:
-    st.markdown("<div class='section-title'>Room Type</div>", unsafe_allow_html=True)
-    rooms = fdf["Room Type"].value_counts().reset_index()
-    rooms.columns = ["Room Type","Count"]
-    fig3 = go.Figure(go.Bar(
-        x=rooms["Count"], y=rooms["Room Type"], orientation="h",
-        marker=dict(color=rooms["Count"], colorscale=BLUES, line=dict(width=0)),
-        hovertemplate="<b>%{y}</b>: %{x}<extra></extra>"
-    ))
-    fig3.update_layout(**CHART)
-    st.plotly_chart(fig3, use_container_width=True)
+# ── Tabs ──────────────────────────────────────────────────
+tab1, tab2, tab3 = st.tabs(["➕ Add Hotel", "✏️ Edit Hotel", "🗑️ Delete Hotel"])
 
-with c4:
-    st.markdown("<div class='section-title'>Bookings Over Time</div>", unsafe_allow_html=True)
-    trend = (fdf.groupby(["Month_Num","Month"])
-                .size().reset_index(name="Bookings").sort_values("Month_Num"))
-    fig4 = go.Figure(go.Scatter(
-        x=trend["Month"], y=trend["Bookings"],
-        mode="lines+markers",
-        line=dict(color=BLUE, width=2.5),
-        marker=dict(size=8, color=BLUE, line=dict(color="white", width=2)),
-        fill="tozeroy", fillcolor="rgba(59,130,246,0.07)",
-        hovertemplate="<b>%{x}</b>: %{y}<extra></extra>"
-    ))
-    fig4.update_layout(**CHART)
-    st.plotly_chart(fig4, use_container_width=True)
+# ── ADD ───────────────────────────────────────────────────
+with tab1:
+    st.markdown("<div class='section-title'>Add New Hotel</div>", unsafe_allow_html=True)
 
-st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
+    with st.form("add_hotel_form"):
+        c1, c2 = st.columns(2)
+        with c1:
+            new_id    = st.text_input("Hotel ID (unique)", placeholder="e.g. HOTEL003")
+            new_name  = st.text_input("Hotel Name",        placeholder="e.g. Pine View Resort")
+        with c2:
+            new_email = st.text_input("Hotel Email")
+            new_plan  = st.selectbox("Plan", ["basic","pro","enterprise"])
 
-ci1, ci2 = st.columns([1,2])
-with ci1:
-    st.markdown("<div class='section-title'>Quick Insights</div>", unsafe_allow_html=True)
-    top_src  = src.iloc[0]["Source"] if len(src) else "—"
-    top_room = rooms.iloc[0]["Room Type"] if len(rooms) else "—"
-    foreign  = src[src["Source"]=="Foreign"]["Guests"].sum() \
-               if "Foreign" in src["Source"].values else 0
-    fp       = round(foreign/src["Guests"].sum()*100) \
-               if src["Guests"].sum()>0 else 0
-    conf     = len(fdf[fdf["Status"]=="Confirmed"]) \
-               if "Confirmed" in fdf["Status"].values else 0
-    rows = [
-        ("Top guest market",  top_src),
-        ("Most booked room",  top_room),
-        ("Foreign guests",    f"{fp}%"),
-        ("Confirmed bookings",str(conf)),
-        ("Total revenue",     f"₹{total_rev:,}"),
-    ]
-    html = "<div class='card-wrap'>"
-    for lbl,val in rows:
-        html += f"<div class='insight-row'><span>{lbl}</span>" \
-                f"<span class='insight-val'>{val}</span></div>"
-    html += "</div>"
-    st.markdown(html, unsafe_allow_html=True)
+        app_url = st.text_input("Your App URL",
+                      value="https://kashmir-hotel-analytics.streamlit.app",
+                      help="The public URL of your deployed app")
+        add = st.form_submit_button("➕ Add Hotel & Send Invite", use_container_width=True)
 
-with ci2:
-    st.markdown("<div class='section-title'>Recent Bookings</div>", unsafe_allow_html=True)
-    recent = fdf.sort_values("Check-in", ascending=False).head(8)
+    if add:
+        if not all([new_id, new_name, new_email]):
+            st.error("❌ Please fill in all fields.")
+        elif new_id in hotels_df["hotel_id"].values:
+            st.error("❌ Hotel ID already exists.")
+        else:
+            add_hotel(new_id, new_name, "", "", new_email, new_plan)
 
-    def generate_wa_link(row):
-        phone = str(row.get("Phone", "")).replace('+', '').strip()
-        if not phone or phone == "nan": return None
-        guest = row.get("Guest Name", "Guest")
-        msg = f"Hello {guest}, this is {hotel_name} regarding your booking."
-        return f"https://wa.me/{phone}?text={urllib.parse.quote(msg)}"
+            from email_utils import generate_invite_token, save_invite_token, send_invite_email
+            token             = generate_invite_token()
+            save_invite_token(token, new_id, new_email)
+            success, message  = send_invite_email(new_name, new_email, token, app_url)
 
-    recent["WhatsApp"] = recent.apply(generate_wa_link, axis=1)
-    st.dataframe(recent, use_container_width=True, hide_index=True, column_config={
-        "WhatsApp": st.column_config.LinkColumn("Contact", display_text="💬 WhatsApp")
-    })
+            if success:
+                st.success(f"✅ Hotel **{new_name}** added and invite sent to **{new_email}**!")
+            else:
+                st.success(f"✅ Hotel **{new_name}** added successfully!")
+                st.error(f"❌ Email failed: {message}")
+
+            st.cache_data.clear()
+            st.rerun()
+
+# ── EDIT ──────────────────────────────────────────────────
+with tab2:
+    st.markdown("<div class='section-title'>Edit Hotel</div>", unsafe_allow_html=True)
+
+    if len(hotels_df) == 0:
+        st.info("No hotels to edit.")
+    else:
+        hotel_options = {row["name"]: row["hotel_id"] for _, row in hotels_df.iterrows()}
+        selected_name = st.selectbox("Select Hotel to Edit", list(hotel_options.keys()))
+        selected_id   = hotel_options[selected_name]
+        selected_data = hotels_df[hotels_df["hotel_id"] == selected_id].iloc[0]
+
+        with st.form("edit_hotel_form"):
+            c1, c2 = st.columns(2)
+            with c1:
+                edit_name     = st.text_input("Hotel Name",   value=selected_data["name"])
+                edit_username = st.text_input("Username",     value=selected_data["username"])
+                edit_password = st.text_input("Password (leave blank to keep current)",
+                                              type="password")
+            with c2:
+                edit_email = st.text_input("Email", value=selected_data["email"])
+                edit_plan  = st.selectbox("Plan",
+                                ["basic","pro","enterprise"],
+                                index=["basic","pro","enterprise"].index(
+                                    selected_data.get("plan","basic")))
+
+            save = st.form_submit_button("💾 Save Changes", use_container_width=True)
+
+        if save:
+            db = get_db()
+            db.collection("hotels").document(selected_id).update({
+                "name":     edit_name,
+                "username": edit_username,
+                "email":    edit_email,
+                "plan":     edit_plan
+            })
+            if edit_password:
+                db.collection("hotels").document(selected_id).update(
+                    {"password": edit_password})
+            st.success(f"✅ **{edit_name}** updated successfully!")
+            st.cache_data.clear()
+            st.rerun()
+
+# ── DELETE ────────────────────────────────────────────────
+with tab3:
+    st.markdown("<div class='section-title'>Delete Hotel</div>", unsafe_allow_html=True)
+
+    if len(hotels_df) == 0:
+        st.info("No hotels to delete.")
+    else:
+        hotel_options_del = {row["name"]: row["hotel_id"] for _, row in hotels_df.iterrows()}
+        del_name = st.selectbox("Select Hotel to Delete", list(hotel_options_del.keys()))
+        del_id   = hotel_options_del[del_name]
+
+        st.warning(f"⚠️ Deleting **{del_name}** will remove their account. "
+                   f"Their bookings will NOT be deleted.")
+
+        confirm = st.checkbox(f"Yes, I want to delete **{del_name}**")
+
+        if confirm:
+            if st.button("🗑️ Delete Hotel", use_container_width=True):
+                db = get_db()
+                db.collection("hotels").document(del_id).delete()
+                st.success(f"✅ **{del_name}** deleted successfully!")
+                st.cache_data.clear()
+                st.rerun()

@@ -2,14 +2,13 @@ import streamlit as st
 import pandas as pd
 import sys, os
 
-# Add the project root to sys.path to allow importing modules from the root directory
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
+
 from sheets_db import get_hotel_by_id, load_hotels, load_all_bookings, add_hotel, get_db
 from style import apply_style, sidebar_logo
 
-# ── Restore session from query params on refresh ──────────
 st.set_page_config(page_title="Admin Panel", page_icon="⚙️", layout="wide")
 apply_style()
 
@@ -17,14 +16,12 @@ apply_style()
 if not st.session_state.get("logged_in"):
     st.markdown("""
         <style>
-            /* Hide entire sidebar and the collapse button (hamburger menu) */
-            section[data-testid="stSidebar"], 
+            section[data-testid="stSidebar"],
             [data-testid="stSidebarNav"] { display: none !important; }
             button[kind="headerNoPadding"] { display: none !important; }
         </style>
     """, unsafe_allow_html=True)
 
-    # ── Restore session from query params ────────────────
     hid = st.query_params.get("hid")
     if hid:
         if hid == "ADMIN":
@@ -45,6 +42,7 @@ if st.session_state.hotel["hotel_id"] != "ADMIN":
     st.switch_page("app.py")
 
 st.query_params["hid"] = "ADMIN"
+
 # ── Sidebar ───────────────────────────────────────────────
 with st.sidebar:
     sidebar_logo()
@@ -63,23 +61,24 @@ with st.sidebar:
 
     st.divider()
     st.markdown("<div class='section-title'>Support</div>", unsafe_allow_html=True)
-    support_no = "918491828292"
+    support_no   = "918491828292"
     support_link = f"https://wa.me/{support_no}?text=Hello, I need help with my hotel analytics dashboard."
     st.markdown(f"""
         <a href='{support_link}' target='_blank' style='text-decoration:none;'>
-            <button style='width:100%; border-radius:10px; padding:10px; background:#25d366; color:white; border:none; cursor:pointer; font-weight:600;'>
+            <button style='width:100%;border-radius:10px;padding:10px;
+                           background:#25d366;color:white;border:none;
+                           cursor:pointer;font-weight:600;'>
                 💬 Contact Support
             </button>
         </a>
     """, unsafe_allow_html=True)
-
     st.divider()
 
     if st.button("🚪 Logout", use_container_width=True):
         st.session_state.logged_in = False
         st.session_state.hotel     = None
         st.query_params.clear()
-        st.cache_data.clear() # Added: Clear cache on admin logout
+        st.cache_data.clear()
         st.rerun()
 
 # ── Header ────────────────────────────────────────────────
@@ -135,32 +134,46 @@ else:
 
 st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
 
-# ── Tabs for Add / Edit / Delete ──────────────────────────
+# ── Tabs ──────────────────────────────────────────────────
 tab1, tab2, tab3 = st.tabs(["➕ Add Hotel", "✏️ Edit Hotel", "🗑️ Delete Hotel"])
 
 # ── ADD ───────────────────────────────────────────────────
 with tab1:
     st.markdown("<div class='section-title'>Add New Hotel</div>", unsafe_allow_html=True)
+
     with st.form("add_hotel_form"):
         c1, c2 = st.columns(2)
         with c1:
-            new_id       = st.text_input("Hotel ID (unique)", placeholder="e.g. HOTEL003")
-            new_name     = st.text_input("Hotel Name",        placeholder="e.g. Pine View Resort")
-            new_username = st.text_input("Username")
+            new_id    = st.text_input("Hotel ID (unique)", placeholder="e.g. HOTEL003")
+            new_name  = st.text_input("Hotel Name",        placeholder="e.g. Pine View Resort")
         with c2:
-            new_password = st.text_input("Password", type="password")
-            new_email    = st.text_input("Email")
-            new_plan     = st.selectbox("Plan", ["basic","pro","enterprise"])
-        add = st.form_submit_button("➕ Add Hotel", use_container_width=True)
+            new_email = st.text_input("Hotel Email")
+            new_plan  = st.selectbox("Plan", ["basic","pro","enterprise"])
+
+        app_url = st.text_input("Your App URL",
+                      value="https://kashmir-hotel-analytics.streamlit.app",
+                      help="The public URL of your deployed app")
+        add = st.form_submit_button("➕ Add Hotel & Send Invite", use_container_width=True)
 
     if add:
-        if not all([new_id, new_name, new_username, new_password, new_email]):
+        if not all([new_id, new_name, new_email]):
             st.error("❌ Please fill in all fields.")
         elif new_id in hotels_df["hotel_id"].values:
             st.error("❌ Hotel ID already exists.")
         else:
-            add_hotel(new_id, new_name, new_username, new_password, new_email, new_plan)
-            st.success(f"✅ Hotel **{new_name}** added successfully!")
+            add_hotel(new_id, new_name, "", "", new_email, new_plan)
+
+            from email_utils import generate_invite_token, save_invite_token, send_invite_email
+            token             = generate_invite_token()
+            save_invite_token(token, new_id, new_email)
+            success, message  = send_invite_email(new_name, new_email, token, app_url)
+
+            if success:
+                st.success(f"✅ Hotel **{new_name}** added and invite sent to **{new_email}**!")
+            else:
+                st.success(f"✅ Hotel **{new_name}** added successfully!")
+                st.error(f"❌ Email failed: {message}")
+
             st.cache_data.clear()
             st.rerun()
 
@@ -181,9 +194,10 @@ with tab2:
             with c1:
                 edit_name     = st.text_input("Hotel Name",   value=selected_data["name"])
                 edit_username = st.text_input("Username",     value=selected_data["username"])
-                edit_password = st.text_input("Password (leave blank to keep current)", type="password") # Modified: Don't pre-fill password
+                edit_password = st.text_input("Password (leave blank to keep current)",
+                                              type="password")
             with c2:
-                edit_email = st.text_input("Email",           value=selected_data["email"])
+                edit_email = st.text_input("Email", value=selected_data["email"])
                 edit_plan  = st.selectbox("Plan",
                                 ["basic","pro","enterprise"],
                                 index=["basic","pro","enterprise"].index(
@@ -199,8 +213,9 @@ with tab2:
                 "email":    edit_email,
                 "plan":     edit_plan
             })
-            if edit_password: # Added: Only update password if a new one is provided
-                db.collection("hotels").document(selected_id).update({"password": edit_password})
+            if edit_password:
+                db.collection("hotels").document(selected_id).update(
+                    {"password": edit_password})
             st.success(f"✅ **{edit_name}** updated successfully!")
             st.cache_data.clear()
             st.rerun()
