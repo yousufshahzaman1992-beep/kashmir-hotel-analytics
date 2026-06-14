@@ -120,16 +120,16 @@ if len(bookings_df) > 0 and "hotel_id" in bookings_df.columns:
              Avg_Nights=("Nights","mean"))
         .reset_index()
     )
-    merged = hotels_df[["hotel_id","name","plan","email"]].merge(
+    merged = hotels_df[["hotel_id","name","username","plan","email"]].merge(
         summary, on="hotel_id", how="left").fillna(0)
     merged["Revenue"]    = merged["Revenue"].astype(int)
     merged["Bookings"]   = merged["Bookings"].astype(int)
     merged["Avg_Nights"] = merged["Avg_Nights"].round(1)
-    merged.columns       = ["Hotel ID","Name","Plan","Email",
+    merged.columns       = ["Hotel ID","Name","Username","Plan","Email",
                              "Bookings","Revenue (₹)","Avg Nights"]
     st.dataframe(merged, use_container_width=True, hide_index=True)
 else:
-    st.dataframe(hotels_df[["hotel_id","name","plan","email"]],
+    st.dataframe(hotels_df[["hotel_id","name","username","plan","email"]],
                  use_container_width=True, hide_index=True)
 
 st.markdown("<div class='divider'></div>", unsafe_allow_html=True)

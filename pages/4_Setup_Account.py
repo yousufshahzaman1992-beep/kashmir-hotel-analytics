@@ -1,6 +1,6 @@
 import streamlit as st
 import sys, os
-from sheets_db import get_db, hash_password
+from sheets_db import get_db, hash_password, load_hotels
 from email_utils import get_invite, mark_invite_used
 from style import apply_style
 
@@ -72,18 +72,24 @@ if submit:
     elif password != password2:
         st.error("❌ Passwords do not match.")
     else:
-        # Update hotel with chosen credentials
-        db.collection("hotels").document(hotel_id).update({
-            "username": username,
-            "password": hash_password(password)
-        })
-        # Mark invite as used
-        mark_invite_used(token)
-        
-        # Clean up session state
-        if "invite_token" in st.session_state:
-            del st.session_state["invite_token"]
+        try:
+            # Update hotel with chosen credentials
+            db.collection("hotels").document(hotel_id).update({
+                "username": username,
+                "password": hash_password(password)
+            })
+            # Mark invite as used
+            mark_invite_used(token)
             
-        st.success("✅ Account created successfully!")
-        st.info("You can now login with your new credentials.")
-        st.page_link("app.py", label="Go to Login →")
+            # Clear the hotel cache so the Admin Panel sees the new username
+            load_hotels.clear()
+            
+            # Clean up session state
+            if "invite_token" in st.session_state:
+                del st.session_state["invite_token"]
+                
+            st.success("✅ Account created successfully!")
+            st.info("You can now login with your new credentials.")
+            st.page_link("app.py", label="Go to Login →")
+        except Exception as e:
+            st.error(f"❌ Failed to update account: {str(e)}")
