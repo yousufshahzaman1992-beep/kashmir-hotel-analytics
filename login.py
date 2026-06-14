@@ -23,7 +23,7 @@ def show_login():
     }
     .block-container {
         max-width: 440px !important;
-        padding-top: 4vh !important;
+        padding-top: 8vh !important;
         margin: 0 auto !important;
     }
     .lg-badge { text-align: center; margin-bottom: 24px; }
@@ -31,8 +31,9 @@ def show_login():
         display: inline-flex;
         align-items: center;
         gap: 8px;
-        background: rgba(59,130,246,0.12);
-        border: 1px solid rgba(59,130,246,0.25);
+        background: rgba(59,130,246,0.08);
+        border: 1px solid rgba(59,130,246,0.2);
+        backdrop-filter: blur(10px);
         border-radius: 100px;
         padding: 6px 16px;
         font-size: 0.75rem;
@@ -57,29 +58,28 @@ def show_login():
         font-size: 32px;
         box-shadow: 0 0 0 1px rgba(59,130,246,0.3),
                     0 8px 32px rgba(59,130,246,0.5);
-        margin-bottom: 14px;
+        margin-bottom: 16px;
     }
     .lg-name {
         font-size: 1.5rem; font-weight: 700;
         color: #f8fafc; letter-spacing: -0.5px; margin-bottom: 4px;
     }
     .lg-tagline { font-size: 0.82rem; color: #64748b; letter-spacing: 0.3px; }
-    .lg-card {
-        background: rgba(255,255,255,0.05);
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-        border: 1px solid rgba(255,255,255,0.1);
-        border-radius: 20px;
-        padding: 28px 36px 20px;
-        box-shadow: 0 8px 32px rgba(0,0,0,0.3),
-                    inset 0 1px 0 rgba(255,255,255,0.1);
-        margin-bottom: 0;
+    [data-testid="stForm"] {
+        background: rgba(255,255,255,0.03) !important;
+        backdrop-filter: blur(20px) !important;
+        -webkit-backdrop-filter: blur(20px) !important;
+        border: 1px solid rgba(255,255,255,0.1) !important;
+        border-radius: 20px !important;
+        padding: 32px 36px !important;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.2) !important;
+        margin-bottom: 24px !important;
     }
     .lg-card-title {
-        font-size: 1.15rem; font-weight: 700;
-        color: #f1f5f9; margin-bottom: 4px; letter-spacing: -0.2px;
+        font-size: 1.25rem; font-weight: 700;
+        color: #f8fafc; margin-bottom: 6px; letter-spacing: -0.4px;
     }
-    .lg-card-sub { font-size: 0.8rem; color: #64748b; margin-bottom: 20px; }
+    .lg-card-sub { font-size: 0.85rem; color: #94a3b8; margin-bottom: 24px; }
     .lg-contact {
         background: rgba(59,130,246,0.07);
         border: 1px solid rgba(59,130,246,0.2);
@@ -121,7 +121,7 @@ def show_login():
         border: none !important;
         border-radius: 10px !important;
         font-size: 0.9rem !important;
-        font-weight: 600 !important;
+        font-weight: 700 !important;
         letter-spacing: 0.4px !important;
         padding: 14px !important;
         box-shadow: 0 4px 16px rgba(59,130,246,0.4) !important;
@@ -169,19 +169,16 @@ def show_login():
     </div>
     """, unsafe_allow_html=True)
 
-    # ── Sign In Card ──────────────────────────────────────
-    st.markdown("""
-    <div class='lg-card' >
-        <div class='lg-card-title'>Sign in to your account</div>
-        <div class='lg-card-sub'>Enter your credentials to continue</div>
-    </div>
-    """, unsafe_allow_html=True)
-
     with st.form("login_form"):
+        st.markdown("""
+            <div class='lg-card-title'>Sign in to your account</div>
+            <div class='lg-card-sub'>Enter your credentials to continue</div>
+        """, unsafe_allow_html=True)
+        
         username = st.text_input("Username", placeholder="your username")
         password = st.text_input("Password", type="password",
                                  placeholder="••••••••")
-        submit   = st.form_submit_button("Sign In  →", width="stretch")
+        submit   = st.form_submit_button("Sign In  →", use_container_width=True)
 
     if submit:
         if not username or not password:
