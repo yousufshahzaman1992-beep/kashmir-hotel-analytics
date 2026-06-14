@@ -56,7 +56,7 @@ with st.sidebar:
         <div style='font-size:0.75rem;color:#3b82f6'>Full Access</div>
     </div>
     """, unsafe_allow_html=True)
-    if st.button("🚪 Logout", width="stretch"):
+    if st.button("🚪 Logout", use_container_width=True):
         st.session_state.logged_in = False
         st.session_state.hotel     = None
         st.query_params.clear()
@@ -109,10 +109,10 @@ if len(bookings_df) > 0 and "hotel_id" in bookings_df.columns:
     merged["Avg_Nights"] = merged["Avg_Nights"].round(1)
     merged.columns       = ["Hotel ID","Name","Plan","Email",
                              "Bookings","Revenue (₹)","Avg Nights"]
-    st.dataframe(merged, width="stretch", hide_index=True)
+    st.dataframe(merged, use_container_width=True, hide_index=True)
 else:
     st.dataframe(hotels_df[["hotel_id","name","plan","email"]],
-                 width="stretch", hide_index=True)
+                 use_container_width=True, hide_index=True)
 
 st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
 
@@ -132,7 +132,7 @@ with tab1:
             new_password = st.text_input("Password", type="password")
             new_email    = st.text_input("Email")
             new_plan     = st.selectbox("Plan", ["basic","pro","enterprise"])
-        add = st.form_submit_button("➕ Add Hotel", width="stretch")
+        add = st.form_submit_button("➕ Add Hotel", use_container_width=True)
 
     if add:
         if not all([new_id, new_name, new_username, new_password, new_email]):
@@ -170,7 +170,7 @@ with tab2:
                                 index=["basic","pro","enterprise"].index(
                                     selected_data.get("plan","basic")))
 
-            save = st.form_submit_button("💾 Save Changes", width="stretch")
+            save = st.form_submit_button("💾 Save Changes", use_container_width=True)
 
         if save:
             db = get_db()
@@ -203,7 +203,7 @@ with tab3:
         confirm = st.checkbox(f"Yes, I want to delete **{del_name}**")
 
         if confirm:
-            if st.button("🗑️ Delete Hotel", width="stretch"):
+            if st.button("🗑️ Delete Hotel", use_container_width=True):
                 db = get_db()
                 db.collection("hotels").document(del_id).delete()
                 st.success(f"✅ **{del_name}** deleted successfully!")

@@ -94,7 +94,7 @@ with st.sidebar:
     </div>
     """, unsafe_allow_html=True)
 
-    if st.button("↻ Refresh Data", width="stretch"):
+    if st.button("↻ Refresh Data", use_container_width=True):
         st.cache_data.clear() # Already present, good.
         st.rerun()
 
@@ -104,7 +104,7 @@ with st.sidebar:
 
     st.divider()
 
-    if st.button("🚪 Logout", width="stretch"):
+    if st.button("🚪 Logout", use_container_width=True):
         st.session_state.logged_in = False # Already present, good.
         st.session_state.hotel     = None # Already present, good.
         st.query_params.clear() # Already present, good.
@@ -173,7 +173,7 @@ with c1:
         hovertemplate="<b>%{x}</b><br>₹%{y:,}<extra></extra>"
     ))
     fig1.update_layout(**CHART)
-    st.plotly_chart(fig1, width="stretch")
+    st.plotly_chart(fig1, use_container_width=True)
 
 with c2:
     st.markdown("<div class='section-title'>Guest Origins</div>", unsafe_allow_html=True)
@@ -185,7 +185,7 @@ with c2:
     fig2.update_traces(textposition="outside", textinfo="percent+label",
                        textfont=dict(size=10))
     fig2.update_layout(**CHART, showlegend=False)
-    st.plotly_chart(fig2, width="stretch")
+    st.plotly_chart(fig2, use_container_width=True)
 
 st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
 
@@ -200,7 +200,7 @@ with c3:
         hovertemplate="<b>%{y}</b>: %{x}<extra></extra>"
     ))
     fig3.update_layout(**CHART)
-    st.plotly_chart(fig3, width="stretch")
+    st.plotly_chart(fig3, use_container_width=True)
 
 with c4:
     st.markdown("<div class='section-title'>Bookings Over Time</div>", unsafe_allow_html=True)
@@ -215,7 +215,7 @@ with c4:
         hovertemplate="<b>%{x}</b>: %{y}<extra></extra>"
     ))
     fig4.update_layout(**CHART)
-    st.plotly_chart(fig4, width="stretch")
+    st.plotly_chart(fig4, use_container_width=True)
 
 st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
 
@@ -247,4 +247,4 @@ with ci1:
 with ci2:
     st.markdown("<div class='section-title'>Recent Bookings</div>", unsafe_allow_html=True)
     recent = fdf.sort_values("Check-in", ascending=False).head(8)
-    st.dataframe(recent, width="stretch", hide_index=True)
+    st.dataframe(recent, use_container_width=True, hide_index=True)

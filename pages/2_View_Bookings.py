@@ -51,7 +51,7 @@ with st.sidebar:
                     color:var(--text-color)'>{hotel["name"]}</div>
     </div>
     """, unsafe_allow_html=True)
-    if st.button("🚪 Logout", width="stretch"):
+    if st.button("🚪 Logout", use_container_width=True):
         st.session_state.logged_in = False
         st.session_state.hotel     = None
         st.query_params.clear()
@@ -97,7 +97,7 @@ st.markdown(f"<div class='section-title'>Showing {len(filtered)} of {len(df)} bo
             unsafe_allow_html=True)
 
 # ── Table ─────────────────────────────────────────────────
-st.dataframe(filtered, width="stretch", hide_index=True) # Changed use_container_width to width="stretch"
+st.dataframe(filtered, use_container_width=True, hide_index=True)
 
 # ── Download ──────────────────────────────────────────────
 st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
@@ -107,5 +107,5 @@ st.download_button(
     data=csv_data,
     file_name=f"{hotel_id}_bookings.csv",
     mime="text/csv",
-    width="stretch"
+    use_container_width=True
 )

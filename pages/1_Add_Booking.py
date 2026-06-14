@@ -52,7 +52,7 @@ with st.sidebar:
                     color:var(--text-color)'>{hotel["name"]}</div>
     </div>
     """, unsafe_allow_html=True)
-    if st.button("🚪 Logout", width="stretch"):
+    if st.button("🚪 Logout", use_container_width=True):
         st.session_state.logged_in = False
         st.session_state.hotel     = None
         st.query_params.clear()
@@ -93,7 +93,7 @@ with st.form("booking_form"):
         with col4:
             notes = st.text_area("Notes", height=80)
 
-    submit = st.form_submit_button("💾 Save Booking", width="stretch") # Changed use_container_width to width="stretch"
+    submit = st.form_submit_button("💾 Save Booking", use_container_width=True)
 
 # ── Save Logic ────────────────────────────────────────────
 if submit:
