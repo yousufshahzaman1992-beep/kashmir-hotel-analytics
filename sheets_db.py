@@ -2,6 +2,7 @@ import streamlit as st
 import firebase_admin
 from firebase_admin import credentials, firestore
 import pandas as pd
+import hashlib
 from google.cloud.firestore_v1.base_query import FieldFilter
 
 # ── Initialize Firebase once ──────────────────────────────
@@ -36,14 +37,18 @@ def get_hotel_by_id(hotel_id):
     return doc.to_dict() if doc.exists else None
 
 # ── Verify login ──────────────────────────────────────────
+def hash_password(password):
+    return hashlib.sha256(password.encode()).hexdigest()
+
 @st.cache_data(ttl=600, show_spinner=False)
 def verify_login(username, password):
     db   = get_db()
-    # Optimization: Query specifically for the username
     docs = list(db.collection("hotels").where(filter=FieldFilter("username", "==", username)).limit(1).get())
     if docs:
         data = docs[0].to_dict()
-        if data.get("password") == password:
+        # Checks both hashed and plain (for migration)
+        stored = data.get("password")
+        if stored == password or stored == hash_password(password):
             return data
     return None
 

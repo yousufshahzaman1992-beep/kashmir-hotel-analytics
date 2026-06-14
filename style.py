@@ -146,6 +146,49 @@ def apply_style():
     """, unsafe_allow_html=True)
 
 
+def ensure_auth(allowed_roles=None):
+    """Handles session restoration, CSS hiding for non-logged users, and redirects."""
+    from sheets_db import get_hotel_by_id
+    
+    if not st.session_state.get("logged_in"):
+        # Aggressively hide UI
+        st.markdown("""
+            <style>
+                section[data-testid="stSidebar"], [data-testid="stSidebarNav"] { display: none !important; }
+                button[kind="headerNoPadding"] { display: none !important; }
+            </style>
+        """, unsafe_allow_html=True)
+
+        # Restore from URL
+        hid = st.query_params.get("hid")
+        if hid:
+            if hid == "ADMIN":
+                st.session_state.logged_in = True
+                st.session_state.hotel = {"hotel_id": "ADMIN", "name": "Administrator"}
+                st.rerun()
+            else:
+                hotel = get_hotel_by_id(hid)
+                if hotel:
+                    st.session_state.logged_in = True
+                    st.session_state.hotel = hotel
+                    st.rerun()
+        
+        st.switch_page("app.py")
+        st.stop()
+
+    # Role-based access control
+    hotel = st.session_state.hotel
+    if allowed_roles and hotel.get("hotel_id") not in allowed_roles:
+        if "ADMIN" in allowed_roles and hotel.get("hotel_id") != "ADMIN":
+            st.switch_page("app.py")
+            st.stop()
+            
+    # Persist ID in URL
+    if st.query_params.get("hid") != hotel["hotel_id"]:
+        st.query_params["hid"] = hotel["hotel_id"]
+    return hotel
+
+
 def sidebar_logo():
     st.sidebar.markdown("""
     <div style='display:flex;align-items:center;gap:10px;margin-bottom:6px'>
@@ -162,3 +205,40 @@ def sidebar_logo():
         </div>
     </div>
     """, unsafe_allow_html=True)
+
+
+def render_sidebar(hotel):
+    """Renders the standard sidebar for all pages."""
+    with st.sidebar:
+        sidebar_logo()
+        st.divider()
+        
+        plan_info = ""
+        if hotel.get("hotel_id") == "ADMIN":
+            plan_info = "<div style='font-size:0.75rem;color:#3b82f6'>Full Access</div>"
+        else:
+            plan = hotel.get("plan", "Full Access").title()
+            plan_info = f"<div style='font-size:0.75rem;color:#3b82f6'>{plan} Plan</div>"
+
+        st.markdown(f"""
+        <div style='background:var(--secondary-background-color);
+                    border:1px solid rgba(148,163,184,0.2);
+                    border-radius:10px;padding:12px 14px;margin-bottom:12px'>
+            <div style='font-size:0.7rem;color:#64748b;text-transform:uppercase;
+                        letter-spacing:1px;margin-bottom:4px'>Logged in as</div>
+            <div style='font-size:0.95rem;font-weight:600;
+                        color:var(--text-color)'>{hotel["name"]}</div>
+            {plan_info}
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Static Support link and Logout Button
+        st.divider()
+        st.markdown("<div class='section-title'>Support</div>", unsafe_allow_html=True)
+        st.markdown("<a href='https://wa.me/918491828292' target='_blank' style='text-decoration:none;'><button style='width:100%; border-radius:10px; padding:10px; background:#25d366; color:white; border:none; cursor:pointer; font-weight:600;'>💬 Contact Support</button></a>", unsafe_allow_html=True)
+        st.divider()
+        if st.button("🚪 Logout", use_container_width=True):
+            for key in list(st.session_state.keys()): del st.session_state[key]
+            st.query_params.clear()
+            st.cache_data.clear()
+            st.rerun()
