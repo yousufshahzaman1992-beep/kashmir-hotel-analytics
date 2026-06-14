@@ -3,6 +3,10 @@ import streamlit as st
 st.set_page_config(page_title="View Bookings", page_icon="📋", layout="wide")
 
 import sys, os
+import pandas as pd
+import urllib.parse
+from fpdf import FPDF
+from fpdf.enums import XPos, YPos
 # Add the project root to sys.path to allow importing modules from the root directory
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
 if project_root not in sys.path:
@@ -58,7 +62,6 @@ with tab1:
         if not phone: return None
         guest = row.get("Guest Name", "Guest")
         msg = f"Hello {guest}, this is {hotel['name']} regarding your booking."
-        import urllib.parse
         return f"https://wa.me/{phone}?text={urllib.parse.quote(msg)}"
 
     filtered["WhatsApp"] = filtered.apply(generate_wa_link, axis=1)
@@ -66,19 +69,55 @@ with tab1:
     # ── Table ─────────────────────────────────────────────────
     # Hide internal IDs and helper columns from display
     display_cols = [c for c in filtered.columns if c not in ["id", "hotel_id", "Month_Num"]]
-    st.dataframe(filtered[display_cols], use_container_width=True, hide_index=True, column_config={
+    st.dataframe(filtered[display_cols], width="stretch", hide_index=True, column_config={
         "WhatsApp": st.column_config.LinkColumn("Contact Guest", display_text="💬 WhatsApp")
     })
 
     st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
-    csv_data = filtered.to_csv(index=False).encode("utf-8")
-    st.download_button(
-        label="📥 Download as CSV",
-        data=csv_data,
-        file_name=f"{hotel_id}_bookings.csv",
-        mime="text/csv",
-        use_container_width=True
-    )
+    
+    c_csv, c_pdf = st.columns(2)
+    with c_csv:
+        csv_data = filtered.to_csv(index=False).encode("utf-8")
+        st.download_button(
+            label="📥 Export to CSV",
+            data=csv_data,
+            file_name=f"{hotel_id}_bookings.csv",
+            mime="text/csv",
+            width="stretch"
+        )
+    
+    with c_pdf:
+        def create_pdf(data, h_name):
+            pdf = FPDF()
+            pdf.add_page()
+            pdf.set_font("helvetica", "B", 16)
+            pdf.cell(0, 10, f"Booking Report: {h_name}", new_x=XPos.LMARGIN, new_y=YPos.NEXT, align="C")
+            pdf.set_font("helvetica", "", 10)
+            pdf.cell(0, 10, f"Generated: {pd.Timestamp.now().strftime('%d %b %Y')}", new_x=XPos.LMARGIN, new_y=YPos.NEXT, align="C")
+            pdf.ln(10)
+            pdf.set_font("helvetica", "B", 9)
+            pdf.set_fill_color(240, 240, 240)
+            headers = ["Guest Name", "Check-in", "Amount", "Status"]
+            widths = [60, 40, 40, 50]
+            for i, h in enumerate(headers): pdf.cell(widths[i], 10, h, border=1, fill=True, align="C")
+            pdf.ln()
+            pdf.set_font("helvetica", "", 8)
+            for _, row in data.iterrows():
+                pdf.cell(widths[0], 8, str(row["Guest Name"])[:30], border=1)
+                pdf.cell(widths[1], 8, row["Check-in"].strftime('%Y-%m-%d'), border=1, align="C")
+                pdf.cell(widths[2], 8, f"{int(row['Amount (₹)']):,}", border=1, align="R")
+                pdf.cell(widths[3], 8, str(row["Status"]), border=1, align="C")
+                pdf.ln()
+            return bytes(pdf.output())
+
+        pdf_bytes = create_pdf(filtered, hotel['name'])
+        st.download_button(
+            label="📄 Export to PDF",
+            data=pdf_bytes,
+            file_name=f"{hotel_id}_report.pdf",
+            mime="application/pdf",
+            width="stretch"
+        )
 
 with tab2:
     st.markdown("<div class='section-title'>Modify or Delete Booking</div>", unsafe_allow_html=True)
@@ -107,7 +146,7 @@ with tab2:
             e_guests = st.number_input("Number of Guests", value=int(b["Guests"]), min_value=1)
 
         e_notes = st.text_area("Notes", value=b["Notes"])
-        save_btn = st.form_submit_button("💾 Update Booking Details", use_container_width=True)
+        save_btn = st.form_submit_button("💾 Update Booking Details", width="stretch")
 
     if save_btn:
         if e_out <= e_in:
@@ -127,7 +166,7 @@ with tab2:
     with st.expander("🗑️ Delete Booking"):
         st.warning(f"Caution: This will permanently remove the booking for **{b['Guest Name']}**.")
         confirm_del = st.checkbox("I confirm I want to delete this booking")
-        if st.button("🗑️ Delete Permanently", use_container_width=True, disabled=not confirm_del):
+        if st.button("🗑️ Delete Permanently", width="stretch", disabled=not confirm_del):
             delete_booking(selected_id, hotel_id)
             st.success("Booking deleted!")
             st.rerun()
