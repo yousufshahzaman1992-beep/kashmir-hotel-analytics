@@ -33,21 +33,27 @@ def mark_invite_used(token):
 # ── Send invitation email ─────────────────────────────────
 def send_invite_email(hotel_name, email, token, app_url):
     try:
-        try:
-            sender   = st.secrets["email"]["sender"]
-            password = st.secrets["email"]["password"]
-        except:
-            import toml, os
-            s        = toml.load(os.path.expanduser("~/.streamlit/secrets.toml"))
-            sender   = s["email"]["sender"]
-            password = s["email"]["password"]
+        # Streamlit automatically handles secrets.toml locally and in the cloud
+        if "email" not in st.secrets:
+            return False, "Email secrets not configured in st.secrets"
+            
+        sender   = st.secrets["email"]["sender"]
+        password = st.secrets["email"]["password"]
 
         setup_link = f"{app_url}?invite={token}"
 
-        msg            = MIMEMultipart("alternative")
+        msg = MIMEMultipart("alternative")
         msg["From"]    = f"Kashmir Analytics <{sender}>"
         msg["To"]      = email
         msg["Subject"] = f"You're invited to Kashmir Hotel Analytics — {hotel_name}"
+
+        # Plain-text version for better deliverability
+        text = f"""
+        Assalamu Alaikum,
+        Your hotel {hotel_name} has been registered on Kashmir Hotel Analytics.
+        Please set up your account by visiting the link below:
+        {setup_link}
+        """
 
         html = f"""
         <html>
@@ -86,13 +92,16 @@ def send_invite_email(hotel_name, email, token, app_url):
         </html>
         """
 
+        msg.attach(MIMEText(text, "plain"))
         msg.attach(MIMEText(html, "html"))
 
-        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+        # Use port 587 with STARTTLS for better compatibility
+        with smtplib.SMTP("smtp.gmail.com", 587) as server:
+            server.starttls()
             server.login(sender, password)
             server.send_message(msg)
 
         return True, "Email sent successfully"
 
     except Exception as e:
-        return False, str(e)
+        return False, f"SMTP Error: {str(e)}"

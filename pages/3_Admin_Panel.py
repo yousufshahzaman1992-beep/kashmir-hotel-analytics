@@ -175,7 +175,8 @@ with tab1:
                 st.error(f"❌ Email failed: {message}")
 
             st.cache_data.clear()
-            st.rerun()
+            # Remove st.rerun() so the user can read the success/error messages.
+            # The UI will update the hotel list on the next manual refresh or interaction.
 
 # ── EDIT ──────────────────────────────────────────────────
 with tab2:
