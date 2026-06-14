@@ -6,16 +6,33 @@ from sheets_db import get_hotel_by_id, load_hotels, load_all_bookings, add_hotel
 from style import apply_style, sidebar_logo
 
 # ── Restore session from query params on refresh ──────────
-if not st.session_state.get("logged_in"):
-    hid = st.query_params.get("hid")
-    if hid:
-        hotel = get_hotel_by_id(hid)
-        if hotel:
-            st.session_state["logged_in"] = True
-            st.session_state["hotel"]     = hotel
-
 st.set_page_config(page_title="Admin Panel", page_icon="⚙️", layout="wide")
 apply_style()
+
+# ── Aggressively hide sidebar if not logged in ────────────
+if not st.session_state.get("logged_in"):
+    st.markdown("""
+        <style>
+            /* Hide entire sidebar and the collapse button (hamburger menu) */
+            section[data-testid="stSidebar"], 
+            [data-testid="stSidebarNav"] { display: none !important; }
+            button[kind="headerNoPadding"] { display: none !important; }
+        </style>
+    """, unsafe_allow_html=True)
+
+    # ── Restore session from query params ────────────────
+    hid = st.query_params.get("hid")
+    if hid:
+        if hid == "ADMIN":
+            st.session_state["logged_in"] = True
+            st.session_state["hotel"]     = {"hotel_id": "ADMIN", "name": "Administrator"}
+            st.rerun()
+        else:
+            hotel = get_hotel_by_id(hid)
+            if hotel:
+                st.session_state["logged_in"] = True
+                st.session_state["hotel"]     = hotel
+                st.rerun()
 
 if not st.session_state.get("logged_in"):
     st.switch_page("app.py")
@@ -24,7 +41,6 @@ if st.session_state.hotel["hotel_id"] != "ADMIN":
     st.switch_page("app.py")
 
 st.query_params["hid"] = "ADMIN"
-
 # ── Sidebar ───────────────────────────────────────────────
 with st.sidebar:
     sidebar_logo()
@@ -40,10 +56,11 @@ with st.sidebar:
         <div style='font-size:0.75rem;color:#3b82f6'>Full Access</div>
     </div>
     """, unsafe_allow_html=True)
-    if st.button("🚪 Logout", use_container_width=True):
+    if st.button("🚪 Logout", width="stretch"):
         st.session_state.logged_in = False
         st.session_state.hotel     = None
         st.query_params.clear()
+        st.cache_data.clear() # Added: Clear cache on admin logout
         st.rerun()
 
 # ── Header ────────────────────────────────────────────────
@@ -92,10 +109,10 @@ if len(bookings_df) > 0 and "hotel_id" in bookings_df.columns:
     merged["Avg_Nights"] = merged["Avg_Nights"].round(1)
     merged.columns       = ["Hotel ID","Name","Plan","Email",
                              "Bookings","Revenue (₹)","Avg Nights"]
-    st.dataframe(merged, use_container_width=True, hide_index=True)
+    st.dataframe(merged, width="stretch", hide_index=True)
 else:
     st.dataframe(hotels_df[["hotel_id","name","plan","email"]],
-                 use_container_width=True, hide_index=True)
+                 width="stretch", hide_index=True)
 
 st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
 
@@ -115,7 +132,7 @@ with tab1:
             new_password = st.text_input("Password", type="password")
             new_email    = st.text_input("Email")
             new_plan     = st.selectbox("Plan", ["basic","pro","enterprise"])
-        add = st.form_submit_button("➕ Add Hotel", use_container_width=True)
+        add = st.form_submit_button("➕ Add Hotel", width="stretch")
 
     if add:
         if not all([new_id, new_name, new_username, new_password, new_email]):
@@ -145,8 +162,7 @@ with tab2:
             with c1:
                 edit_name     = st.text_input("Hotel Name",   value=selected_data["name"])
                 edit_username = st.text_input("Username",     value=selected_data["username"])
-                edit_password = st.text_input("Password",     value=selected_data["password"],
-                                              type="password")
+                edit_password = st.text_input("Password (leave blank to keep current)", type="password") # Modified: Don't pre-fill password
             with c2:
                 edit_email = st.text_input("Email",           value=selected_data["email"])
                 edit_plan  = st.selectbox("Plan",
@@ -154,17 +170,18 @@ with tab2:
                                 index=["basic","pro","enterprise"].index(
                                     selected_data.get("plan","basic")))
 
-            save = st.form_submit_button("💾 Save Changes", use_container_width=True)
+            save = st.form_submit_button("💾 Save Changes", width="stretch")
 
         if save:
             db = get_db()
             db.collection("hotels").document(selected_id).update({
                 "name":     edit_name,
                 "username": edit_username,
-                "password": edit_password,
                 "email":    edit_email,
                 "plan":     edit_plan
             })
+            if edit_password: # Added: Only update password if a new one is provided
+                db.collection("hotels").document(selected_id).update({"password": edit_password})
             st.success(f"✅ **{edit_name}** updated successfully!")
             st.cache_data.clear()
             st.rerun()
@@ -186,7 +203,7 @@ with tab3:
         confirm = st.checkbox(f"Yes, I want to delete **{del_name}**")
 
         if confirm:
-            if st.button("🗑️ Delete Hotel", use_container_width=True):
+            if st.button("🗑️ Delete Hotel", width="stretch"):
                 db = get_db()
                 db.collection("hotels").document(del_id).delete()
                 st.success(f"✅ **{del_name}** deleted successfully!")

@@ -12,7 +12,10 @@ def show_login():
     apply_style()
     st.markdown("""
     <style>
-    section[data-testid="stSidebar"] { display: none !important; }
+    /* Aggressively hide all sidebar components on login */
+    section[data-testid="stSidebar"], 
+    [data-testid="stSidebarNav"],
+    button[kind="headerNoPadding"] { display: none !important; }
 
     .stApp {
         background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 50%, #0f172a 100%) !important;
@@ -178,7 +181,7 @@ def show_login():
         username = st.text_input("Username", placeholder="your username")
         password = st.text_input("Password", type="password",
                                  placeholder="••••••••")
-        submit   = st.form_submit_button("Sign In  →", use_container_width=True)
+        submit   = st.form_submit_button("Sign In  →", width="stretch")
 
     if submit:
         if not username or not password:

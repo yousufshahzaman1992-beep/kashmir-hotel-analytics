@@ -2,6 +2,7 @@ import streamlit as st
 import firebase_admin
 from firebase_admin import credentials, firestore
 import pandas as pd
+from google.cloud.firestore_v1.base_query import FieldFilter
 
 # ── Initialize Firebase once ──────────────────────────────
 @st.cache_resource
@@ -39,7 +40,7 @@ def get_hotel_by_id(hotel_id):
 def verify_login(username, password):
     db   = get_db()
     # Optimization: Query specifically for the username
-    docs = list(db.collection("hotels").where("username", "==", username).limit(1).get())
+    docs = list(db.collection("hotels").where(filter=FieldFilter("username", "==", username)).limit(1).get())
     if docs:
         data = docs[0].to_dict()
         if data.get("password") == password:
@@ -50,11 +51,15 @@ def verify_login(username, password):
 @st.cache_data(ttl=300, show_spinner=False)
 def load_bookings(hotel_id):
     db   = get_db()
-    # Optimization: Server-side filtering reduces latency and costs
-    docs = db.collection("bookings").where("hotel_id", "==", hotel_id).get()
+    # We remove order_by from the Firestore query to bypass the requirement for a Composite Index.
+    # Sorting is handled in Python/Pandas below.
+    docs = db.collection("bookings").where(filter=FieldFilter("hotel_id", "==", hotel_id)).get()
     data = [doc.to_dict() for doc in docs]
 
-    return _process_bookings_dataframe(data)
+    df = _process_bookings_dataframe(data)
+    if not df.empty and "Check-in" in df.columns:
+        df = df.sort_values("Check-in", ascending=False)
+    return df
 
 def _process_bookings_dataframe(data):
     """Helper to standardize booking data processing."""
@@ -68,8 +73,11 @@ def _process_bookings_dataframe(data):
 
     df = pd.DataFrame(data)
     if "Check-in" in df.columns:
-        df["Check-in"]  = pd.to_datetime(df["Check-in"], errors='coerce')
-        df["Check-out"] = pd.to_datetime(df["Check-out"], errors='coerce')
+        # Explicit format parsing is significantly faster than generic parsing
+        df["Check-in"]  = pd.to_datetime(df["Check-in"], format='%Y-%m-%d', errors='coerce')
+        df["Check-out"] = pd.to_datetime(df["Check-out"], format='%Y-%m-%d', errors='coerce')
+        
+        # Pre-calculate month info once during the cached load
         df["Month"]     = df["Check-in"].dt.strftime("%b")
         df["Month_Num"] = df["Check-in"].dt.month
     return df
@@ -103,6 +111,6 @@ def load_all_bookings():
     db   = get_db()
     # Suggestion: Add .limit(500) or filter by date to prevent 
     # performance degradation as data grows.
-    docs = db.collection("bookings").order_by("Check-in", direction="DESCENDING").limit(1000).get()
+    docs = db.collection("bookings").order_by("`Check-in`", direction="DESCENDING").limit(1000).get()
     data = [doc.to_dict() for doc in docs]
     return _process_bookings_dataframe(data)

@@ -8,15 +8,6 @@ from sheets_db import load_bookings, get_hotel_by_id
 from login import show_login
 from style import apply_style, sidebar_logo
 
-# ── Restore session from query params on refresh ──────────
-if not st.session_state.get("logged_in"):
-    hid = st.query_params.get("hid")
-    if hid:
-        hotel = get_hotel_by_id(hid)
-        if hotel:
-            st.session_state["logged_in"] = True
-            st.session_state["hotel"]     = hotel
-
 # ── Init session state ────────────────────────────────────
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
@@ -27,8 +18,33 @@ st.set_page_config(
     page_title="Kashmir Hotel Analytics",
     page_icon="🏔️",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="expanded" if st.session_state.get("logged_in") else "collapsed"
 )
+
+# ── Aggressively hide sidebar if not logged in ────────────
+if not st.session_state.get("logged_in"):
+    st.markdown("""
+        <style>
+            /* Hide entire sidebar and the collapse button (hamburger menu) */
+            section[data-testid="stSidebar"], 
+            [data-testid="stSidebarNav"] { display: none !important; }
+            button[kind="headerNoPadding"] { display: none !important; }
+        </style>
+    """, unsafe_allow_html=True)
+
+    # ── Restore session from query params AFTER layout is hidden ──
+    hid = st.query_params.get("hid")
+    if hid:
+        if hid == "ADMIN":
+            st.session_state["logged_in"] = True
+            st.session_state["hotel"]     = {"hotel_id": "ADMIN", "name": "Administrator"}
+            st.rerun()
+        else:
+            hotel = get_hotel_by_id(hid) # UI stays hidden while this runs
+            if hotel:
+                st.session_state["logged_in"] = True
+                st.session_state["hotel"]     = hotel
+                st.rerun() # Force instant update to show sidebar properly
 
 apply_style()
 
@@ -73,12 +89,13 @@ with st.sidebar:
                     letter-spacing:1px;margin-bottom:4px'>Logged in as</div>
         <div style='font-size:0.95rem;font-weight:600;
                     color:var(--text-color)'>{hotel_name}</div>
-        <div style='font-size:0.75rem;color:#3b82f6'>{hotel["plan"].title()} Plan</div>
+        <div style='font-size:0.75rem;color:#3b82f6'>
+            {hotel.get("plan", "Full Access").title()}{" Plan" if "plan" in hotel else ""}</div>
     </div>
     """, unsafe_allow_html=True)
 
-    if st.button("↻ Refresh Data", use_container_width=True):
-        st.cache_data.clear()
+    if st.button("↻ Refresh Data", width="stretch"):
+        st.cache_data.clear() # Already present, good.
         st.rerun()
 
     season = st.selectbox("Season",
@@ -87,11 +104,11 @@ with st.sidebar:
 
     st.divider()
 
-    if st.button("🚪 Logout", use_container_width=True):
-        st.session_state.logged_in = False
-        st.session_state.hotel     = None
-        st.query_params.clear()
-        st.cache_data.clear()
+    if st.button("🚪 Logout", width="stretch"):
+        st.session_state.logged_in = False # Already present, good.
+        st.session_state.hotel     = None # Already present, good.
+        st.query_params.clear() # Already present, good.
+        st.cache_data.clear() # Already present, good.
         st.rerun()
 
 # ── Load data for THIS hotel only ────────────────────────
@@ -130,12 +147,14 @@ avg_book     = int(fdf["Amount (₹)"].mean())  if total_book else 0
 
 st.markdown("<div class='section-title'>Performance Overview</div>", unsafe_allow_html=True)
 
-k1,k2,k3,k4,k5 = st.columns(5)
-k1.metric("📋 Bookings",    str(total_book),       "+3 this week")
-k2.metric("💰 Revenue",     f"₹{total_rev:,}",     "+12%")
-k3.metric("🌙 Nights Sold", str(total_nights))
-k4.metric("📅 Avg Stay",    f"{avg_nights} nights")
-k5.metric("💵 Avg Booking", f"₹{avg_book:,}")
+# Using a container for metrics helps with layout stability
+with st.container():
+    k1,k2,k3,k4,k5 = st.columns(5)
+    k1.metric("📋 Bookings",    str(total_book))
+    k2.metric("💰 Revenue",     f"₹{total_rev:,}")
+    k3.metric("🌙 Nights Sold", str(total_nights))
+    k4.metric("📅 Avg Stay",    f"{avg_nights} nights")
+    k5.metric("💵 Avg Booking", f"₹{avg_book:,}")
 
 st.markdown("<br>", unsafe_allow_html=True)
 
@@ -154,7 +173,7 @@ with c1:
         hovertemplate="<b>%{x}</b><br>₹%{y:,}<extra></extra>"
     ))
     fig1.update_layout(**CHART)
-    st.plotly_chart(fig1, use_container_width=True)
+    st.plotly_chart(fig1, width="stretch")
 
 with c2:
     st.markdown("<div class='section-title'>Guest Origins</div>", unsafe_allow_html=True)
@@ -166,7 +185,7 @@ with c2:
     fig2.update_traces(textposition="outside", textinfo="percent+label",
                        textfont=dict(size=10))
     fig2.update_layout(**CHART, showlegend=False)
-    st.plotly_chart(fig2, use_container_width=True)
+    st.plotly_chart(fig2, width="stretch")
 
 st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
 
@@ -181,7 +200,7 @@ with c3:
         hovertemplate="<b>%{y}</b>: %{x}<extra></extra>"
     ))
     fig3.update_layout(**CHART)
-    st.plotly_chart(fig3, use_container_width=True)
+    st.plotly_chart(fig3, width="stretch")
 
 with c4:
     st.markdown("<div class='section-title'>Bookings Over Time</div>", unsafe_allow_html=True)
@@ -196,7 +215,7 @@ with c4:
         hovertemplate="<b>%{x}</b>: %{y}<extra></extra>"
     ))
     fig4.update_layout(**CHART)
-    st.plotly_chart(fig4, use_container_width=True)
+    st.plotly_chart(fig4, width="stretch")
 
 st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
 
@@ -228,4 +247,4 @@ with ci1:
 with ci2:
     st.markdown("<div class='section-title'>Recent Bookings</div>", unsafe_allow_html=True)
     recent = fdf.sort_values("Check-in", ascending=False).head(8)
-    st.dataframe(recent, use_container_width=True, hide_index=True)
+    st.dataframe(recent, width="stretch", hide_index=True)

@@ -8,15 +8,27 @@ from sheets_db import save_booking, get_hotel_by_id
 from style import apply_style, sidebar_logo
 
 # ── Restore session from query params on refresh ──────────
+apply_style()
+
+# ── Aggressively hide sidebar if not logged in ────────────
 if not st.session_state.get("logged_in"):
+    st.markdown("""
+        <style>
+            /* Hide entire sidebar and the collapse button (hamburger menu) */
+            section[data-testid="stSidebar"], 
+            [data-testid="stSidebarNav"] { display: none !important; }
+            button[kind="headerNoPadding"] { display: none !important; }
+        </style>
+    """, unsafe_allow_html=True)
+
+    # ── Restore session from query params ────────────────
     hid = st.query_params.get("hid")
     if hid:
         hotel = get_hotel_by_id(hid)
         if hotel:
             st.session_state["logged_in"] = True
             st.session_state["hotel"]     = hotel
-
-apply_style()
+            st.rerun()
 
 if not st.session_state.get("logged_in"):
     st.switch_page("app.py")
@@ -26,7 +38,6 @@ hotel_id = hotel["hotel_id"]
 
 if st.query_params.get("hid") != hotel_id:
     st.query_params["hid"] = hotel_id
-
 # ── Sidebar ───────────────────────────────────────────────
 with st.sidebar:
     sidebar_logo()
@@ -41,10 +52,11 @@ with st.sidebar:
                     color:var(--text-color)'>{hotel["name"]}</div>
     </div>
     """, unsafe_allow_html=True)
-    if st.button("🚪 Logout", use_container_width=True):
+    if st.button("🚪 Logout", width="stretch"):
         st.session_state.logged_in = False
         st.session_state.hotel     = None
         st.query_params.clear()
+        st.cache_data.clear() # Added: Clear cache on logout
         st.rerun()
 
 # ── Header ────────────────────────────────────────────────
@@ -81,7 +93,7 @@ with st.form("booking_form"):
         with col4:
             notes = st.text_area("Notes", height=80)
 
-    submit = st.form_submit_button("💾 Save Booking", use_container_width=True)
+    submit = st.form_submit_button("💾 Save Booking", width="stretch") # Changed use_container_width to width="stretch"
 
 # ── Save Logic ────────────────────────────────────────────
 if submit:
