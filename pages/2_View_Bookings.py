@@ -3,6 +3,10 @@ import streamlit as st
 st.set_page_config(page_title="View Bookings", page_icon="📋", layout="wide")
 
 import sys, os
+# Add the project root to sys.path to allow importing modules from the root directory
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
 from sheets_db import load_bookings, get_hotel_by_id, update_booking, delete_booking
 from style import apply_style, sidebar_logo
 

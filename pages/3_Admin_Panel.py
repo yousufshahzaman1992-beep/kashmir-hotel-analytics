@@ -2,6 +2,10 @@ import streamlit as st
 import pandas as pd
 import sys, os
 
+# Add the project root to sys.path to allow importing modules from the root directory
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
 from sheets_db import get_hotel_by_id, load_hotels, load_all_bookings, add_hotel, get_db
 from style import apply_style, sidebar_logo
 

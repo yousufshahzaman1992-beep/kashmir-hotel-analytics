@@ -4,6 +4,10 @@ st.set_page_config(page_title="Add Booking", page_icon="📝", layout="centered"
 
 from datetime import date
 import sys, os
+# Add the project root to sys.path to allow importing modules from the root directory
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
 from sheets_db import save_booking, get_hotel_by_id
 from style import apply_style, sidebar_logo
 
