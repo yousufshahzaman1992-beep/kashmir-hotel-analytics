@@ -51,6 +51,21 @@ with st.sidebar:
                     color:var(--text-color)'>{hotel["name"]}</div>
     </div>
     """, unsafe_allow_html=True)
+
+    st.divider()
+    st.markdown("<div class='section-title'>Support</div>", unsafe_allow_html=True)
+    support_no = "918491828292"
+    support_link = f"https://wa.me/{support_no}?text=Hello, I need help with my hotel analytics dashboard."
+    st.markdown(f"""
+        <a href='{support_link}' target='_blank' style='text-decoration:none;'>
+            <button style='width:100%; border-radius:10px; padding:10px; background:#25d366; color:white; border:none; cursor:pointer; font-weight:600;'>
+                💬 Contact Support
+            </button>
+        </a>
+    """, unsafe_allow_html=True)
+
+    st.divider()
+
     if st.button("🚪 Logout", use_container_width=True):
         st.session_state.logged_in = False
         st.session_state.hotel     = None
@@ -90,14 +105,19 @@ with col2:
 with col3:
     rmf = st.multiselect("Room Type", options=df["Room Type"].unique(), default=df["Room Type"].unique())
 
-filtered = df[df["Status"].isin(sf) & df["Source"].isin(rf) & df["Room Type"].isin(rmf)]
+filtered = df[df["Status"].isin(sf) & df["Source"].isin(rf) & df["Room Type"].isin(rmf)].copy()
 
 st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
 st.markdown(f"<div class='section-title'>Showing {len(filtered)} of {len(df)} bookings</div>",
             unsafe_allow_html=True)
 
+# Create WhatsApp Link Column
+filtered["WhatsApp"] = filtered["Phone"].apply(lambda x: f"https://wa.me/{str(x).replace('+', '')}" if x else None)
+
 # ── Table ─────────────────────────────────────────────────
-st.dataframe(filtered, use_container_width=True, hide_index=True)
+st.dataframe(filtered, use_container_width=True, hide_index=True, column_config={
+    "WhatsApp": st.column_config.LinkColumn("Contact Guest", display_text="💬 WhatsApp")
+})
 
 # ── Download ──────────────────────────────────────────────
 st.markdown("<div class='divider'></div>", unsafe_allow_html=True)

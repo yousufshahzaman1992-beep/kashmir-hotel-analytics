@@ -104,6 +104,19 @@ with st.sidebar:
 
     st.divider()
 
+    st.markdown("<div class='section-title'>Support</div>", unsafe_allow_html=True)
+    support_no = "918491828292"
+    support_link = f"https://wa.me/{support_no}?text=Hello, I need help with my hotel analytics dashboard."
+    st.markdown(f"""
+        <a href='{support_link}' target='_blank' style='text-decoration:none;'>
+            <button style='width:100%; border-radius:10px; padding:10px; background:#25d366; color:white; border:none; cursor:pointer; font-weight:600;'>
+                💬 Contact Support
+            </button>
+        </a>
+    """, unsafe_allow_html=True)
+
+    st.divider()
+
     if st.button("🚪 Logout", use_container_width=True):
         st.session_state.logged_in = False # Already present, good.
         st.session_state.hotel     = None # Already present, good.

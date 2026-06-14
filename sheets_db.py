@@ -64,15 +64,17 @@ def load_bookings(hotel_id):
 def _process_bookings_dataframe(data):
     """Helper to standardize booking data processing."""
     cols = [
-        "Guest Name", "Check-in", "Check-out", "Nights",
+        "Guest Name", "Phone", "Check-in", "Check-out", "Nights",
         "Room Type", "Guests", "Source", "Amount (₹)",
         "Status", "Notes", "hotel_id"
     ]
-    if not data:
-        return pd.DataFrame(columns=cols)
+    # Create DataFrame and ensure all expected columns exist (handles missing fields in legacy data)
+    df = pd.DataFrame(data).reindex(columns=cols)
+    
+    # Ensure Phone is at least an empty string to prevent 'nan' strings in WhatsApp links
+    df["Phone"] = df["Phone"].fillna("")
 
-    df = pd.DataFrame(data)
-    if "Check-in" in df.columns:
+    if not df.empty:
         # Explicit format parsing is significantly faster than generic parsing
         df["Check-in"]  = pd.to_datetime(df["Check-in"], format='%Y-%m-%d', errors='coerce')
         df["Check-out"] = pd.to_datetime(df["Check-out"], format='%Y-%m-%d', errors='coerce')

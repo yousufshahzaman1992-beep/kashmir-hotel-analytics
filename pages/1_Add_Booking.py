@@ -52,6 +52,21 @@ with st.sidebar:
                     color:var(--text-color)'>{hotel["name"]}</div>
     </div>
     """, unsafe_allow_html=True)
+
+    st.divider()
+    st.markdown("<div class='section-title'>Support</div>", unsafe_allow_html=True)
+    support_no = "918491828292"
+    support_link = f"https://wa.me/{support_no}?text=Hello, I need help with my hotel analytics dashboard."
+    st.markdown(f"""
+        <a href='{support_link}' target='_blank' style='text-decoration:none;'>
+            <button style='width:100%; border-radius:10px; padding:10px; background:#25d366; color:white; border:none; cursor:pointer; font-weight:600;'>
+                💬 Contact Support
+            </button>
+        </a>
+    """, unsafe_allow_html=True)
+
+    st.divider()
+
     if st.button("🚪 Logout", use_container_width=True):
         st.session_state.logged_in = False
         st.session_state.hotel     = None
@@ -74,6 +89,7 @@ with st.form("booking_form"):
     col1, col2 = st.columns(2)
     with col1:
         guest_name = st.text_input("Guest Name *")
+        phone      = st.text_input("Phone Number *", placeholder="e.g. 918491828292")
         checkin    = st.date_input("Check-in *",  value=date.today())
         checkout   = st.date_input("Check-out *", value=date.today())
     with col2:
@@ -97,8 +113,8 @@ with st.form("booking_form"):
 
 # ── Save Logic ────────────────────────────────────────────
 if submit:
-    if not guest_name:
-        st.session_state["form_error"] = "❌ Please enter guest name."
+    if not guest_name or not phone:
+        st.session_state["form_error"] = "❌ Please enter guest name and phone number."
     elif checkout <= checkin:
         st.session_state["form_error"] = "❌ Check-out must be after check-in."
     else:
@@ -106,6 +122,7 @@ if submit:
         nights  = (checkout - checkin).days
         booking = {
             "Guest Name":  guest_name,
+            "Phone":       phone,
             "Check-in":    str(checkin),
             "Check-out":   str(checkout),
             "Nights":      nights,
