@@ -15,6 +15,19 @@ from sheets_db import load_bookings, get_hotel_by_id, update_booking, delete_boo
 from style import apply_style, ensure_auth, render_sidebar
 
 apply_style()
+# ── Hide admin pages from non-admin users ─────────────────
+if st.session_state.get("hotel", {}).get("hotel_id") != "ADMIN":
+    st.markdown("""
+    <style>
+    [data-testid="stSidebarNav"] a[href*="3_Admin"],
+    [data-testid="stSidebarNav"] a[href*="Admin_Panel"],
+    [data-testid="stSidebarNav"] a[href*="4_Setup"],
+    [data-testid="stSidebarNav"] a[href*="setup_account"],
+    [data-testid="stSidebarNav"] a[href*="Setup_Account"] {
+        display: none !important;
+    }
+    </style>
+    """, unsafe_allow_html=True)
 hotel = ensure_auth()
 hotel_id = hotel["hotel_id"]
 render_sidebar(hotel)
@@ -170,3 +183,10 @@ with tab2:
             delete_booking(selected_id, hotel_id)
             st.success("Booking deleted!")
             st.rerun()
+from style import apply_style, sidebar_logo, hide_admin_pages
+
+apply_style()
+
+# Hide admin pages for non-admin users
+if st.session_state.get("hotel", {}).get("hotel_id") != "ADMIN":
+    hide_admin_pages()

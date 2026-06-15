@@ -11,7 +11,21 @@ from sheets_db import get_hotel_by_id, load_bookings
 
 st.set_page_config(page_title="Kashmir Hotel Analytics", page_icon="🏔️", layout="wide")
 apply_style()
-
+# ── Hide admin pages from non-admin users ─────────────────
+if st.session_state.get("logged_in"):
+    if st.session_state.hotel.get("hotel_id") != "ADMIN":
+        st.markdown("""
+        <style>
+        /* Hide Admin Panel and Setup Account from sidebar */
+        [data-testid="stSidebarNav"] a[href*="3_Admin"],
+        [data-testid="stSidebarNav"] a[href*="Admin_Panel"],
+        [data-testid="stSidebarNav"] a[href*="4_Setup"],
+        [data-testid="stSidebarNav"] a[href*="setup_account"],
+        [data-testid="stSidebarNav"] a[href*="Setup_Account"] {
+            display: none !important;
+        }
+        </style>
+        """, unsafe_allow_html=True)
 if not st.session_state.get("logged_in"):
     # ── Handle Invite Links ──────────────────────────────
     invite_token = st.query_params.get("invite")

@@ -13,7 +13,19 @@ from style import apply_style, sidebar_logo
 
 # ── Restore session from query params on refresh ──────────
 apply_style()
-
+# ── Hide admin pages from non-admin users ─────────────────
+if st.session_state.get("hotel", {}).get("hotel_id") != "ADMIN":
+    st.markdown("""
+    <style>
+    [data-testid="stSidebarNav"] a[href*="3_Admin"],
+    [data-testid="stSidebarNav"] a[href*="Admin_Panel"],
+    [data-testid="stSidebarNav"] a[href*="4_Setup"],
+    [data-testid="stSidebarNav"] a[href*="setup_account"],
+    [data-testid="stSidebarNav"] a[href*="Setup_Account"] {
+        display: none !important;
+    }
+    </style>
+    """, unsafe_allow_html=True)
 # ── Aggressively hide sidebar if not logged in ────────────
 if not st.session_state.get("logged_in"):
     st.markdown("""
@@ -151,3 +163,10 @@ if st.session_state.get("form_error"):
 if st.session_state.get("form_success"):
     st.success(f"✅ Booking saved for **{st.session_state['form_success']}**!")
     st.session_state["form_success"] = None
+from style import apply_style, sidebar_logo, hide_admin_pages
+
+apply_style()
+
+# Hide admin pages for non-admin users
+if st.session_state.get("hotel", {}).get("hotel_id") != "ADMIN":
+    hide_admin_pages()

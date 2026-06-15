@@ -244,3 +244,10 @@ with tab3:
                 st.success(f"✅ **{del_name}** deleted successfully!")
                 st.cache_data.clear()
                 st.rerun()
+from style import apply_style, sidebar_logo, hide_admin_pages
+
+apply_style()
+
+# Hide admin pages for non-admin users
+if st.session_state.get("hotel", {}).get("hotel_id") != "ADMIN":
+    hide_admin_pages()

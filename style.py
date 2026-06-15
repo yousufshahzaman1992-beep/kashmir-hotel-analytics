@@ -242,3 +242,16 @@ def render_sidebar(hotel):
             st.query_params.clear()
             st.cache_data.clear()
             st.rerun()
+
+def hide_admin_pages():
+    st.markdown("""
+    <style>
+    [data-testid="stSidebarNav"] a[href*="3_Admin"],
+    [data-testid="stSidebarNav"] a[href*="Admin_Panel"],
+    [data-testid="stSidebarNav"] a[href*="4_Setup"],
+    [data-testid="stSidebarNav"] a[href*="setup_account"],
+    [data-testid="stSidebarNav"] a[href*="Setup_Account"] {
+        display: none !important;
+    }
+    </style>
+    """, unsafe_allow_html=True)
