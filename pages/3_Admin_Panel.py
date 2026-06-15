@@ -7,41 +7,13 @@ if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
 from sheets_db import get_hotel_by_id, load_hotels, load_all_bookings, add_hotel, get_db
-from style import apply_style, sidebar_logo
+from style import apply_style, sidebar_logo, ensure_auth
 
 st.set_page_config(page_title="Admin Panel", page_icon="⚙️", layout="wide")
 apply_style()
 
-# ── Aggressively hide sidebar if not logged in ────────────
-if not st.session_state.get("logged_in"):
-    st.markdown("""
-        <style>
-            section[data-testid="stSidebar"],
-            [data-testid="stSidebarNav"] { display: none !important; }
-            button[kind="headerNoPadding"] { display: none !important; }
-        </style>
-    """, unsafe_allow_html=True)
-
-    hid = st.query_params.get("hid")
-    if hid:
-        if hid == "ADMIN":
-            st.session_state["logged_in"] = True
-            st.session_state["hotel"]     = {"hotel_id": "ADMIN", "name": "Administrator"}
-            st.rerun()
-        else:
-            hotel = get_hotel_by_id(hid)
-            if hotel:
-                st.session_state["logged_in"] = True
-                st.session_state["hotel"]     = hotel
-                st.rerun()
-
-if not st.session_state.get("logged_in"):
-    st.switch_page("app.py")
-
-if st.session_state.hotel["hotel_id"] != "ADMIN":
-    st.switch_page("app.py")
-
-st.query_params["hid"] = "ADMIN"
+# Use ensure_auth to handle roles and session restoration
+hotel = ensure_auth(allowed_roles=["ADMIN"])
 
 # ── Sidebar ───────────────────────────────────────────────
 with st.sidebar:
@@ -244,10 +216,3 @@ with tab3:
                 st.success(f"✅ **{del_name}** deleted successfully!")
                 st.cache_data.clear()
                 st.rerun()
-from style import apply_style, sidebar_logo, hide_admin_pages
-
-apply_style()
-
-# Hide admin pages for non-admin users
-if st.session_state.get("hotel", {}).get("hotel_id") != "ADMIN":
-    hide_admin_pages()

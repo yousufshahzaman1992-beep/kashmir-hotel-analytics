@@ -175,9 +175,13 @@ def ensure_auth(allowed_roles=None):
         
         st.switch_page("app.py")
         st.stop()
-
     # Role-based access control
     hotel = st.session_state.hotel
+    
+    # Auto-hide admin pages for standard users to prevent flicker
+    if hotel.get("hotel_id") != "ADMIN":
+        hide_admin_pages()
+
     if allowed_roles and hotel.get("hotel_id") not in allowed_roles:
         if "ADMIN" in allowed_roles and hotel.get("hotel_id") != "ADMIN":
             st.switch_page("app.py")

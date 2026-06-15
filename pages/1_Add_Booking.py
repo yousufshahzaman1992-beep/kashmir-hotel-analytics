@@ -13,83 +13,13 @@ from style import apply_style, sidebar_logo
 
 # ── Restore session from query params on refresh ──────────
 apply_style()
-# ── Hide admin pages from non-admin users ─────────────────
-if st.session_state.get("hotel", {}).get("hotel_id") != "ADMIN":
-    st.markdown("""
-    <style>
-    [data-testid="stSidebarNav"] a[href*="3_Admin"],
-    [data-testid="stSidebarNav"] a[href*="Admin_Panel"],
-    [data-testid="stSidebarNav"] a[href*="4_Setup"],
-    [data-testid="stSidebarNav"] a[href*="setup_account"],
-    [data-testid="stSidebarNav"] a[href*="Setup_Account"] {
-        display: none !important;
-    }
-    </style>
-    """, unsafe_allow_html=True)
-# ── Aggressively hide sidebar if not logged in ────────────
-if not st.session_state.get("logged_in"):
-    st.markdown("""
-        <style>
-            /* Hide entire sidebar and the collapse button (hamburger menu) */
-            section[data-testid="stSidebar"], 
-            [data-testid="stSidebarNav"] { display: none !important; }
-            button[kind="headerNoPadding"] { display: none !important; }
-        </style>
-    """, unsafe_allow_html=True)
+from style import ensure_auth, render_sidebar
 
-    # ── Restore session from query params ────────────────
-    hid = st.query_params.get("hid")
-    if hid:
-        hotel = get_hotel_by_id(hid)
-        if hotel:
-            st.session_state["logged_in"] = True
-            st.session_state["hotel"]     = hotel
-            st.rerun()
-
-if not st.session_state.get("logged_in"):
-    st.switch_page("app.py")
-
-hotel    = st.session_state.hotel
+hotel = ensure_auth()
 hotel_id = hotel["hotel_id"]
+render_sidebar(hotel)
 
-if st.query_params.get("hid") != hotel_id:
-    st.query_params["hid"] = hotel_id
 # ── Sidebar ───────────────────────────────────────────────
-with st.sidebar:
-    sidebar_logo()
-    st.divider()
-    st.markdown(f"""
-    <div style='background:var(--secondary-background-color);
-                border:1px solid rgba(148,163,184,0.2);
-                border-radius:10px;padding:12px 14px;margin-bottom:12px'>
-        <div style='font-size:0.7rem;color:#64748b;text-transform:uppercase;
-                    letter-spacing:1px;margin-bottom:4px'>Logged in as</div>
-        <div style='font-size:0.95rem;font-weight:600;
-                    color:var(--text-color)'>{hotel["name"]}</div>
-    </div>
-    """, unsafe_allow_html=True)
-
-    st.divider()
-    st.markdown("<div class='section-title'>Support</div>", unsafe_allow_html=True)
-    support_no = "918491828292"
-    support_link = f"https://wa.me/{support_no}?text=Hello, I need help with my hotel analytics dashboard."
-    st.markdown(f"""
-        <a href='{support_link}' target='_blank' style='text-decoration:none;'>
-            <button style='width:100%; border-radius:10px; padding:10px; background:#25d366; color:white; border:none; cursor:pointer; font-weight:600;'>
-                💬 Contact Support
-            </button>
-        </a>
-    """, unsafe_allow_html=True)
-
-    st.divider()
-
-    if st.button("🚪 Logout", use_container_width=True):
-        st.session_state.logged_in = False
-        st.session_state.hotel     = None
-        st.query_params.clear()
-        st.cache_data.clear() # Added: Clear cache on logout
-        st.rerun()
-
 # ── Header ────────────────────────────────────────────────
 st.markdown("<p class='page-title'>📝 Add New Booking</p>", unsafe_allow_html=True)
 st.markdown("<p class='page-sub'>Fill in the details to record a new booking.</p>", unsafe_allow_html=True)
@@ -97,6 +27,21 @@ st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
 
 # ── Form ──────────────────────────────────────────────────
 with st.form("booking_form"):
+    # Comprehensive list of Guest Sources (States, UTs, and major Indian Cities)
+    SOURCE_OPTIONS = sorted(list(set([
+        "Mumbai", "Delhi", "Bengaluru", "Hyderabad", "Ahmedabad", "Chennai", "Kolkata", "Surat", "Pune", "Jaipur", 
+        "Lucknow", "Kanpur", "Nagpur", "Indore", "Thane", "Bhopal", "Visakhapatnam", "Patna", "Vadodara", "Ghaziabad", 
+        "Ludhiana", "Agra", "Nashik", "Faridabad", "Meerut", "Rajkot", "Varanasi", "Srinagar", "Amritsar", "Ranchi", 
+        "Howrah", "Jabalpur", "Gwalior", "Vijayawada", "Jodhpur", "Madurai", "Raipur", "Kota", "Guwahati", "Mysore", 
+        "Gurgaon", "Aligarh", "Jalandhar", "Bhubaneswar", "Noida", "Kochi", "Dehradun", "Jammu", "Udaipur", "Shimla", 
+        "Darjeeling", "Gangtok", "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh", "Goa", "Gujarat", 
+        "Haryana", "Himachal Pradesh", "Jharkhand", "Karnataka", "Kerala", "Madhya Pradesh", "Maharashtra", "Manipur", 
+        "Meghalaya", "Mizoram", "Nagaland", "Odisha", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu", "Telangana", 
+        "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal", "Andaman and Nicobar Islands", "Chandigarh", 
+        "Dadra and Nagar Haveli and Daman and Diu", "Jammu and Kashmir", "Ladakh", "Lakshadweep", "Puducherry",
+        "Foreign", "Local", "Other"
+    ])))
+
     # Initialize optional variables
     guests = 2
     source = "Delhi"
@@ -119,9 +64,7 @@ with st.form("booking_form"):
         col3, col4 = st.columns(2)
         with col3:
             guests = st.number_input("Number of Guests", min_value=1, max_value=10, value=2)
-            source = st.selectbox("Guest Source",
-                        ["Delhi","Mumbai","Punjab","Gujarat",
-                         "Foreign","Local","Other"])
+            source = st.selectbox("Guest Source", options=SOURCE_OPTIONS, index=SOURCE_OPTIONS.index("Delhi") if "Delhi" in SOURCE_OPTIONS else 0)
         with col4:
             notes = st.text_area("Notes", height=80)
 
@@ -163,10 +106,3 @@ if st.session_state.get("form_error"):
 if st.session_state.get("form_success"):
     st.success(f"✅ Booking saved for **{st.session_state['form_success']}**!")
     st.session_state["form_success"] = None
-from style import apply_style, sidebar_logo, hide_admin_pages
-
-apply_style()
-
-# Hide admin pages for non-admin users
-if st.session_state.get("hotel", {}).get("hotel_id") != "ADMIN":
-    hide_admin_pages()

@@ -93,10 +93,3 @@ if submit:
             st.page_link("app.py", label="Go to Login →")
         except Exception as e:
             st.error(f"❌ Failed to update account: {str(e)}")
-from style import apply_style, sidebar_logo, hide_admin_pages
-
-apply_style()
-
-# Hide admin pages for non-admin users
-if st.session_state.get("hotel", {}).get("hotel_id") != "ADMIN":
-    hide_admin_pages()

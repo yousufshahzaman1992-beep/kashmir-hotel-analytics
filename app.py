@@ -32,13 +32,14 @@ apply_style()
 CHART = dict(
     paper_bgcolor="rgba(0,0,0,0)",
     plot_bgcolor="rgba(0,0,0,0)",
-    font=dict(family="Inter, sans-serif", color="#64748b", size=11),
-    xaxis=dict(gridcolor="rgba(148,163,184,0.15)", linecolor="rgba(148,163,184,0.2)"),
-    yaxis=dict(gridcolor="rgba(148,163,184,0.15)", linecolor="rgba(148,163,184,0.2)"),
-    margin=dict(t=20, b=20, l=10, r=10)
+    font=dict(family="Inter, sans-serif", color="#94a3b8", size=11),
+    xaxis=dict(showgrid=False, showline=False, zeroline=False),
+    yaxis=dict(showgrid=True, gridcolor="rgba(255,255,255,0.05)", showline=False, zeroline=False),
+    margin=dict(t=30, b=20, l=10, r=10),
+    hoverlabel=dict(bgcolor="#1e293b", font_size=13, font_family="Inter", bordercolor="rgba(255,255,255,0.1)")
 )
 BLUES = [[0,"#bfdbfe"],[1,"#2563eb"]]
-BLUE  = "#3b82f6"
+VIBRANT_PURPLE = "#8b5cf6"
 
 # ══════════════════════════════════════════════════════════
 # NOT LOGGED IN — handle invite links + session restore
@@ -217,7 +218,9 @@ with c1:
               .sum().reset_index().sort_values("Month_Num"))
     fig1 = go.Figure(go.Bar(
         x=rev["Month"], y=rev["Amount (₹)"],
-        marker=dict(color=rev["Amount (₹)"], colorscale=BLUES, line=dict(width=0)),
+        marker=dict(color=rev["Amount (₹)"], colorscale="Sunset", line=dict(width=0)),
+        text=rev["Amount (₹)"].apply(lambda x: f"₹{x/1000:.1f}k" if x >= 1000 else f"₹{x}"),
+        textposition="outside",
         hovertemplate="<b>%{x}</b><br>₹%{y:,}<extra></extra>"
     ))
     fig1.update_layout(**CHART)
@@ -228,10 +231,10 @@ with c2:
     src = fdf["Source"].value_counts().reset_index()
     src.columns = ["Source","Guests"]
     fig2 = px.pie(src, names="Source", values="Guests", hole=0.55,
-                  color_discrete_sequence=["#2563eb","#3b82f6","#60a5fa",
-                                            "#93c5fd","#bfdbfe","#1e40af","#dbeafe"])
-    fig2.update_traces(textposition="outside", textinfo="percent+label",
-                       textfont=dict(size=10))
+                  color_discrete_sequence=px.colors.qualitative.Vivid)
+    fig2.update_traces(textposition="outside", textinfo="label+percent",
+                       pull=[0.05 if i == 0 else 0 for i in range(len(src))],
+                       textfont=dict(size=11, color="#94a3b8"))
     fig2.update_layout(**CHART, showlegend=False)
     st.plotly_chart(fig2, use_container_width=True)
 
@@ -245,7 +248,9 @@ with c3:
     rooms.columns = ["Room Type","Count"]
     fig3 = go.Figure(go.Bar(
         x=rooms["Count"], y=rooms["Room Type"], orientation="h",
-        marker=dict(color=rooms["Count"], colorscale=BLUES, line=dict(width=0)),
+        marker=dict(color=rooms["Count"], colorscale="Viridis", line=dict(width=0)),
+        text=rooms["Count"],
+        textposition="auto",
         hovertemplate="<b>%{y}</b>: %{x}<extra></extra>"
     ))
     fig3.update_layout(**CHART)
@@ -258,9 +263,9 @@ with c4:
     fig4 = go.Figure(go.Scatter(
         x=trend["Month"], y=trend["Bookings"],
         mode="lines+markers",
-        line=dict(color=BLUE, width=2.5),
-        marker=dict(size=8, color=BLUE, line=dict(color="white", width=2)),
-        fill="tozeroy", fillcolor="rgba(59,130,246,0.07)",
+        line=dict(color=VIBRANT_PURPLE, width=3, shape="spline"),
+        marker=dict(size=10, color=VIBRANT_PURPLE, line=dict(color="white", width=2)),
+        fill="tozeroy", fillcolor="rgba(139, 92, 246, 0.15)",
         hovertemplate="<b>%{x}</b>: %{y}<extra></extra>"
     ))
     fig4.update_layout(**CHART)
