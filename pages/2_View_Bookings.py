@@ -4,6 +4,7 @@ st.set_page_config(page_title="View Bookings", page_icon="📋", layout="wide")
 
 import sys, os
 import pandas as pd
+import plotly.express as px
 import urllib.parse
 from fpdf import FPDF
 from fpdf.enums import XPos, YPos
@@ -48,23 +49,26 @@ tab1, tab2 = st.tabs(["📊 View & Filter", "✏️ Edit / Delete"])
 
 with tab1:
     st.markdown("<div class='section-title'>Overview</div>", unsafe_allow_html=True)
-    k1,k2,k3,k4 = st.columns(4)
+    k1,k2,k3,k4,k5 = st.columns(5)
     k1.metric("Total Bookings", len(df))
     k2.metric("Total Revenue",  f"₹{int(df['Amount (₹)'].sum()):,}")
-    k3.metric("Avg Nights",     f"{round(df['Nights'].mean(),1)}")
-    k4.metric("Avg Booking",    f"₹{int(df['Amount (₹)'].mean()):,}")
+    k3.metric("Commission",     f"₹{int(df['commission_paid'].sum()):,}")
+    k4.metric("Avg Nights",     f"{round(df['Nights'].mean(),1)}")
+    k5.metric("Avg Booking",    f"₹{int(df['Amount (₹)'].mean()):,}")
 
     st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
     st.markdown("<div class='section-title'>Filters</div>", unsafe_allow_html=True)
-    col1,col2,col3 = st.columns(3)
+    col1,col2,col3,col4 = st.columns(4)
     with col1:
         sf  = st.multiselect("Status",    options=df["Status"].unique(),    default=df["Status"].unique())
     with col2:
         rf  = st.multiselect("Source",    options=df["Source"].unique(),    default=df["Source"].unique())
     with col3:
         rmf = st.multiselect("Room Type", options=df["Room Type"].unique(), default=df["Room Type"].unique())
+    with col4:
+        bsf = st.multiselect("Booking Channel", options=df["booking_source"].unique(), default=df["booking_source"].unique())
 
-    filtered = df[df["Status"].isin(sf) & df["Source"].isin(rf) & df["Room Type"].isin(rmf)].copy()
+    filtered = df[df["Status"].isin(sf) & df["Source"].isin(rf) & df["Room Type"].isin(rmf) & df["booking_source"].isin(bsf)].copy()
 
     st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
     st.markdown(f"<div class='section-title'>Showing {len(filtered)} of {len(df)} bookings</div>",
@@ -81,12 +85,32 @@ with tab1:
 
     # ── Table ─────────────────────────────────────────────────
     # Hide internal IDs and helper columns from display
-    display_cols = [c for c in filtered.columns if c not in ["id", "hotel_id", "Month_Num"]]
+    display_cols = [c for c in filtered.columns if c not in ["id", "hotel_id", "Month_Num", "selector"]]
     st.dataframe(filtered[display_cols], use_container_width=True, hide_index=True, column_config={
-        "WhatsApp": st.column_config.LinkColumn("Contact Guest", display_text="💬 WhatsApp")
+        "WhatsApp": st.column_config.LinkColumn("Contact Guest", display_text="💬 WhatsApp"),
+        "commission_paid": st.column_config.NumberColumn("Commission Paid (₹)", format="₹%.2f")
     })
 
     st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
+
+    # ── Revenue Distribution Analysis ─────────────────────────
+    st.markdown("<div class='section-title'>Revenue Leakage vs Direct Sales</div>", unsafe_allow_html=True)
+    
+    if not filtered.empty:
+        # Aggregate gross revenue by booking source
+        source_revenue = filtered.groupby("booking_source", as_index=False)["Amount (₹)"].sum()
+
+        if source_revenue["Amount (₹)"].sum() > 0:
+            fig_source = px.pie(source_revenue, values="Amount (₹)", names="booking_source",
+                               hole=0.4,
+                               color_discrete_sequence=px.colors.qualitative.Pastel)
+            fig_source.update_traces(textposition='inside', textinfo='percent+label')
+            fig_source.update_layout(margin=dict(t=0, b=0, l=0, r=0), height=350)
+            st.plotly_chart(fig_source, use_container_width=True)
+        else:
+            st.info("Insufficient revenue data to generate distribution chart.")
+    else:
+        st.info("No bookings match your current filters.")
     
     c_csv, c_pdf = st.columns(2)
     with c_csv:
@@ -150,6 +174,11 @@ with tab2:
             e_phone = st.text_input("Phone Number", value=b["Phone"])
             e_in    = st.date_input("Check-in Date", value=b["Check-in"])
             e_out   = st.date_input("Check-out Date", value=b["Check-out"])
+            e_source = st.selectbox("Booking Source / Channel *", 
+                                    ["Direct Website", "Walk-In", "Local Travel Agent", "MakeMyTrip", 
+                                     "Booking.com", "Agoda", "Goibibo", "Yatra", "EaseMyTrip"],
+                                    index=["Direct Website", "Walk-In", "Local Travel Agent", "MakeMyTrip", 
+                                           "Booking.com", "Agoda", "Goibibo", "Yatra", "EaseMyTrip"].index(b["booking_source"]))
         with c2:
             e_amt   = st.number_input("Amount Paid (₹)", value=int(b["Amount (₹)"]), step=500)
             e_room  = st.selectbox("Room Type", ["Standard","Deluxe","Suite","Houseboat"], 
@@ -157,6 +186,7 @@ with tab2:
             e_status = st.selectbox("Status", ["Confirmed","Pending","Cancelled"],
                                     index=["Confirmed","Pending","Cancelled"].index(b["Status"]))
             e_guests = st.number_input("Number of Guests", value=int(b["Guests"]), min_value=1)
+            st.info(f"Current Commission: ₹{b['commission_paid']:.2f}")
 
         e_notes = st.text_area("Notes", value=b["Notes"])
         save_btn = st.form_submit_button("💾 Update Booking Details", use_container_width=True)
@@ -165,11 +195,24 @@ with tab2:
         if e_out <= e_in:
             st.error("Check-out date must be after check-in date.")
         else:
+            # Dynamic Backend Commission Calculation
+            commission_map = {
+                "MakeMyTrip": 0.20,
+                "Booking.com": 0.15,
+                "Agoda": 0.15,
+                "Goibibo": 0.15,
+                "Yatra": 0.15,
+                "EaseMyTrip": 0.12
+            }
+            commission_rate = commission_map.get(e_source, 0.00)
+            e_commission = e_amt * commission_rate
+
             nights = (e_out - e_in).days
             up_data = {
                 "Guest Name": e_guest, "Phone": e_phone, "Check-in": str(e_in),
                 "Check-out": str(e_out), "Nights": nights, "Room Type": e_room,
-                "Amount (₹)": e_amt, "Status": e_status, "Guests": e_guests, "Notes": e_notes
+                "Amount (₹)": e_amt, "Status": e_status, "Guests": e_guests, "Notes": e_notes,
+                "booking_source": e_source, "commission_paid": e_commission
             }
             update_booking(selected_id, up_data, hotel_id)
             st.success("Booking updated successfully!")
@@ -183,10 +226,3 @@ with tab2:
             delete_booking(selected_id, hotel_id)
             st.success("Booking deleted!")
             st.rerun()
-from style import apply_style, sidebar_logo, hide_admin_pages
-
-apply_style()
-
-# Hide admin pages for non-admin users
-if st.session_state.get("hotel", {}).get("hotel_id") != "ADMIN":
-    hide_admin_pages()

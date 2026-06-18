@@ -60,6 +60,11 @@ with st.form("booking_form"):
         status    = st.selectbox("Status",
                         ["Confirmed","Pending","Cancelled"])
 
+    # New Mandatory Booking Source Dropdown
+    booking_source = st.selectbox("Booking Source / Channel *", 
+                                 ["Direct Website", "Walk-In", "Local Travel Agent", "MakeMyTrip", 
+                                  "Booking.com", "Agoda", "Goibibo", "Yatra", "EaseMyTrip"])
+
     with st.expander("➕ More Details (optional)"):
         col3, col4 = st.columns(2)
         with col3:
@@ -77,6 +82,19 @@ if submit:
     elif checkout <= checkin:
         st.session_state["form_error"] = "❌ Check-out must be after check-in."
     else:
+        # Dynamic Backend Commission Calculation
+        commission_map = {
+            "MakeMyTrip": 0.20,
+            "Booking.com": 0.15,
+            "Agoda": 0.15,
+            "Goibibo": 0.15,
+            "Yatra": 0.15,
+            "EaseMyTrip": 0.12
+        }
+        
+        commission_rate = commission_map.get(booking_source, 0.00)
+        commission_paid = amount * commission_rate
+
         st.session_state["form_error"] = None
         nights  = (checkout - checkin).days
         booking = {
@@ -91,7 +109,10 @@ if submit:
             "Amount (₹)":  amount,
             "Status":      status,
             "Notes":       notes,
-            "hotel_id":    hotel_id    # ← lowercase, no space
+            "hotel_id":    hotel_id,
+            "booking_source": booking_source,
+            "commission_paid": commission_paid,
+            "status":      "active"
         }
         save_booking(booking)
         if "form_error" in st.session_state:

@@ -74,7 +74,8 @@ def _process_bookings_dataframe(data):
         "id",
         "Guest Name", "Phone", "Check-in", "Check-out", "Nights",
         "Room Type", "Guests", "Source", "Amount (₹)",
-        "Status", "Notes", "hotel_id"
+        "Status", "Notes", "hotel_id",
+        "booking_source", "commission_paid", "status"
     ]
     # Create DataFrame and ensure all expected columns exist (handles missing fields in legacy data)
     df = pd.DataFrame(data).reindex(columns=cols)
@@ -83,6 +84,13 @@ def _process_bookings_dataframe(data):
     df["Phone"] = df["Phone"].fillna("")
 
     if not df.empty:
+        # Ensure numeric types for aggregation and fill missing sources for legacy data
+        df["Amount (₹)"] = pd.to_numeric(df["Amount (₹)"].replace('', 0), errors='coerce').fillna(0)
+        df["commission_paid"] = pd.to_numeric(df["commission_paid"].replace('', 0), errors='coerce').fillna(0)
+        
+        # Default legacy bookings to 'Direct Website' so they appear in analytics
+        df["booking_source"] = df["booking_source"].replace(['', None], "Direct Website").fillna("Direct Website")
+
         # Explicit format parsing is significantly faster than generic parsing
         df["Check-in"]  = pd.to_datetime(df["Check-in"], format='%Y-%m-%d', errors='coerce')
         df["Check-out"] = pd.to_datetime(df["Check-out"], format='%Y-%m-%d', errors='coerce')
