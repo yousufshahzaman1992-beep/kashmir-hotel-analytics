@@ -199,6 +199,7 @@ if hotel_id == "ADMIN":
                 unsafe_allow_html=True)
     st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
     st.info("👋 Use the sidebar to navigate to the **Admin Panel** to manage hotels.")
+    st.markdown("<div class='app-unlocked'></div>", unsafe_allow_html=True)
     st.stop()
 
 # ── Load data ─────────────────────────────────────────────
@@ -225,6 +226,7 @@ SM = {
 
 if len(df) == 0:
     st.info("No bookings yet. Go to **Add Booking** to add your first booking.")
+    st.markdown("<div class='app-unlocked'></div>", unsafe_allow_html=True)
     st.stop()
 
 fdf = df[df["Month_Num"].isin(SM[season])]
