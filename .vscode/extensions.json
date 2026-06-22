@@ -1,0 +1,8 @@
+{
+    "recommendations": [
+        "colourafredi.vscode-deepseek",
+        "denizhandaklr.copilot-vscode-deepseek",
+        "google.geminicodeassist",
+        "anthropic.claude-code"
+    ]
+}

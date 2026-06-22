@@ -1,4 +1,15 @@
 {
-    "python-envs.defaultEnvManager": "ms-python.python:conda",
-    "python-envs.defaultPackageManager": "ms-python.python:conda"
+    "python-envs.defaultEnvManager": "ms-python.python:system",
+    "python-envs.defaultPackageManager": "ms-python.python:pip",
+    "geminicodeassist.agentDebugMode": true,
+    "geminicodeassist.agentYoloMode": true,
+    "geminicodeassist.chat.defaultCodeBlockDisplay": "Expanded",
+    "github.copilot.chat.alternateGeminiModelFPrompt.enabled": true,
+    "github.copilot.chat.customInstructionsInSystemMessage": true,
+    "github.copilot.chat.organizationInstructions.enabled": true,
+    "github.copilot.chat.organizationCustomAgents.enabled": false,
+    "github.copilot.chat.updated53CodexPrompt.enabled": true,
+    "github.copilot.editor.enableCodeActions": true,
+    "git.postCommitCommand": "sync",
+    "geminicodeassist.chat.changeView": "Default diff view"
 }
