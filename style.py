@@ -61,6 +61,55 @@ def apply_style():
     }
 
     /* ═══════════════════════════════════════════════
+       GLOBAL TEXT OVERRIDES — dark-mode lock
+       Prevents browser-cached light theme from making
+       text dark and unreadable on dark backgrounds.
+    ═══════════════════════════════════════════════ */
+    body, p, span, label,
+    [data-testid="stMarkdownContainer"] *,
+    [data-testid="stText"],
+    [data-testid="stCaption"] {
+        color: #e2e8f0 !important;
+    }
+
+    /* st.page_link() navigation items */
+    [data-testid="stPageLink"] a,
+    [data-testid="stPageLink"] a p,
+    [data-testid="stPageLink"] a span,
+    [data-testid="stPageLink"] p,
+    [data-testid="stPageLink"] span {
+        color: #94a3b8 !important;
+        text-decoration: none !important;
+    }
+    [data-testid="stPageLink"]:hover a,
+    [data-testid="stPageLink"]:hover a p,
+    [data-testid="stPageLink"]:hover a span {
+        color: #93c5fd !important;
+    }
+    [data-testid="stPageLink"][aria-current="page"] a,
+    [data-testid="stPageLink"][aria-current="page"] a p,
+    [data-testid="stPageLink"][aria-current="page"] a span {
+        color: #60a5fa !important;
+        font-weight: 600 !important;
+    }
+
+    /* Widget labels */
+    [data-testid="stWidgetLabel"] p,
+    [data-testid="stWidgetLabel"] span,
+    label[data-testid="stWidgetLabel"] p {
+        color: #94a3b8 !important;
+        font-size: 0.82rem !important;
+        font-weight: 500 !important;
+    }
+
+    /* Metric cards */
+    [data-testid="stMetricLabel"] p { color: #64748b !important; }
+    [data-testid="stMetricValue"]  p { color: #ffffff !important; }
+
+    /* Alert / info / warning text */
+    [data-testid="stAlert"] p { color: #e2e8f0 !important; }
+
+    /* ═══════════════════════════════════════════════
        SIDEBAR
     ═══════════════════════════════════════════════ */
     [data-testid="stSidebar"] {
@@ -75,7 +124,7 @@ def apply_style():
         padding: 10px 14px;
         font-weight: 500;
         font-size: 0.88rem;
-        color: #94a3b8;
+        color: #94a3b8 !important;
         transition: all 0.25s ease;
     }
     [data-testid="stSidebarNav"] li a:hover {
