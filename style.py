@@ -346,30 +346,74 @@ def apply_style():
     /* ═══════════════════════════════════════════════
        INPUTS & SELECTS
     ═══════════════════════════════════════════════ */
-    [data-baseweb="input"], [data-baseweb="textarea"] {
+    [data-baseweb="input"], [data-baseweb="textarea"], [data-baseweb="select"] > div {
         background: rgba(15, 23, 42, 0.9) !important;
+        background-color: rgba(15, 23, 42, 0.9) !important;
         border: 1px solid rgba(255, 255, 255, 0.08) !important;
         border-radius: 10px !important;
         color: #e2e8f0 !important;
         transition: all 0.2s ease !important;
     }
+    
+    /* Focus styles */
     [data-baseweb="input"]:focus-within,
-    [data-baseweb="textarea"]:focus-within {
+    [data-baseweb="textarea"]:focus-within,
+    [data-baseweb="select"]:focus-within {
         border-color: #3b82f6 !important;
         box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15) !important;
     }
-    [data-baseweb="select"] > div {
-        background: rgba(15, 23, 42, 0.9) !important;
-        border: 1px solid rgba(255, 255, 255, 0.08) !important;
-        border-radius: 10px !important;
-    }
-    [data-testid="stTextArea"] textarea {
-        background: rgba(15, 23, 42, 0.9) !important;
-        border: 1px solid rgba(255, 255, 255, 0.08) !important;
-        border-radius: 10px !important;
+
+    /* Target raw HTML input and textarea elements inside Streamlit widgets */
+    [data-baseweb="input"] input, 
+    [data-baseweb="textarea"] textarea,
+    [data-testid="stTextArea"] textarea,
+    input, 
+    textarea,
+    select {
+        background-color: transparent !important;
+        background: transparent !important;
         color: #e2e8f0 !important;
         font-family: 'Inter', sans-serif !important;
         font-size: 0.88rem !important;
+    }
+
+    /* Placeholder text style override */
+    input::placeholder, textarea::placeholder, [data-baseweb="input"] input::placeholder {
+        color: #64748b !important;
+        opacity: 0.8 !important;
+    }
+
+    /* Dropdown popover container & options list (selectbox & multiselect options) */
+    [data-baseweb="popover"], 
+    [role="listbox"], 
+    [role="option"], 
+    ul[data-testid="stSelectboxVirtualDropdown"],
+    ul[data-testid="stSelectboxVirtualDropdown"] *,
+    div[data-baseweb="popover"] * {
+        background-color: #0a1228 !important;
+        background: #0a1228 !important;
+        color: #e2e8f0 !important;
+    }
+
+    /* Dropdown option hover & selected states */
+    [role="option"]:hover,
+    [role="option"][aria-selected="true"],
+    [data-baseweb="popover"] li:hover {
+        background-color: #1e3a8a !important;
+        background: #1e3a8a !important;
+        color: #ffffff !important;
+    }
+
+    /* Date picker calendar */
+    [data-baseweb="calendar"] *,
+    [data-baseweb="calendar"] {
+        background-color: #0a1228 !important;
+        background: #0a1228 !important;
+        color: #e2e8f0 !important;
+    }
+    [data-baseweb="calendar"] [aria-selected="true"] {
+        background-color: #3b82f6 !important;
+        color: #ffffff !important;
     }
 
     /* ═══════════════════════════════════════════════
