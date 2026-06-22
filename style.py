@@ -31,8 +31,19 @@ def apply_style():
     ═══════════════════════════════════════════════ */
     *, *::before, *::after { box-sizing: border-box; }
 
-    html, body, [data-testid="stAppViewContainer"] {
+    :root, [data-theme="light"], [data-theme="dark"], html, body, [data-testid="stAppViewContainer"] {
+        --st-background-color: #060b18 !important;
+        --st-secondary-background-color: #0a1228 !important;
+        --st-text-color: #e2e8f0 !important;
+        --st-primary-color: #3b82f6 !important;
+        
+        --background-color: #060b18 !important;
+        --secondary-background-color: #0a1228 !important;
+        --text-color: #e2e8f0 !important;
+        --primary-color: #3b82f6 !important;
+
         background: #060b18 !important;
+        background-color: #060b18 !important;
         color: #e2e8f0 !important;
         font-family: 'Inter', sans-serif;
     }
@@ -48,6 +59,23 @@ def apply_style():
             radial-gradient(ellipse 40% 40% at 50% 50%, rgba(6, 182, 212, 0.04) 0%, transparent 70%);
         pointer-events: none;
         z-index: 0;
+    }
+
+    /* ═══════════════════════════════════════════════
+       HEADER & MOBILE TOP STRIP
+    ═══════════════════════════════════════════════ */
+    [data-testid="stHeader"], header {
+        background: #060b18 !important;
+        background-color: #060b18 !important;
+        backdrop-filter: blur(20px) saturate(1.5) !important;
+        -webkit-backdrop-filter: blur(20px) saturate(1.5) !important;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.04) !important;
+        color: #e2e8f0 !important;
+    }
+    [data-testid="stHeader"] button, header button,
+    [data-testid="stHeader"] svg, header svg {
+        color: #e2e8f0 !important;
+        fill: #e2e8f0 !important;
     }
 
     /* ═══════════════════════════════════════════════
