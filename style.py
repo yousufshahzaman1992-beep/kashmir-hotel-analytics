@@ -51,34 +51,19 @@ def apply_style():
     }
 
     /* ═══════════════════════════════════════════════
-       HEADER
+       THEME TOGGLE LOCKOUT
+       Hides the Streamlit settings button so users
+       cannot switch to light mode and break the design.
     ═══════════════════════════════════════════════ */
-    [data-testid="stHeader"] {
-        background: rgba(6, 11, 24, 0.92) !important;
-        backdrop-filter: blur(20px) saturate(1.5);
-        -webkit-backdrop-filter: blur(20px) saturate(1.5);
-        border-bottom: 1px solid rgba(255, 255, 255, 0.04);
-    }
+    [data-testid="stToolbarActions"] { display: none !important; }
 
-    /* ═══════════════════════════════════════════════
-       GLOBAL TEXT OVERRIDES — dark-mode lock
-       Prevents browser-cached light theme from making
-       text dark and unreadable on dark backgrounds.
-    ═══════════════════════════════════════════════ */
-    body, p, span, label,
-    [data-testid="stMarkdownContainer"] *,
-    [data-testid="stText"],
-    [data-testid="stCaption"] {
-        color: #e2e8f0 !important;
-    }
-
-    /* st.page_link() navigation items */
+    /* st.page_link() — sidebar navigation link text colors */
     [data-testid="stPageLink"] a,
     [data-testid="stPageLink"] a p,
     [data-testid="stPageLink"] a span,
     [data-testid="stPageLink"] p,
     [data-testid="stPageLink"] span {
-        color: #94a3b8 !important;
+        color: #cbd5e1 !important;
         text-decoration: none !important;
     }
     [data-testid="stPageLink"]:hover a,
@@ -92,22 +77,6 @@ def apply_style():
         color: #60a5fa !important;
         font-weight: 600 !important;
     }
-
-    /* Widget labels */
-    [data-testid="stWidgetLabel"] p,
-    [data-testid="stWidgetLabel"] span,
-    label[data-testid="stWidgetLabel"] p {
-        color: #94a3b8 !important;
-        font-size: 0.82rem !important;
-        font-weight: 500 !important;
-    }
-
-    /* Metric cards */
-    [data-testid="stMetricLabel"] p { color: #64748b !important; }
-    [data-testid="stMetricValue"]  p { color: #ffffff !important; }
-
-    /* Alert / info / warning text */
-    [data-testid="stAlert"] p { color: #e2e8f0 !important; }
 
     /* ═══════════════════════════════════════════════
        SIDEBAR
@@ -124,7 +93,7 @@ def apply_style():
         padding: 10px 14px;
         font-weight: 500;
         font-size: 0.88rem;
-        color: #94a3b8 !important;
+        color: #cbd5e1 !important;
         transition: all 0.25s ease;
     }
     [data-testid="stSidebarNav"] li a:hover {
@@ -138,6 +107,7 @@ def apply_style():
         border-left: 3px solid #3b82f6;
         font-weight: 600;
     }
+
 
     /* ═══════════════════════════════════════════════
        LAYOUT
