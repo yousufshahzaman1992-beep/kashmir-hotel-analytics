@@ -139,7 +139,8 @@ def add_hotel(hotel_id, name, username, password, email, plan):
 @st.cache_data(ttl=300, show_spinner=False)
 def load_all_bookings():
     db   = get_db()
-    docs = db.collection("bookings").order_by("`Check-in`", direction="DESCENDING").limit(1000).get()
+    # Avoid composite-index order_by; sort client-side after fetch
+    docs = db.collection("bookings").limit(1000).get()
     data = []
     for doc in docs:
         d = doc.to_dict()
@@ -261,7 +262,7 @@ MOCK_REVIEWS = {
     ]
 }
 
-@st.cache_data(ttl=600)
+@st.cache_data(ttl=600, show_spinner=False)
 def load_reviews(hotel_id):
     hotel_id_upper = str(hotel_id).strip().upper()
     try:
@@ -515,14 +516,12 @@ def save_review_to_firebase(review_dict):
 def update_hotel_ota_links(hotel_id, booking_url, agoda_url, mmt_url, google_place_id=None):
     """
     Updates the OTA links and Google Place ID for a hotel in Firestore.
+    Skips the existence-check round-trip; catches NotFound if doc is missing.
     """
     db = get_db()
     doc_id = str(hotel_id).strip().upper()
     hotel_ref = db.collection("hotels").document(doc_id)
-    
-    if not hotel_ref.get().exists:
-        return False
-        
+
     updates = {
         "booking_review_url": booking_url.strip(),
         "agoda_review_url": agoda_url.strip(),
@@ -531,8 +530,12 @@ def update_hotel_ota_links(hotel_id, booking_url, agoda_url, mmt_url, google_pla
     }
     if google_place_id:
         updates["google_place_id"] = google_place_id.strip()
-        
-    hotel_ref.update(updates)
+
+    try:
+        hotel_ref.update(updates)
+    except Exception:
+        return False
+
     load_hotels.clear()
     get_hotel_by_id.clear(doc_id)
     return True
@@ -629,6 +632,7 @@ def get_srinagar_live_risk_data():
     """
     Fetches real-time weather and connectivity conditions for Srinagar (SXR Airport)
     from Open-Meteo API and calculates a dynamic risk index.
+    Cached for 15 minutes (ttl=900) to avoid a live HTTP call on every page render.
     """
     import requests
     try:
