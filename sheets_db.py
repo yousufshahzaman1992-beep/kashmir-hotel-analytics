@@ -624,6 +624,7 @@ def sync_hotel_reviews(hotel_id, hotel_name):
         
     return saved_count, msg, logs
 
+@st.cache_data(ttl=900, show_spinner=False)
 def get_srinagar_live_risk_data():
     """
     Fetches real-time weather and connectivity conditions for Srinagar (SXR Airport)
