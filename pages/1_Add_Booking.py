@@ -127,3 +127,6 @@ if st.session_state.get("form_error"):
 if st.session_state.get("form_success"):
     st.success(f"✅ Booking saved for **{st.session_state['form_success']}**!")
     st.session_state["form_success"] = None
+
+# CSS Unlock — triggers the dynamic has-selector to reveal the page
+st.markdown("<div class='app-unlocked'></div>", unsafe_allow_html=True)

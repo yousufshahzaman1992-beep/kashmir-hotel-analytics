@@ -22,7 +22,7 @@ from sheets_db import (
     get_srinagar_live_risk_data,
 )
 from login import show_login
-from style import apply_style, sidebar_logo
+from style import apply_style, sidebar_logo, render_custom_navigation
 
 # ── Init session state ────────────────────────────────────
 if "logged_in" not in st.session_state:
@@ -145,6 +145,7 @@ if hotel_id != "ADMIN":
 # ── Sidebar ───────────────────────────────────────────────
 with st.sidebar:
     sidebar_logo()
+    render_custom_navigation()
     st.divider()
 
     st.markdown(f"""
@@ -621,7 +622,7 @@ with tab_reviews:
         
         st.markdown(f"""
         <div style='margin: 15px 0 25px 0;'>
-            <div style='display:flex; justify-content:space-between; font-size:0.8rem; color:#94a3b8; margin-bottom:6px;'>
+            <div style='display:flex; justify-content:space-between; align-items:center; font-size:0.8rem; color:#94a3b8; margin-bottom:6px; flex-wrap:wrap; gap:4px;'>
                 <span>Guest Sentiment Distribution</span>
                 <span>🟢 Positive ({pos_bar:.0f}%) | 🟡 Neutral ({neu_bar:.0f}%) | 🔴 Negative ({neg_bar:.0f}%)</span>
             </div>
@@ -658,9 +659,9 @@ with tab_reviews:
                           "Guests love the buffet and local Kashmiri Kahwa. Maintain current recipes and food safety standards.")
                 st.markdown(f"""
                 <div style='background:rgba(255,255,255,0.02); border:1px solid rgba(148,163,184,0.15); border-radius:10px; padding:15px; margin-bottom:15px;'>
-                    <div style='font-weight:600; display:flex; justify-content:space-between; margin-bottom:8px;'>
-                        <span>🍴 Food & Dining</span>
-                        <span style='color:{color}; font-weight:700;'>{score}% Positive ({count} reviews)</span>
+                    <div style='font-weight:600; display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px; flex-wrap:wrap; gap:4px; min-width:0;'>
+                        <span style='flex-shrink:0;'>🍴 Food & Dining</span>
+                        <span style='color:{color}; font-weight:700; text-align:right;'>{score}% Positive ({count} reviews)</span>
                     </div>
                     <div style='height:6px; border-radius:3px; background:#334155; margin-bottom:8px; overflow:hidden;'>
                         <div style='width:{score}%; height:100%; background:{color};'></div>
@@ -685,9 +686,9 @@ with tab_reviews:
                           "Heating and hot water systems are operational and satisfying guests. Continue routine checks.")
                 st.markdown(f"""
                 <div style='background:rgba(255,255,255,0.02); border:1px solid rgba(148,163,184,0.15); border-radius:10px; padding:15px; margin-bottom:15px;'>
-                    <div style='font-weight:600; display:flex; justify-content:space-between; margin-bottom:8px;'>
-                        <span>🔥 Heating & Plumbing</span>
-                        <span style='color:{color}; font-weight:700;'>{score}% Positive ({count} reviews)</span>
+                    <div style='font-weight:600; display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px; flex-wrap:wrap; gap:4px; min-width:0;'>
+                        <span style='flex-shrink:0;'>🔥 Heating & Plumbing</span>
+                        <span style='color:{color}; font-weight:700; text-align:right;'>{score}% Positive ({count} reviews)</span>
                     </div>
                     <div style='height:6px; border-radius:3px; background:#334155; margin-bottom:8px; overflow:hidden;'>
                         <div style='width:{score}%; height:100%; background:{color};'></div>
@@ -713,9 +714,9 @@ with tab_reviews:
                           "Service hospitality levels are outstanding. Highlight polite and helpful staff members in the team meeting.")
                 st.markdown(f"""
                 <div style='background:rgba(255,255,255,0.02); border:1px solid rgba(148,163,184,0.15); border-radius:10px; padding:15px; margin-bottom:15px;'>
-                    <div style='font-weight:600; display:flex; justify-content:space-between; margin-bottom:8px;'>
-                        <span>🛎️ Service & Hospitality</span>
-                        <span style='color:{color}; font-weight:700;'>{score}% Positive ({count} reviews)</span>
+                    <div style='font-weight:600; display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px; flex-wrap:wrap; gap:4px; min-width:0;'>
+                        <span style='flex-shrink:0;'>🛎️ Service & Hospitality</span>
+                        <span style='color:{color}; font-weight:700; text-align:right;'>{score}% Positive ({count} reviews)</span>
                     </div>
                     <div style='height:6px; border-radius:3px; background:#334155; margin-bottom:8px; overflow:hidden;'>
                         <div style='width:{score}%; height:100%; background:{color};'></div>
@@ -740,9 +741,9 @@ with tab_reviews:
                           "Guests appreciate clean rooms, cozy linen, and garden/lake views. Maintain strict room inspection schedules.")
                 st.markdown(f"""
                 <div style='background:rgba(255,255,255,0.02); border:1px solid rgba(148,163,184,0.15); border-radius:10px; padding:15px; margin-bottom:15px;'>
-                    <div style='font-weight:600; display:flex; justify-content:space-between; margin-bottom:8px;'>
-                        <span>🛏️ Room & Cleanliness</span>
-                        <span style='color:{color}; font-weight:700;'>{score}% Positive ({count} reviews)</span>
+                    <div style='font-weight:600; display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px; flex-wrap:wrap; gap:4px; min-width:0;'>
+                        <span style='flex-shrink:0;'>🛏️ Room & Cleanliness</span>
+                        <span style='color:{color}; font-weight:700; text-align:right;'>{score}% Positive ({count} reviews)</span>
                     </div>
                     <div style='height:6px; border-radius:3px; background:#334155; margin-bottom:8px; overflow:hidden;'>
                         <div style='width:{score}%; height:100%; background:{color};'></div>
@@ -767,16 +768,16 @@ with tab_reviews:
             badge_color = {"Positive": "#10b981", "Neutral": "#f59e0b", "Negative": "#ef4444"}.get(row["sentiment"], "#64748b")
             aspects_html = " ".join([f"<span style='background:rgba(59,130,246,0.15);color:#93c5fd;border-radius:4px;padding:2px 7px;font-size:0.7rem;margin-right:4px;'>{a}</span>" for a in row["aspects"]])
             st.markdown(f"""
-            <div style='background:rgba(255,255,255,0.02);border:1px solid rgba(148,163,184,0.12);border-radius:10px;padding:14px;margin-bottom:10px;'>
-                <div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;'>
-                    <span style='font-weight:600;color:#e2e8f0;'>{row["guest_name"]}</span>
-                    <span style='color:#f59e0b;font-size:0.9rem;'>{stars}</span>
+            <div style='background:rgba(255,255,255,0.02);border:1px solid rgba(148,163,184,0.12);border-radius:10px;padding:14px;margin-bottom:10px;overflow:hidden;'>
+                <div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;flex-wrap:wrap;gap:4px;'>
+                    <span style='font-weight:600;color:#e2e8f0;min-width:0;overflow:hidden;text-overflow:ellipsis;'>{row["guest_name"]}</span>
+                    <span style='color:#f59e0b;font-size:0.9rem;flex-shrink:0;'>{stars}</span>
                 </div>
-                <p style='font-size:0.85rem;color:#94a3b8;margin:0 0 8px 0;'>{row["review_text"]}</p>
-                <div style='display:flex;align-items:center;gap:8px;'>
-                    <span style='background:{badge_color};color:white;border-radius:4px;padding:2px 8px;font-size:0.7rem;font-weight:600;'>{row["sentiment"]}</span>
+                <p style='font-size:0.85rem;color:#94a3b8;margin:0 0 8px 0;word-break:break-word;overflow-wrap:break-word;'>{row["review_text"]}</p>
+                <div style='display:flex;align-items:center;gap:8px;flex-wrap:wrap;'>
+                    <span style='background:{badge_color};color:white;border-radius:4px;padding:2px 8px;font-size:0.7rem;font-weight:600;flex-shrink:0;'>{row["sentiment"]}</span>
                     {aspects_html}
-                    <span style='color:#475569;font-size:0.75rem;margin-left:auto;'>{row["source"]} · {row["date"]}</span>
+                    <span style='color:#475569;font-size:0.75rem;margin-left:auto;white-space:nowrap;'>{row["source"]} · {row["date"]}</span>
                 </div>
             </div>
             """, unsafe_allow_html=True)
@@ -1041,3 +1042,6 @@ with tab_risk:
             st.warning("⚠️ This guest has no valid phone number on record.")
     else:
         st.info("No bookings found. Add your first booking via the **Add Booking** page to enable guest outreach.")
+
+# CSS Unlock — triggers the dynamic has-selector to reveal the page
+st.markdown("<div class='app-unlocked'></div>", unsafe_allow_html=True)

@@ -20,17 +20,20 @@ token = st.query_params.get("invite") or st.session_state.get("invite_token")
 
 if not token:
     st.error("❌ Invalid or missing invite link.")
+    st.markdown("<div class='app-unlocked'></div>", unsafe_allow_html=True)
     st.stop()
 
 invite = get_invite(token)
 
 if not invite:
     st.error("❌ Invite link not found.")
+    st.markdown("<div class='app-unlocked'></div>", unsafe_allow_html=True)
     st.stop()
 
 if invite.get("used"):
     st.warning("⚠️ This invite link has already been used. Please login normally.")
     st.page_link("app.py", label="Go to Login →")
+    st.markdown("<div class='app-unlocked'></div>", unsafe_allow_html=True)
     st.stop()
 
 hotel_id = invite["hotel_id"]
@@ -41,6 +44,7 @@ doc = db.collection("hotels").document(hotel_id).get()
 
 if not doc.exists:
     st.error("❌ Hotel not found.")
+    st.markdown("<div class='app-unlocked'></div>", unsafe_allow_html=True)
     st.stop()
 
 hotel = doc.to_dict()
@@ -93,3 +97,6 @@ if submit:
             st.page_link("app.py", label="Go to Login →")
         except Exception as e:
             st.error(f"❌ Failed to update account: {str(e)}")
+
+# CSS Unlock — triggers the dynamic has-selector to reveal the page
+st.markdown("<div class='app-unlocked'></div>", unsafe_allow_html=True)

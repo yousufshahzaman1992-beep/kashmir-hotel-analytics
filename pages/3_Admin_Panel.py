@@ -8,7 +8,7 @@ if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
 from sheets_db import get_hotel_by_id, load_hotels, load_all_bookings, add_hotel, get_db
-from style import apply_style, sidebar_logo, ensure_auth
+from style import apply_style, sidebar_logo, ensure_auth, render_custom_navigation
 
 st.set_page_config(page_title="Admin Panel · Kashmir Analytics", page_icon="⚙️", layout="wide")
 apply_style()
@@ -18,6 +18,7 @@ hotel = ensure_auth(allowed_roles=["ADMIN"])
 # ── Sidebar ────────────────────────────────────────────────
 with st.sidebar:
     sidebar_logo()
+    render_custom_navigation()
     st.divider()
     st.markdown("""
     <div style='
@@ -286,3 +287,6 @@ with tab3:
                 st.success(f"✅ **{del_name}** deleted successfully!")
                 st.cache_data.clear()
                 st.rerun()
+
+# CSS Unlock — triggers the dynamic has-selector to reveal the page
+st.markdown("<div class='app-unlocked'></div>", unsafe_allow_html=True)

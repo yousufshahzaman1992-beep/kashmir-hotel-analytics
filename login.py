@@ -9,7 +9,8 @@ from sheets_db import verify_login
 from style import apply_style
 
 def show_login():
-    apply_style()
+    # apply_style() is already called by app.py before show_login();
+    # calling it again would re-inject the JS lock, resetting the timer.
     st.markdown("""
     <style>
     /* Aggressively hide all sidebar components on login */
@@ -231,3 +232,6 @@ def show_login():
         © 2025 Kashmir Analytics · All rights reserved
     </div>
     """, unsafe_allow_html=True)
+
+    # CSS Unlock — triggers the dynamic has-selector to reveal the page
+    st.markdown("<div class='app-unlocked'></div>", unsafe_allow_html=True)

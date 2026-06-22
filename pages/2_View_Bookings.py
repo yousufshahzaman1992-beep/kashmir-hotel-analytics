@@ -43,6 +43,7 @@ df = load_bookings(hotel_id)
 
 if df is None or len(df) == 0:
     st.info("No bookings yet. Go to **Add Booking** to enter your first one.")
+    st.markdown("<div class='app-unlocked'></div>", unsafe_allow_html=True)
     st.stop()
 
 tab1, tab2 = st.tabs(["📊 View & Filter", "✏️ Edit / Delete"])
@@ -226,3 +227,6 @@ with tab2:
             delete_booking(selected_id, hotel_id)
             st.success("Booking deleted!")
             st.rerun()
+
+# CSS Unlock — triggers the dynamic has-selector to reveal the page
+st.markdown("<div class='app-unlocked'></div>", unsafe_allow_html=True)

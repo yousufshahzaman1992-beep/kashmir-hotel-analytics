@@ -2,27 +2,24 @@ import streamlit as st
 
 
 def apply_style():
+    # ── PURE CSS DYNAMIC FLASH LOCK ──────────────────────────────────────────
+    # We hide the entire app view container by default. It is only revealed
+    # (with a smooth fade-in) when the Python script successfully completes
+    # execution and appends `<div class="app-unlocked"></div>` to the DOM.
+    # This prevents any raw content flash during websocket updates or redirects.
     st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap');
 
-    /* ═══════════════════════════════════════════════
-       FLASH PREVENTION — hide content until Python auth completes
-       Delay is 600ms — long enough for st.switch_page() / st.stop()
-       to always fire before the reveal animation triggers.
-       This prevents the dashboard flashing before the login page appears.
-    ═══════════════════════════════════════════════ */
-    [data-testid="stMain"],
-    [data-testid="stMainBlockContainer"] {
-        opacity: 0;
-        animation: pageReveal 0.3s ease 0.6s forwards;
+    [data-testid="stAppViewContainer"] {
+        opacity: 0 !important;
     }
-    @keyframes pageReveal {
-        from { opacity: 0; transform: translateY(4px); }
-        to   { opacity: 1; transform: translateY(0);   }
+    [data-testid="stAppViewContainer"]:has(.app-unlocked) {
+        opacity: 1 !important;
+        transition: opacity 0.3s ease-in-out !important;
     }
 
-    /* Instant lock — injected by ensure_auth() on unauth redirect */
+    /* Hard lock injected by ensure_auth() on redirect */
     .auth-redirect-lock [data-testid="stMain"],
     .auth-redirect-lock [data-testid="stMainBlockContainer"] {
         opacity: 0 !important;
@@ -432,13 +429,68 @@ def apply_style():
 
     /* ═══════════════════════════════════════════════
        PLOTLY CHART CONTAINERS
+       NOTE: overflow must NOT be hidden — Plotly renders
+       bar/pie labels outside the SVG frame; clipping them
+       causes text to hide behind the card border.
     ═══════════════════════════════════════════════ */
     [data-testid="stPlotlyChart"] {
         border-radius: 14px !important;
-        overflow: hidden !important;
+        overflow: visible !important;
         border: 1px solid rgba(255,255,255,0.05) !important;
         background: rgba(10, 15, 30, 0.5) !important;
         backdrop-filter: blur(10px);
+    }
+    /* The inner SVG/canvas must still stay clipped to its own bounds */
+    [data-testid="stPlotlyChart"] > div {
+        overflow: visible !important;
+    }
+
+    /* ═══════════════════════════════════════════════
+       MOBILE RESPONSIVE — OTA REVIEWS & GENERAL
+    ═══════════════════════════════════════════════ */
+
+    /* Sentiment bar label row: wrap on small screens */
+    @media (max-width: 600px) {
+        /* Sentiment distribution label row */
+        div[style*="justify-content:space-between"],
+        div[style*="justify-content: space-between"] {
+            flex-wrap: wrap !important;
+            gap: 4px !important;
+        }
+
+        /* Aspect cards header row: let score wrap below title */
+        .aspect-card-header {
+            flex-direction: column !important;
+            align-items: flex-start !important;
+            gap: 4px !important;
+        }
+
+        /* Review card footer: let source/date stack below badges */
+        .review-card-footer {
+            flex-wrap: wrap !important;
+            gap: 4px !important;
+        }
+
+        /* Prevent any inline text from overflowing its container */
+        [data-testid="stMarkdownContainer"] *,
+        [data-testid="stMarkdownContainer"] p,
+        [data-testid="stMarkdownContainer"] span,
+        [data-testid="stMarkdownContainer"] div {
+            word-break: break-word !important;
+            overflow-wrap: break-word !important;
+        }
+
+        /* Tab bar: allow horizontal scroll on tiny screens */
+        [data-testid="stTabs"] > div:first-child {
+            overflow-x: auto !important;
+            flex-wrap: nowrap !important;
+        }
+
+        /* Block container padding reduction */
+        .block-container {
+            padding-left: 1rem !important;
+            padding-right: 1rem !important;
+        }
     }
 
     /* ═══════════════════════════════════════════════
@@ -542,10 +594,26 @@ def sidebar_logo():
     """, unsafe_allow_html=True)
 
 
+def render_custom_navigation():
+    st.markdown("""
+    <div style='margin-top:14px;margin-bottom:6px;'>
+        <span style='font-size:0.65rem;color:#475569;text-transform:uppercase;letter-spacing:1.5px;font-weight:600;'>Navigation</span>
+    </div>
+    """, unsafe_allow_html=True)
+    st.page_link("app.py", label="Dashboard", icon="📊")
+    st.page_link("pages/1_Add_Booking.py", label="Add Booking", icon="📝")
+    st.page_link("pages/2_View_Bookings.py", label="View Bookings", icon="📋")
+    
+    # Only show Admin Panel to ADMIN role
+    if st.session_state.get("hotel", {}).get("hotel_id") == "ADMIN":
+        st.page_link("pages/3_Admin_Panel.py", label="Admin Panel", icon="⚙️")
+
 def render_sidebar(hotel):
     """Renders the standard sidebar for all pages."""
     with st.sidebar:
         sidebar_logo()
+        render_custom_navigation()
+        st.divider()
 
         plan_label = "Full Access" if hotel.get("hotel_id") == "ADMIN" else hotel.get("plan", "Basic").title()
         st.markdown(f"""
