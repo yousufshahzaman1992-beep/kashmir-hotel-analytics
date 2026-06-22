@@ -32,6 +32,7 @@ def apply_style():
     *, *::before, *::after { box-sizing: border-box; }
 
     :root, [data-theme="light"], [data-theme="dark"], html, body, [data-testid="stAppViewContainer"] {
+        color-scheme: dark !important;
         --st-background-color: #060b18 !important;
         --st-secondary-background-color: #0a1228 !important;
         --st-text-color: #e2e8f0 !important;
@@ -346,9 +347,19 @@ def apply_style():
     /* ═══════════════════════════════════════════════
        INPUTS & SELECTS
     ═══════════════════════════════════════════════ */
-    [data-baseweb="input"], [data-baseweb="textarea"], [data-baseweb="select"] > div {
-        background: rgba(15, 23, 42, 0.9) !important;
-        background-color: rgba(15, 23, 42, 0.9) !important;
+    /* Target both BaseWeb and general Streamlit input container wrappers to lock background */
+    [data-baseweb="base-input"],
+    [data-baseweb="input"],
+    [data-baseweb="textarea"],
+    [data-baseweb="select"] > div,
+    .stTextInput > div > div,
+    .stNumberInput > div > div,
+    .stTextArea > div > div,
+    .stDateInput > div > div,
+    .stSelectbox > div > div,
+    .stMultiSelect > div > div {
+        background: #0a1228 !important;
+        background-color: #0a1228 !important;
         border: 1px solid rgba(255, 255, 255, 0.08) !important;
         border-radius: 10px !important;
         color: #e2e8f0 !important;
@@ -356,25 +367,49 @@ def apply_style():
     }
     
     /* Focus styles */
+    [data-baseweb="base-input"]:focus-within,
     [data-baseweb="input"]:focus-within,
     [data-baseweb="textarea"]:focus-within,
-    [data-baseweb="select"]:focus-within {
+    [data-baseweb="select"]:focus-within,
+    .stTextInput > div > div:focus-within,
+    .stNumberInput > div > div:focus-within,
+    .stTextArea > div > div:focus-within,
+    .stDateInput > div > div:focus-within,
+    .stSelectbox > div > div:focus-within,
+    .stMultiSelect > div > div:focus-within {
         border-color: #3b82f6 !important;
         box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15) !important;
     }
 
-    /* Target raw HTML input and textarea elements inside Streamlit widgets */
+    /* Target raw HTML input and textarea elements inside Streamlit widgets and force dark styling */
+    [data-baseweb="base-input"] input,
     [data-baseweb="input"] input, 
     [data-baseweb="textarea"] textarea,
     [data-testid="stTextArea"] textarea,
+    .stTextInput input,
+    .stNumberInput input,
+    .stTextArea textarea,
+    .stDateInput input,
     input, 
     textarea,
     select {
-        background-color: transparent !important;
-        background: transparent !important;
+        background-color: #0a1228 !important;
+        background: #0a1228 !important;
         color: #e2e8f0 !important;
         font-family: 'Inter', sans-serif !important;
         font-size: 0.88rem !important;
+    }
+
+    /* Prevent browser autofill / autocomplete changing input background to white/yellow */
+    input:-webkit-autofill,
+    input:-webkit-autofill:hover, 
+    input:-webkit-autofill:focus, 
+    input:-webkit-autofill:active,
+    input:-internal-autofill-selected {
+        -webkit-box-shadow: 0 0 0px 1000px #0a1228 inset !important;
+        -webkit-text-fill-color: #e2e8f0 !important;
+        box-shadow: 0 0 0px 1000px #0a1228 inset !important;
+        transition: background-color 5000s ease-in-out 0s !important;
     }
 
     /* Placeholder text style override */

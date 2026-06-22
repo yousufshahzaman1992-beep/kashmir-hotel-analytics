@@ -107,6 +107,19 @@ def show_login():
         color: var(--text-color) !important;
         border-radius: 10px !important;
     }
+    input[type="text"]:-webkit-autofill,
+    input[type="text"]:-webkit-autofill:hover, 
+    input[type="text"]:-webkit-autofill:focus, 
+    input[type="text"]:-webkit-autofill:active,
+    input[type="password"]:-webkit-autofill,
+    input[type="password"]:-webkit-autofill:hover, 
+    input[type="password"]:-webkit-autofill:focus, 
+    input[type="password"]:-webkit-autofill:active {
+        -webkit-box-shadow: 0 0 0 1000px var(--secondary-background-color) inset !important;
+        -webkit-text-fill-color: var(--text-color) !important;
+        box-shadow: 0 0 0 1000px var(--secondary-background-color) inset !important;
+        transition: background-color 5000s ease-in-out 0s !important;
+    }
     input[type="text"]:focus, input[type="password"]:focus {
         border-color: rgba(59,130,246,0.6) !important;
         box-shadow: 0 0 0 3px rgba(59,130,246,0.15) !important;
