@@ -8,18 +8,25 @@ def apply_style():
 
     /* ═══════════════════════════════════════════════
        FLASH PREVENTION — hide content until Python auth completes
-       Streamlit does a blank render before Python session state
-       is ready. We hide the main area for 380ms, then fade in.
-       By that time st.stop() will have run if not logged in.
+       Delay is 600ms — long enough for st.switch_page() / st.stop()
+       to always fire before the reveal animation triggers.
+       This prevents the dashboard flashing before the login page appears.
     ═══════════════════════════════════════════════ */
     [data-testid="stMain"],
     [data-testid="stMainBlockContainer"] {
         opacity: 0;
-        animation: pageReveal 0.25s ease 0.38s forwards;
+        animation: pageReveal 0.3s ease 0.6s forwards;
     }
     @keyframes pageReveal {
         from { opacity: 0; transform: translateY(4px); }
         to   { opacity: 1; transform: translateY(0);   }
+    }
+
+    /* Instant lock — injected by ensure_auth() on unauth redirect */
+    .auth-redirect-lock [data-testid="stMain"],
+    .auth-redirect-lock [data-testid="stMainBlockContainer"] {
+        opacity: 0 !important;
+        animation: none !important;
     }
 
     /* ═══════════════════════════════════════════════
@@ -461,12 +468,25 @@ def apply_style():
 
 
 def ensure_auth(allowed_roles=None):
-    """Handles session restoration, CSS hiding for non-logged users, and redirects."""
+    """Handles session restoration, CSS hiding for non-logged users, and redirects.
+    
+    Injects an instant content-lock style BEFORE any redirect so the page
+    content never becomes visible during the switch — preventing the flash
+    of dashboard content that appears before the login page.
+    """
     from sheets_db import get_hotel_by_id
 
     if not st.session_state.get("logged_in"):
+        # INSTANT LOCK: kill the reveal animation and freeze opacity at 0
+        # This fires synchronously before st.switch_page(), so no content flash.
         st.markdown("""
             <style>
+                [data-testid="stMain"],
+                [data-testid="stMainBlockContainer"] {
+                    opacity: 0 !important;
+                    animation: none !important;
+                    visibility: hidden !important;
+                }
                 section[data-testid="stSidebar"],
                 [data-testid="stSidebarNav"] { display: none !important; }
                 button[kind="headerNoPadding"] { display: none !important; }
