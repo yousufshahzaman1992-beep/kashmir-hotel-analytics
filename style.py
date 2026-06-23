@@ -7,6 +7,63 @@ def apply_style():
     # (with a smooth fade-in) when the Python script successfully completes
     # execution and appends `<div class="app-unlocked"></div>` to the DOM.
     # This prevents any raw content flash during websocket updates or redirects.
+    # ── JS: detect Streamlit's active theme and stamp data-theme on <html> ────
+    # Streamlit injects --background-color on :root via its own <style> tag.
+    # We read that computed value (luminance test) to decide dark vs light
+    # and set data-theme, which drives our [data-theme] CSS variable blocks.
+    st.markdown("""
+<script>
+(function(){
+  'use strict';
+  var _last = null;
+
+  function _lum(hex) {
+    hex = hex.replace('#','');
+    if (hex.length===3) hex=hex[0]+hex[0]+hex[1]+hex[1]+hex[2]+hex[2];
+    var r=parseInt(hex.substr(0,2),16),
+        g=parseInt(hex.substr(2,2),16),
+        b=parseInt(hex.substr(4,2),16);
+    return (0.299*r+0.587*g+0.114*b)/255;
+  }
+
+  function _detect(){
+    // Streamlit injects --background-color on :root; we do NOT set that var,
+    // so getComputedStyle gives us Streamlit's raw value.
+    var bg='';
+    try{ bg=getComputedStyle(document.documentElement)
+            .getPropertyValue('--background-color').trim(); }catch(e){}
+
+    var theme='dark';
+    if(bg && bg.startsWith('#')){
+      theme = _lum(bg) > 0.5 ? 'light' : 'dark';
+    } else if(bg && bg.startsWith('rgb')){
+      var m=bg.match(/\\d+/g);
+      if(m && m.length>=3){
+        var l=(0.299*+m[0]+0.587*+m[1]+0.114*+m[2])/255;
+        theme = l>0.5?'light':'dark';
+      }
+    }
+
+    if(theme!==_last){
+      _last=theme;
+      document.documentElement.setAttribute('data-theme',theme);
+    }
+  }
+
+  // Run immediately & after short delays to catch Streamlit's style injection
+  _detect();
+  [50,150,400,800,1500,3000].forEach(function(d){setTimeout(_detect,d);});
+
+  // Watch head for Streamlit re-injecting its theme <style>
+  var obs=new MutationObserver(function(){setTimeout(_detect,30);});
+  obs.observe(document.head,{childList:true,subtree:true});
+
+  // Also catch localStorage changes (Streamlit theme toggle writes localStorage)
+  window.addEventListener('storage',function(){setTimeout(_detect,50);});
+})();
+</script>
+""", unsafe_allow_html=True)
+
     st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap');
@@ -31,110 +88,254 @@ def apply_style():
     ═══════════════════════════════════════════════ */
     *, *::before, *::after { box-sizing: border-box; }
 
-    /* CSS Variables for Dark Mode (Default) */
-    :root, [data-theme="dark"] {
-        color-scheme: dark !important;
-        --st-background-color: #060b18 !important;
-        --st-secondary-background-color: #0a1228 !important;
-        --st-text-color: #e2e8f0 !important;
-        --st-primary-color: #3b82f6 !important;
-        
-        --bg-color: #060b18;
+
+    /* ── Dark mode variables (default — JS will confirm via data-theme) ── */
+    :root,
+    html[data-theme="dark"] {
+        color-scheme: dark;
+        --bg-color:           #060b18;
         --secondary-bg-color: #0a1228;
-        --text-color: #e2e8f0;
-        --primary-color: #3b82f6;
-        
-        --text-muted: #64748b;
-        --text-highlight: #93c5fd;
-        --text-active: #60a5fa;
-        --border-color: rgba(255, 255, 255, 0.08);
-        --border-card: rgba(59, 130, 246, 0.15);
-        
-        --card-bg: rgba(15, 23, 42, 0.95);
-        --card-bg-glow: rgba(15, 23, 42, 0.9);
-        --card-hover-shadow: rgba(0, 0, 0, 0.35);
-        
-        --tab-bar-bg: rgba(15, 23, 42, 0.7);
-        --tab-button-text: #64748b;
-        --tab-button-active-bg: linear-gradient(135deg, #1e40af, #2563eb);
+        --text-color:         #e2e8f0;
+        --primary-color:      #3b82f6;
+        --text-muted:         #64748b;
+        --text-highlight:     #93c5fd;
+        --text-active:        #60a5fa;
+        --border-color:       rgba(255,255,255,0.08);
+        --border-card:        rgba(59,130,246,0.15);
+        --card-bg:            rgba(15,23,42,0.95);
+        --card-bg-glow:       rgba(15,23,42,0.9);
+        --card-hover-shadow:  rgba(0,0,0,0.35);
+        --tab-bar-bg:         rgba(15,23,42,0.7);
+        --tab-button-text:    #64748b;
+        --tab-button-active-bg:   linear-gradient(135deg,#1e40af,#2563eb);
         --tab-button-active-text: #ffffff;
-        
-        --sidebar-bg: linear-gradient(180deg, #080e1f 0%, #0a1228 60%, #080e1f 100%);
-        --sidebar-border: rgba(59, 130, 246, 0.08);
-        
-        --dropdown-bg: #0a1228;
-        --dropdown-text: #e2e8f0;
-        --dropdown-hover-bg: #1e3a8a;
-        --dropdown-hover-text: #ffffff;
-        
-        --button-bg: linear-gradient(135deg, #1e3a8a 0%, #2563eb 50%, #1d4ed8 100%);
-        --button-text: #ffffff;
-        --button-shadow: rgba(37, 99, 235, 0.25);
-        --button-hover-shadow: rgba(37, 99, 235, 0.4);
-        
-        --title-gradient: linear-gradient(135deg, #ffffff 0%, #e2e8f0 40%, #93c5fd 100%);
-        --metric-value: #ffffff;
-        
-        --mesh-bg-gradient: radial-gradient(ellipse 80% 60% at 10% 0%, rgba(37, 99, 235, 0.08) 0%, transparent 60%),
-                            radial-gradient(ellipse 60% 50% at 90% 100%, rgba(139, 92, 246, 0.07) 0%, transparent 60%),
-                            radial-gradient(ellipse 40% 40% at 50% 50%, rgba(6, 182, 212, 0.04) 0%, transparent 70%);
+        --sidebar-bg:         linear-gradient(180deg,#080e1f 0%,#0a1228 60%,#080e1f 100%);
+        --sidebar-border:     rgba(59,130,246,0.08);
+        --dropdown-bg:        #0a1228;
+        --dropdown-text:      #e2e8f0;
+        --dropdown-hover-bg:  #1e3a8a;
+        --dropdown-hover-text:#ffffff;
+        --button-bg:          linear-gradient(135deg,#1e3a8a 0%,#2563eb 50%,#1d4ed8 100%);
+        --button-text:        #ffffff;
+        --button-shadow:      rgba(37,99,235,0.25);
+        --button-hover-shadow:rgba(37,99,235,0.4);
+        --title-gradient:     linear-gradient(135deg,#ffffff 0%,#e2e8f0 40%,#93c5fd 100%);
+        --metric-value:       #ffffff;
+        --input-bg:           #0a1228;
+        --input-border:       rgba(255,255,255,0.12);
+        --input-text:         #e2e8f0;
+        --mesh-bg-gradient:
+            radial-gradient(ellipse 80% 60% at 10% 0%,rgba(37,99,235,0.08) 0%,transparent 60%),
+            radial-gradient(ellipse 60% 50% at 90% 100%,rgba(139,92,246,0.07) 0%,transparent 60%),
+            radial-gradient(ellipse 40% 40% at 50% 50%,rgba(6,182,212,0.04) 0%,transparent 70%);
     }
 
-    /* CSS Variables for Light Mode */
-    [data-theme="light"] {
-        color-scheme: light !important;
-        --st-background-color: #ffffff !important;
-        --st-secondary-background-color: #f8fafc !important;
-        --st-text-color: #1e293b !important;
-        --st-primary-color: #2563eb !important;
-        
-        --bg-color: #ffffff;
+    /* ── Light mode variables — pure white / dark text ── */
+    html[data-theme="light"] {
+        color-scheme: light;
+        --bg-color:           #ffffff;
         --secondary-bg-color: #f8fafc;
-        --text-color: #1e293b;
-        --primary-color: #2563eb;
-        
-        --text-muted: #64748b;
-        --text-highlight: #1d4ed8;
-        --text-active: #2563eb;
-        --border-color: rgba(0, 0, 0, 0.08);
-        --border-card: rgba(37, 99, 235, 0.15);
-        
-        --card-bg: rgba(248, 250, 252, 0.95);
-        --card-bg-glow: rgba(255, 255, 255, 0.95);
-        --card-hover-shadow: rgba(0, 0, 0, 0.08);
-        
-        --tab-bar-bg: rgba(241, 245, 249, 0.8);
-        --tab-button-text: #475569;
-        --tab-button-active-bg: linear-gradient(135deg, #2563eb, #3b82f6);
+        --text-color:         #0f172a;
+        --primary-color:      #2563eb;
+        --text-muted:         #64748b;
+        --text-highlight:     #1d4ed8;
+        --text-active:        #2563eb;
+        --border-color:       rgba(0,0,0,0.09);
+        --border-card:        rgba(37,99,235,0.15);
+        --card-bg:            #ffffff;
+        --card-bg-glow:       #ffffff;
+        --card-hover-shadow:  rgba(0,0,0,0.07);
+        --tab-bar-bg:         rgba(241,245,249,0.9);
+        --tab-button-text:    #475569;
+        --tab-button-active-bg:   linear-gradient(135deg,#2563eb,#3b82f6);
         --tab-button-active-text: #ffffff;
-        
-        --sidebar-bg: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 60%, #f8fafc 100%);
-        --sidebar-border: rgba(37, 99, 235, 0.08);
-        
-        --dropdown-bg: #ffffff;
-        --dropdown-text: #1e293b;
-        --dropdown-hover-bg: #dbeafe;
-        --dropdown-hover-text: #1e40af;
-        
-        --button-bg: linear-gradient(135deg, #2563eb 0%, #3b82f6 50%, #1d4ed8 100%);
-        --button-text: #ffffff;
-        --button-shadow: rgba(37, 99, 235, 0.2);
-        --button-hover-shadow: rgba(37, 99, 235, 0.3);
-        
-        --title-gradient: linear-gradient(135deg, #0f172a 0%, #1e293b 60%, #2563eb 100%);
-        --metric-value: #0f172a;
-        
-        --mesh-bg-gradient: radial-gradient(ellipse 80% 60% at 10% 0%, rgba(37, 99, 235, 0.03) 0%, transparent 60%),
-                            radial-gradient(ellipse 60% 50% at 90% 100%, rgba(139, 92, 246, 0.02) 0%, transparent 60%),
-                            radial-gradient(ellipse 40% 40% at 50% 50%, rgba(6, 182, 212, 0.01) 0%, transparent 70%);
+        --sidebar-bg:         linear-gradient(180deg,#f8fafc 0%,#f1f5f9 60%,#f8fafc 100%);
+        --sidebar-border:     rgba(37,99,235,0.08);
+        --dropdown-bg:        #ffffff;
+        --dropdown-text:      #0f172a;
+        --dropdown-hover-bg:  #dbeafe;
+        --dropdown-hover-text:#1e40af;
+        --button-bg:          linear-gradient(135deg,#2563eb 0%,#3b82f6 50%,#1d4ed8 100%);
+        --button-text:        #ffffff;
+        --button-shadow:      rgba(37,99,235,0.2);
+        --button-hover-shadow:rgba(37,99,235,0.3);
+        --title-gradient:     linear-gradient(135deg,#0f172a 0%,#1e293b 60%,#2563eb 100%);
+        --metric-value:       #0f172a;
+        --input-bg:           #ffffff;
+        --input-border:       rgba(0,0,0,0.12);
+        --input-text:         #0f172a;
+        --mesh-bg-gradient:   none;
     }
 
-    html, body, [data-testid="stAppViewContainer"] {
-        background: var(--bg-color) !important;
+    /* ── Base element resets for both themes ── */
+    html, body,
+    [data-testid="stApp"],
+    [data-testid="stAppViewContainer"],
+    [data-testid="stMain"],
+    [data-testid="stMainBlockContainer"],
+    .main, .stApp {
         background-color: var(--bg-color) !important;
-        color: var(--text-color) !important;
+        background:       var(--bg-color) !important;
+        color:            var(--text-color) !important;
         font-family: 'Inter', sans-serif;
     }
+
+    /* ── Light-mode total-white hardening ─────────────────────────── */
+    /* Every panel, column, and container in light mode gets white bg  */
+    html[data-theme="light"] [data-testid="stApp"],
+    html[data-theme="light"] [data-testid="stAppViewContainer"],
+    html[data-theme="light"] [data-testid="stMain"],
+    html[data-theme="light"] [data-testid="stMainBlockContainer"],
+    html[data-theme="light"] [data-testid="stVerticalBlock"],
+    html[data-theme="light"] [data-testid="stHorizontalBlock"],
+    html[data-theme="light"] [data-testid="column"],
+    html[data-theme="light"] .block-container,
+    html[data-theme="light"] .element-container,
+    html[data-theme="light"] section[data-testid="stSidebar"],
+    html[data-theme="light"] [data-testid="stSidebarContent"] {
+        background-color: var(--bg-color) !important;
+        background:       var(--bg-color) !important;
+        color:            var(--text-color) !important;
+    }
+    html[data-theme="light"] section[data-testid="stSidebar"],
+    html[data-theme="light"] [data-testid="stSidebarContent"] {
+        background-color: var(--secondary-bg-color) !important;
+        background:       var(--secondary-bg-color) !important;
+    }
+    /* All text elements in light mode */
+    html[data-theme="light"] p,
+    html[data-theme="light"] h1, html[data-theme="light"] h2,
+    html[data-theme="light"] h3, html[data-theme="light"] h4,
+    html[data-theme="light"] h5, html[data-theme="light"] h6,
+    html[data-theme="light"] span, html[data-theme="light"] label,
+    html[data-theme="light"] div,
+    html[data-theme="light"] [data-testid="stMarkdownContainer"],
+    html[data-theme="light"] [data-testid="stMarkdownContainer"] p,
+    html[data-theme="light"] [data-testid="stMarkdownContainer"] span,
+    html[data-theme="light"] [data-testid="stMarkdownContainer"] li,
+    html[data-theme="light"] [data-testid="stWidgetLabel"] p,
+    html[data-theme="light"] [data-testid="stMetricLabel"],
+    html[data-theme="light"] [data-testid="stMetricLabel"] p,
+    html[data-theme="light"] [data-testid="stMetricDelta"] {
+        color: var(--text-color) !important;
+    }
+    /* Light mode metric values */
+    html[data-theme="light"] [data-testid="stMetricValue"],
+    html[data-theme="light"] [data-testid="stMetricValue"] div {
+        color: var(--metric-value) !important;
+    }
+    /* Light mode inputs */
+    html[data-theme="light"] input,
+    html[data-theme="light"] textarea,
+    html[data-theme="light"] select,
+    html[data-theme="light"] [data-baseweb="input"] input,
+    html[data-theme="light"] [data-baseweb="textarea"] textarea,
+    html[data-theme="light"] [data-baseweb="select"] input {
+        background-color: #ffffff !important;
+        color: #0f172a !important;
+        border-color: rgba(0,0,0,0.15) !important;
+    }
+    html[data-theme="light"] [data-baseweb="input"],
+    html[data-theme="light"] [data-baseweb="textarea"],
+    html[data-theme="light"] [data-baseweb="select"],
+    html[data-theme="light"] [data-baseweb="popover"],
+    html[data-theme="light"] [data-testid="stTextInput"] > div,
+    html[data-theme="light"] [data-testid="stTextArea"] > div,
+    html[data-theme="light"] [data-testid="stSelectbox"] > div > div {
+        background-color: #ffffff !important;
+        color: #0f172a !important;
+    }
+    /* Light mode autofill */
+    html[data-theme="light"] input:-webkit-autofill,
+    html[data-theme="light"] input:-webkit-autofill:hover,
+    html[data-theme="light"] input:-webkit-autofill:focus {
+        -webkit-box-shadow: 0 0 0 1000px #ffffff inset !important;
+        -webkit-text-fill-color: #0f172a !important;
+        box-shadow: 0 0 0 1000px #ffffff inset !important;
+    }
+    /* Light mode tabs */
+    html[data-theme="light"] [data-testid="stTabs"] > div:first-child {
+        background: rgba(241,245,249,0.9) !important;
+    }
+    html[data-theme="light"] [data-testid="stTabs"] button[role="tab"] {
+        color: #475569 !important;
+    }
+    html[data-theme="light"] [data-testid="stTabs"] button[role="tab"][aria-selected="true"] {
+        color: #ffffff !important;
+        background: linear-gradient(135deg,#2563eb,#3b82f6) !important;
+    }
+    /* Light mode expander */
+    html[data-theme="light"] [data-testid="stExpander"],
+    html[data-theme="light"] details,
+    html[data-theme="light"] summary {
+        background-color: #ffffff !important;
+        border-color: rgba(0,0,0,0.09) !important;
+        color: #0f172a !important;
+    }
+    /* Light mode dataframe */
+    html[data-theme="light"] [data-testid="stDataFrame"],
+    html[data-theme="light"] [data-testid="stDataFrame"] * {
+        background-color: #ffffff !important;
+        color: #0f172a !important;
+    }
+    /* Light mode metric cards */
+    html[data-theme="light"] [data-testid="stMetric"] {
+        background: #f8fafc !important;
+        border-color: rgba(0,0,0,0.08) !important;
+    }
+    /* Light mode header */
+    html[data-theme="light"] [data-testid="stHeader"],
+    html[data-theme="light"] header {
+        background-color: #ffffff !important;
+        background: #ffffff !important;
+        border-bottom-color: rgba(0,0,0,0.08) !important;
+    }
+    html[data-theme="light"] [data-testid="stHeader"] button,
+    html[data-theme="light"] header button,
+    html[data-theme="light"] [data-testid="stHeader"] svg,
+    html[data-theme="light"] header svg {
+        color: #0f172a !important;
+        fill: #0f172a !important;
+    }
+    /* Light mode dividers */
+    html[data-theme="light"] hr { border-color: rgba(0,0,0,0.1) !important; }
+    /* Light mode selectbox dropdown popup */
+    html[data-theme="light"] [data-testid="stSelectbox"] ul,
+    html[data-theme="light"] [role="listbox"],
+    html[data-theme="light"] [role="option"] {
+        background-color: #ffffff !important;
+        color: #0f172a !important;
+    }
+    /* Light mode plotly chart containers */
+    html[data-theme="light"] [data-testid="stPlotlyChart"] {
+        background: #ffffff !important;
+        border-color: rgba(0,0,0,0.09) !important;
+    }
+    /* Light mode page links */
+    html[data-theme="light"] [data-testid="stPageLink"] a,
+    html[data-theme="light"] [data-testid="stPageLink"] p,
+    html[data-theme="light"] [data-testid="stPageLink"] span {
+        color: #0f172a !important;
+    }
+    html[data-theme="light"] [data-testid="stPageLink"][aria-current="page"] a,
+    html[data-theme="light"] [data-testid="stPageLink"][aria-current="page"] p {
+        color: #2563eb !important;
+    }
+    /* Light mode buttons */
+    html[data-theme="light"] [data-testid="stBaseButton-secondary"] {
+        background: #f1f5f9 !important;
+        color: #0f172a !important;
+        border-color: rgba(0,0,0,0.12) !important;
+    }
+    html[data-theme="light"] [data-testid="stBaseButton-secondary"]:hover {
+        background: #e2e8f0 !important;
+    }
+    /* Light mode alerts */
+    html[data-theme="light"] [data-testid="stAlert"] {
+        background-color: #f8fafc !important;
+        color: #0f172a !important;
+    }
+
 
     /* Animated background mesh */
     [data-testid="stAppViewContainer"]::before {

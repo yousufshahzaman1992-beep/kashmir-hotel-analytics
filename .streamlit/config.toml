@@ -1,11 +1,9 @@
 [client]
 showSidebarNavigation = false
-toolbarMode = "minimal"
+toolbarMode = "auto"
 
 [theme]
+# Dark is the default. Switch via ⋮ → Settings → Theme.
+# Our JS reads Streamlit's --background-color to detect the theme
+# and stamps data-theme on <html>, driving our full CSS variable system.
 base = "dark"
-backgroundColor = "#060b18"
-secondaryBackgroundColor = "#0a1228"
-textColor = "#e2e8f0"
-primaryColor = "#3b82f6"
-font = "sans serif"
