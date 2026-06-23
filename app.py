@@ -148,17 +148,12 @@ with st.sidebar:
     render_custom_navigation()
     st.divider()
 
+    plan_label = "Full Access" if hotel_id == "ADMIN" else hotel.get("plan", "Basic").title()
     st.markdown(f"""
-    <div style='background:var(--secondary-background-color);
-                border:1px solid rgba(148,163,184,0.2);
-                border-radius:10px;padding:12px 14px;margin-bottom:12px'>
-        <div style='font-size:0.7rem;color:#64748b;text-transform:uppercase;
-                    letter-spacing:1px;margin-bottom:4px'>Logged in as</div>
-        <div style='font-size:0.95rem;font-weight:600;
-                    color:var(--text-color)'>{hotel_name}</div>
-        <div style='font-size:0.75rem;color:#3b82f6'>
-            {hotel.get("plan","basic").title()} Plan
-        </div>
+    <div class='logged-in-box'>
+        <div class='logged-in-box-label'>Logged in as</div>
+        <div class='logged-in-box-name'>{hotel_name}</div>
+        <div class='logged-in-box-plan'>{plan_label} Plan</div>
     </div>
     """, unsafe_allow_html=True)
 
@@ -175,9 +170,7 @@ with st.sidebar:
     support_link = "https://wa.me/918491828292?text=Hello, I need help with my hotel analytics dashboard."
     st.markdown(f"""
         <a href='{support_link}' target='_blank' style='text-decoration:none;'>
-            <button style='width:100%;border-radius:10px;padding:10px;
-                           background:#25d366;color:white;border:none;
-                           cursor:pointer;font-weight:600;margin-bottom:8px'>
+            <button class='support-btn'>
                 💬 Contact Support
             </button>
         </a>
@@ -415,9 +408,9 @@ with tab_reviews:
     # ── Live OTA Sync & Real-Time Sentiment Control Center ──
     with st.container():
         st.markdown("""
-        <div style='background:rgba(59,130,246,0.06); border:1px solid rgba(59,130,246,0.2); border-radius:12px; padding:18px; margin-bottom:20px;'>
-            <h4 style='margin:0 0 6px 0; color:#3b82f6; font-size:1.15rem;'>🔄 Live OTA Sync & Real-Time Sentiment Control Center</h4>
-            <p style='font-size:0.8rem; color:#94a3b8; margin:0;'>
+        <div style='background:rgba(59,130,246,0.08); border:1px solid rgba(59,130,246,0.2); border-radius:12px; padding:18px; margin-bottom:20px;'>
+            <h4 style='margin:0 0 6px 0; color:var(--primary-color); font-size:1.15rem;'>🔄 Live OTA Sync & Real-Time Sentiment Control Center</h4>
+            <p style='font-size:0.8rem; color:var(--text-muted); margin:0;'>
                 Sync guest feedback automatically from Booking.com, Agoda, MakeMyTrip, and Google, or write a custom review below to perform instant sentiment analysis.
             </p>
         </div>
@@ -426,7 +419,7 @@ with tab_reviews:
         col_sync, col_manual = st.columns(2)
         
         with col_sync:
-            st.markdown("<p style='font-weight:600; color:#e2e8f0; margin-bottom:8px; font-size:0.95rem;'>⚡ OTA Connection & Live Sync</p>", unsafe_allow_html=True)
+            st.markdown("<p style='font-weight:600; color:var(--text-color); margin-bottom:8px; font-size:0.95rem;'>⚡ OTA Connection & Live Sync</p>", unsafe_allow_html=True)
             
             # Fetch current URLs from session state hotel info
             h_booking_url = hotel.get("booking_review_url", "")
@@ -462,9 +455,9 @@ with tab_reviews:
             else: status_items.append("⚪ Google Places")
             
             st.markdown(f"""
-            <div style='background:rgba(255,255,255,0.01); border:1px solid rgba(148,163,184,0.1); border-radius:8px; padding:10px 12px; margin-bottom:12px;'>
-                <div style='font-size:0.75rem; color:#64748b; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px;'>Connected Platforms</div>
-                <div style='font-size:0.8rem; display:flex; gap:10px; flex-wrap:wrap; color:#e2e8f0;'>
+            <div style='background:var(--secondary-bg-color); border:1px solid var(--border-color); border-radius:8px; padding:10px 12px; margin-bottom:12px;'>
+                <div style='font-size:0.75rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px;'>Connected Platforms</div>
+                <div style='font-size:0.8rem; display:flex; gap:10px; flex-wrap:wrap; color:var(--text-color);'>
                     {" | ".join(status_items)}
                 </div>
             </div>
@@ -484,7 +477,7 @@ with tab_reviews:
                     st.rerun()
         
         with col_manual:
-            st.markdown("<p style='font-weight:600; color:#e2e8f0; margin-bottom:8px; font-size:0.95rem;'>✍️ Real-Time Sentiment Analyzer Form</p>", unsafe_allow_html=True)
+            st.markdown("<p style='font-weight:600; color:var(--text-color); margin-bottom:8px; font-size:0.95rem;'>✍️ Real-Time Sentiment Analyzer Form</p>", unsafe_allow_html=True)
             
             # Real-time text area
             m_review_text = st.text_area("Review Text", height=82, placeholder="Type/paste a guest review to analyze sentiment in real time...", key="m_review_text_val")
@@ -522,15 +515,15 @@ with tab_reviews:
                 if not live_aspects:
                     live_aspects = ["General"]
                 
-                aspects_badges = " ".join([f"<span style='background:rgba(59,130,246,0.15);color:#93c5fd;border-radius:4px;padding:2px 6px;font-size:0.7rem;'>{a}</span>" for a in live_aspects])
+                aspects_badges = " ".join([f"<span style='background:rgba(59,130,246,0.15);color:var(--primary-color);border-radius:4px;padding:2px 6px;font-size:0.7rem;'>{a}</span>" for a in live_aspects])
                 
                 st.markdown(f"""
                 <div style='background:{bg_color}; border:1px solid {text_color}44; border-radius:8px; padding:12px; margin-bottom:12px;'>
                     <div style='display:flex; justify-content:space-between; align-items:center;'>
-                        <span style='font-size:0.8rem; color:#94a3b8;'>Live Sentiment Score: <b>{score}</b></span>
+                        <span style='font-size:0.8rem; color:var(--text-muted);'>Live Sentiment Score: <b>{score}</b></span>
                         <span style='color:{text_color}; font-weight:700; font-size:0.9rem;'>{live_sent}</span>
                     </div>
-                    <div style='margin-top:6px; font-size:0.8rem; color:#94a3b8; display:flex; align-items:center; gap:6px;'>
+                    <div style='margin-top:6px; font-size:0.8rem; color:var(--text-muted); display:flex; align-items:center; gap:6px;'>
                         <span>Aspects:</span>
                         <div style='display:flex; gap:4px; flex-wrap:wrap;'>{aspects_badges}</div>
                     </div>
@@ -624,11 +617,11 @@ with tab_reviews:
         
         st.markdown(f"""
         <div style='margin: 15px 0 25px 0;'>
-            <div style='display:flex; justify-content:space-between; align-items:center; font-size:0.8rem; color:#94a3b8; margin-bottom:6px; flex-wrap:wrap; gap:4px;'>
+            <div style='display:flex; justify-content:space-between; align-items:center; font-size:0.8rem; color:var(--text-muted); margin-bottom:6px; flex-wrap:wrap; gap:4px;'>
                 <span>Guest Sentiment Distribution</span>
                 <span>🟢 Positive ({pos_bar:.0f}%) | 🟡 Neutral ({neu_bar:.0f}%) | 🔴 Negative ({neg_bar:.0f}%)</span>
             </div>
-            <div style='display:flex; height:12px; border-radius:6px; overflow:hidden; background:#334155;'>
+            <div style='display:flex; height:12px; border-radius:6px; overflow:hidden; background:var(--border-color);'>
                 <div style='width:{pos_bar}%; background:#10b981;' title='Positive'></div>
                 <div style='width:{neu_bar}%; background:#f59e0b;' title='Neutral'></div>
                 <div style='width:{neg_bar}%; background:#ef4444;' title='Negative'></div>
@@ -768,18 +761,18 @@ with tab_reviews:
         for _, row in rdf.iterrows():
             stars = "⭐" * int(row["rating"])
             badge_color = {"Positive": "#10b981", "Neutral": "#f59e0b", "Negative": "#ef4444"}.get(row["sentiment"], "#64748b")
-            aspects_html = " ".join([f"<span style='background:rgba(59,130,246,0.15);color:#93c5fd;border-radius:4px;padding:2px 7px;font-size:0.7rem;margin-right:4px;'>{a}</span>" for a in row["aspects"]])
+            aspects_html = " ".join([f"<span style='background:rgba(59,130,246,0.15);color:var(--primary-color);border-radius:4px;padding:2px 7px;font-size:0.7rem;margin-right:4px;'>{a}</span>" for a in row["aspects"]])
             st.markdown(f"""
-            <div style='background:rgba(255,255,255,0.02);border:1px solid rgba(148,163,184,0.12);border-radius:10px;padding:14px;margin-bottom:10px;overflow:hidden;'>
+            <div style='background:var(--secondary-bg-color);border:1px solid var(--border-color);border-radius:10px;padding:14px;margin-bottom:10px;overflow:hidden;'>
                 <div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;flex-wrap:wrap;gap:4px;'>
-                    <span style='font-weight:600;color:#e2e8f0;min-width:0;overflow:hidden;text-overflow:ellipsis;'>{row["guest_name"]}</span>
+                    <span style='font-weight:600;color:var(--text-color);min-width:0;overflow:hidden;text-overflow:ellipsis;'>{row["guest_name"]}</span>
                     <span style='color:#f59e0b;font-size:0.9rem;flex-shrink:0;'>{stars}</span>
                 </div>
-                <p style='font-size:0.85rem;color:#94a3b8;margin:0 0 8px 0;word-break:break-word;overflow-wrap:break-word;'>{row["review_text"]}</p>
+                <p style='font-size:0.85rem;color:var(--text-muted);margin:0 0 8px 0;word-break:break-word;overflow-wrap:break-word;'>{row["review_text"]}</p>
                 <div style='display:flex;align-items:center;gap:8px;flex-wrap:wrap;'>
                     <span style='background:{badge_color};color:white;border-radius:4px;padding:2px 8px;font-size:0.7rem;font-weight:600;flex-shrink:0;'>{row["sentiment"]}</span>
                     {aspects_html}
-                    <span style='color:#475569;font-size:0.75rem;margin-left:auto;white-space:nowrap;'>{row["source"]} · {row["date"]}</span>
+                    <span style='color:var(--text-muted);font-size:0.75rem;margin-left:auto;white-space:nowrap;'>{row["source"]} · {row["date"]}</span>
                 </div>
             </div>
             """, unsafe_allow_html=True)
@@ -798,27 +791,27 @@ with tab_risk:
     # ── Live Airport Weather Status Card ──
     weather_icon = "❄️" if weather["snow"] > 0 else ("🌧️" if weather["rain"] > 0 else ("🌫️" if weather["visibility_km"] < 2 else "☀️"))
     st.markdown(f"""
-    <div style='background:rgba(15,23,42,0.8); border:1px solid rgba(59,130,246,0.25); border-radius:12px; padding:16px; margin-bottom:20px; backdrop-filter:blur(10px); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap;'>
+    <div style='background:var(--secondary-bg-color); border:1px solid var(--border-card); border-radius:12px; padding:16px; margin-bottom:20px; backdrop-filter:blur(10px); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap;'>
         <div>
-            <div style='font-size:0.75rem; color:#64748b; text-transform:uppercase; letter-spacing:1px; font-weight:600;'>📍 Srinagar International Airport (SXR)</div>
-            <div style='font-size:1.15rem; font-weight:700; color:#f1f5f9; display:flex; align-items:center; gap:8px; margin-top:2px;'>
+            <div style='font-size:0.75rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; font-weight:600;'>📍 Srinagar International Airport (SXR)</div>
+            <div style='font-size:1.15rem; font-weight:700; color:var(--text-color); display:flex; align-items:center; gap:8px; margin-top:2px;'>
                 <span>{weather_icon} {weather["desc"]}</span>
-                <span style='color:#475569;'>•</span>
-                <span style='color:#60a5fa;'>{weather["temp"]}°C</span>
+                <span style='color:var(--text-muted);'>•</span>
+                <span style='color:var(--primary-color);'>{weather["temp"]}°C</span>
             </div>
         </div>
         <div style='display:flex; gap:20px; margin-top:10px;'>
             <div>
-                <div style='font-size:0.7rem; color:#64748b;'>Visibility</div>
-                <div style='font-size:0.9rem; font-weight:600; color:#e2e8f0;'>{weather["visibility_km"]} km</div>
+                <div style='font-size:0.7rem; color:var(--text-muted);'>Visibility</div>
+                <div style='font-size:0.9rem; font-weight:600; color:var(--text-color);'>{weather["visibility_km"]} km</div>
             </div>
             <div>
-                <div style='font-size:0.7rem; color:#64748b;'>Wind Speed</div>
-                <div style='font-size:0.9rem; font-weight:600; color:#e2e8f0;'>{weather["wind_speed"]} km/h</div>
+                <div style='font-size:0.7rem; color:var(--text-muted);'>Wind Speed</div>
+                <div style='font-size:0.9rem; font-weight:600; color:var(--text-color);'>{weather["wind_speed"]} km/h</div>
             </div>
             <div>
-                <div style='font-size:0.7rem; color:#64748b;'>Active Snow/Rain</div>
-                <div style='font-size:0.9rem; font-weight:600; color:#e2e8f0;'>{max(weather["snow"], weather["rain"])} mm</div>
+                <div style='font-size:0.7rem; color:var(--text-muted);'>Active Snow/Rain</div>
+                <div style='font-size:0.9rem; font-weight:600; color:var(--text-color);'>{max(weather["snow"], weather["rain"])} mm</div>
             </div>
         </div>
     </div>
@@ -852,9 +845,9 @@ with tab_risk:
     with g1:
         st.plotly_chart(fig_gauge, use_container_width=True)
         st.markdown(f"""
-        <div style='background:rgba(255,255,255,0.03);border:1px solid rgba(148,163,184,0.15);border-radius:10px;padding:14px;margin-top:-10px;'>
+        <div style='background:var(--secondary-bg-color);border:1px solid var(--border-color);border-radius:10px;padding:14px;margin-top:-10px;'>
             <div style='font-size:1rem;font-weight:700;color:{gauge_color};margin-bottom:4px;'>⚠️ {risk_label}</div>
-            <div style='font-size:0.8rem;color:#94a3b8;'>Composite score based on flight cancellations, weather events, political advisories, and seasonal demand patterns.</div>
+            <div style='font-size:0.8rem;color:var(--text-muted);'>Composite score based on flight cancellations, weather events, political advisories, and seasonal demand patterns.</div>
         </div>
         """, unsafe_allow_html=True)
 
@@ -943,7 +936,7 @@ with tab_risk:
         ]
         for item, done in checklist_items:
             icon = "✅" if done else "⬜"
-            color = "#10b981" if done else "#94a3b8"
+            color = "#10b981" if done else "var(--text-muted)"
             st.markdown(f"<div style='padding:6px 0;font-size:0.85rem;color:{color};'>{icon} {item}</div>", unsafe_allow_html=True)
     with chk2:
         checklist_items2 = [
@@ -955,14 +948,14 @@ with tab_risk:
         ]
         for item, done in checklist_items2:
             icon = "✅" if done else "⬜"
-            color = "#10b981" if done else "#94a3b8"
+            color = "#10b981" if done else "var(--text-muted)"
             st.markdown(f"<div style='padding:6px 0;font-size:0.85rem;color:{color};'>{icon} {item}</div>", unsafe_allow_html=True)
 
     st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
 
     # ── WhatsApp Guest Outreach Panel ──
     st.markdown("<div class='section-title'>💬 Guest Outreach — Send WhatsApp Messages</div>", unsafe_allow_html=True)
-    st.markdown("<p style='font-size:0.85rem;color:#64748b;margin-bottom:16px;'>Select any guest to send them a proactive WhatsApp message. Upcoming bookings are shown first.</p>", unsafe_allow_html=True)
+    st.markdown("<p style='font-size:0.85rem;color:var(--text-muted);margin-bottom:16px;'>Select any guest to send them a proactive WhatsApp message. Upcoming bookings are shown first.</p>", unsafe_allow_html=True)
 
     today = date.today()
     arriving_bookings = pd.DataFrame()

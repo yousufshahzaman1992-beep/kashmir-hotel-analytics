@@ -27,25 +27,112 @@ def apply_style():
     }
 
     /* ═══════════════════════════════════════════════
-       GLOBAL BASE
+       GLOBAL BASE & THEMES
     ═══════════════════════════════════════════════ */
     *, *::before, *::after { box-sizing: border-box; }
 
-    :root, [data-theme="light"], [data-theme="dark"], html, body, [data-testid="stAppViewContainer"] {
+    /* CSS Variables for Dark Mode (Default) */
+    :root, [data-theme="dark"] {
         color-scheme: dark !important;
         --st-background-color: #060b18 !important;
         --st-secondary-background-color: #0a1228 !important;
         --st-text-color: #e2e8f0 !important;
         --st-primary-color: #3b82f6 !important;
         
-        --background-color: #060b18 !important;
-        --secondary-background-color: #0a1228 !important;
-        --text-color: #e2e8f0 !important;
-        --primary-color: #3b82f6 !important;
+        --bg-color: #060b18;
+        --secondary-bg-color: #0a1228;
+        --text-color: #e2e8f0;
+        --primary-color: #3b82f6;
+        
+        --text-muted: #64748b;
+        --text-highlight: #93c5fd;
+        --text-active: #60a5fa;
+        --border-color: rgba(255, 255, 255, 0.08);
+        --border-card: rgba(59, 130, 246, 0.15);
+        
+        --card-bg: rgba(15, 23, 42, 0.95);
+        --card-bg-glow: rgba(15, 23, 42, 0.9);
+        --card-hover-shadow: rgba(0, 0, 0, 0.35);
+        
+        --tab-bar-bg: rgba(15, 23, 42, 0.7);
+        --tab-button-text: #64748b;
+        --tab-button-active-bg: linear-gradient(135deg, #1e40af, #2563eb);
+        --tab-button-active-text: #ffffff;
+        
+        --sidebar-bg: linear-gradient(180deg, #080e1f 0%, #0a1228 60%, #080e1f 100%);
+        --sidebar-border: rgba(59, 130, 246, 0.08);
+        
+        --dropdown-bg: #0a1228;
+        --dropdown-text: #e2e8f0;
+        --dropdown-hover-bg: #1e3a8a;
+        --dropdown-hover-text: #ffffff;
+        
+        --button-bg: linear-gradient(135deg, #1e3a8a 0%, #2563eb 50%, #1d4ed8 100%);
+        --button-text: #ffffff;
+        --button-shadow: rgba(37, 99, 235, 0.25);
+        --button-hover-shadow: rgba(37, 99, 235, 0.4);
+        
+        --title-gradient: linear-gradient(135deg, #ffffff 0%, #e2e8f0 40%, #93c5fd 100%);
+        --metric-value: #ffffff;
+        
+        --mesh-bg-gradient: radial-gradient(ellipse 80% 60% at 10% 0%, rgba(37, 99, 235, 0.08) 0%, transparent 60%),
+                            radial-gradient(ellipse 60% 50% at 90% 100%, rgba(139, 92, 246, 0.07) 0%, transparent 60%),
+                            radial-gradient(ellipse 40% 40% at 50% 50%, rgba(6, 182, 212, 0.04) 0%, transparent 70%);
+    }
 
-        background: #060b18 !important;
-        background-color: #060b18 !important;
-        color: #e2e8f0 !important;
+    /* CSS Variables for Light Mode */
+    [data-theme="light"] {
+        color-scheme: light !important;
+        --st-background-color: #ffffff !important;
+        --st-secondary-background-color: #f8fafc !important;
+        --st-text-color: #1e293b !important;
+        --st-primary-color: #2563eb !important;
+        
+        --bg-color: #ffffff;
+        --secondary-bg-color: #f8fafc;
+        --text-color: #1e293b;
+        --primary-color: #2563eb;
+        
+        --text-muted: #64748b;
+        --text-highlight: #1d4ed8;
+        --text-active: #2563eb;
+        --border-color: rgba(0, 0, 0, 0.08);
+        --border-card: rgba(37, 99, 235, 0.15);
+        
+        --card-bg: rgba(248, 250, 252, 0.95);
+        --card-bg-glow: rgba(255, 255, 255, 0.95);
+        --card-hover-shadow: rgba(0, 0, 0, 0.08);
+        
+        --tab-bar-bg: rgba(241, 245, 249, 0.8);
+        --tab-button-text: #475569;
+        --tab-button-active-bg: linear-gradient(135deg, #2563eb, #3b82f6);
+        --tab-button-active-text: #ffffff;
+        
+        --sidebar-bg: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 60%, #f8fafc 100%);
+        --sidebar-border: rgba(37, 99, 235, 0.08);
+        
+        --dropdown-bg: #ffffff;
+        --dropdown-text: #1e293b;
+        --dropdown-hover-bg: #dbeafe;
+        --dropdown-hover-text: #1e40af;
+        
+        --button-bg: linear-gradient(135deg, #2563eb 0%, #3b82f6 50%, #1d4ed8 100%);
+        --button-text: #ffffff;
+        --button-shadow: rgba(37, 99, 235, 0.2);
+        --button-hover-shadow: rgba(37, 99, 235, 0.3);
+        
+        --title-gradient: linear-gradient(135deg, #0f172a 0%, #1e293b 60%, #2563eb 100%);
+        --metric-value: #0f172a;
+        
+        --mesh-bg-gradient: radial-gradient(ellipse 80% 60% at 10% 0%, rgba(37, 99, 235, 0.03) 0%, transparent 60%),
+                            radial-gradient(ellipse 60% 50% at 90% 100%, rgba(139, 92, 246, 0.02) 0%, transparent 60%),
+                            radial-gradient(ellipse 40% 40% at 50% 50%, rgba(6, 182, 212, 0.01) 0%, transparent 70%);
+    }
+
+    html, body, [data-testid="stAppViewContainer"] {
+        background: var(--bg-color) !important;
+        background-color: var(--bg-color) !important;
+        color: var(--text-color) !important;
         font-family: 'Inter', sans-serif;
     }
 
@@ -54,10 +141,7 @@ def apply_style():
         content: '';
         position: fixed;
         inset: 0;
-        background:
-            radial-gradient(ellipse 80% 60% at 10% 0%, rgba(37, 99, 235, 0.08) 0%, transparent 60%),
-            radial-gradient(ellipse 60% 50% at 90% 100%, rgba(139, 92, 246, 0.07) 0%, transparent 60%),
-            radial-gradient(ellipse 40% 40% at 50% 50%, rgba(6, 182, 212, 0.04) 0%, transparent 70%);
+        background: var(--mesh-bg-gradient);
         pointer-events: none;
         z-index: 0;
     }
@@ -66,25 +150,18 @@ def apply_style():
        HEADER & MOBILE TOP STRIP
     ═══════════════════════════════════════════════ */
     [data-testid="stHeader"], header {
-        background: #060b18 !important;
-        background-color: #060b18 !important;
+        background: var(--bg-color) !important;
+        background-color: var(--bg-color) !important;
         backdrop-filter: blur(20px) saturate(1.5) !important;
         -webkit-backdrop-filter: blur(20px) saturate(1.5) !important;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.04) !important;
-        color: #e2e8f0 !important;
+        border-bottom: 1px solid var(--border-color) !important;
+        color: var(--text-color) !important;
     }
     [data-testid="stHeader"] button, header button,
     [data-testid="stHeader"] svg, header svg {
-        color: #e2e8f0 !important;
-        fill: #e2e8f0 !important;
+        color: var(--text-color) !important;
+        fill: var(--text-color) !important;
     }
-
-    /* ═══════════════════════════════════════════════
-       THEME TOGGLE LOCKOUT
-       Hides the Streamlit settings button so users
-       cannot switch to light mode and break the design.
-    ═══════════════════════════════════════════════ */
-    [data-testid="stToolbarActions"] { display: none !important; }
 
     /* st.page_link() — sidebar navigation link text colors */
     [data-testid="stPageLink"] a,
@@ -92,28 +169,31 @@ def apply_style():
     [data-testid="stPageLink"] a span,
     [data-testid="stPageLink"] p,
     [data-testid="stPageLink"] span {
-        color: #cbd5e1 !important;
+        color: var(--text-color) !important;
         text-decoration: none !important;
+        opacity: 0.8;
     }
     [data-testid="stPageLink"]:hover a,
     [data-testid="stPageLink"]:hover a p,
     [data-testid="stPageLink"]:hover a span {
-        color: #93c5fd !important;
+        color: var(--text-highlight) !important;
+        opacity: 1;
     }
     [data-testid="stPageLink"][aria-current="page"] a,
     [data-testid="stPageLink"][aria-current="page"] a p,
     [data-testid="stPageLink"][aria-current="page"] a span {
-        color: #60a5fa !important;
+        color: var(--text-active) !important;
         font-weight: 600 !important;
+        opacity: 1;
     }
 
     /* ═══════════════════════════════════════════════
        SIDEBAR
     ═══════════════════════════════════════════════ */
     [data-testid="stSidebar"] {
-        background: linear-gradient(180deg, #080e1f 0%, #0a1228 60%, #080e1f 100%) !important;
-        border-right: 1px solid rgba(59, 130, 246, 0.08) !important;
-        box-shadow: 4px 0 30px rgba(0, 0, 0, 0.4);
+        background: var(--sidebar-bg) !important;
+        border-right: 1px solid var(--sidebar-border) !important;
+        box-shadow: 4px 0 30px var(--card-hover-shadow);
     }
     [data-testid="stSidebarNav"] { padding-top: 10px; }
     [data-testid="stSidebarNav"] li a {
@@ -122,21 +202,115 @@ def apply_style():
         padding: 10px 14px;
         font-weight: 500;
         font-size: 0.88rem;
-        color: #cbd5e1 !important;
+        color: var(--text-color) !important;
         transition: all 0.25s ease;
+        opacity: 0.8;
     }
     [data-testid="stSidebarNav"] li a:hover {
         background: rgba(59, 130, 246, 0.1) !important;
-        color: #93c5fd !important;
+        color: var(--text-highlight) !important;
         transform: translateX(3px);
+        opacity: 1;
     }
     [data-testid="stSidebarNav"] li a[data-selected="true"] {
         background: linear-gradient(135deg, rgba(37, 99, 235, 0.25), rgba(59, 130, 246, 0.12)) !important;
-        color: #60a5fa !important;
-        border-left: 3px solid #3b82f6;
+        color: var(--text-active) !important;
+        border-left: 3px solid var(--primary-color);
         font-weight: 600;
+        opacity: 1;
     }
 
+    /* Custom sidebar elements */
+    .sidebar-logo-container {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 4px 0 8px 0;
+    }
+    .sidebar-logo-icon {
+        width: 40px;
+        height: 40px;
+        background: linear-gradient(135deg, #1e3a8a, #3b82f6);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        flex-shrink: 0;
+        box-shadow: 0 4px 16px rgba(59, 130, 246, 0.4);
+    }
+    .sidebar-logo-sub {
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: 3px;
+        text-transform: uppercase;
+        color: var(--primary-color);
+        line-height: 1;
+    }
+    .sidebar-logo-main {
+        font-size: 1.1rem;
+        font-weight: 800;
+        color: var(--text-color);
+        line-height: 1.3;
+        letter-spacing: -0.3px;
+    }
+    .sidebar-logo-divider {
+        height: 1px;
+        background: linear-gradient(90deg, rgba(59, 130, 246, 0.4), transparent);
+        margin-bottom: 4px;
+    }
+
+    .logged-in-box {
+        background: var(--secondary-bg-color);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 14px 16px;
+        margin: 12px 0;
+        box-shadow: 0 4px 20px var(--card-hover-shadow);
+    }
+    .logged-in-box-label {
+        font-size: 0.65rem;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        margin-bottom: 5px;
+    }
+    .logged-in-box-name {
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: var(--text-color);
+    }
+    .logged-in-box-plan {
+        display: inline-block;
+        margin-top: 5px;
+        font-size: 0.65rem;
+        font-weight: 700;
+        background: linear-gradient(135deg, rgba(37, 99, 235, 0.2), rgba(59, 130, 246, 0.1));
+        color: var(--primary-color);
+        border: 1px solid rgba(59, 130, 246, 0.25);
+        border-radius: 20px;
+        padding: 2px 10px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .support-btn {
+        width: 100%;
+        border-radius: 10px;
+        padding: 11px;
+        background: linear-gradient(135deg, #16a34a, #25d366);
+        color: white !important;
+        border: none;
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 0.85rem;
+        box-shadow: 0 4px 14px rgba(37, 211, 102, 0.25);
+        transition: all 0.2s;
+    }
+    .support-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 20px rgba(37, 211, 102, 0.4);
+    }
 
     /* ═══════════════════════════════════════════════
        LAYOUT
@@ -154,8 +328,8 @@ def apply_style():
         margin-top: 4px;
     }
     [data-testid="stTabs"] > div:first-child {
-        background: rgba(15, 23, 42, 0.7);
-        border: 1px solid rgba(255, 255, 255, 0.06);
+        background: var(--tab-bar-bg);
+        border: 1px solid var(--border-color);
         border-radius: 14px;
         padding: 5px;
         gap: 4px;
@@ -165,7 +339,7 @@ def apply_style():
         background: transparent !important;
         border: none !important;
         border-radius: 10px !important;
-        color: #64748b !important;
+        color: var(--tab-button-text) !important;
         font-family: 'Inter', sans-serif !important;
         font-weight: 500 !important;
         font-size: 0.84rem !important;
@@ -177,14 +351,14 @@ def apply_style():
     }
     [data-testid="stTabs"] button[role="tab"]:hover {
         background: rgba(59, 130, 246, 0.08) !important;
-        color: #93c5fd !important;
+        color: var(--text-highlight) !important;
         transform: none !important;
     }
     [data-testid="stTabs"] button[role="tab"][aria-selected="true"] {
-        background: linear-gradient(135deg, #1e40af, #2563eb) !important;
-        color: #ffffff !important;
+        background: var(--tab-button-active-bg) !important;
+        color: var(--tab-button-active-text) !important;
         font-weight: 600 !important;
-        box-shadow: 0 4px 16px rgba(37, 99, 235, 0.35) !important;
+        box-shadow: 0 4px 16px var(--button-shadow) !important;
     }
     /* Remove default tab underline indicator */
     [data-testid="stTabs"] [role="tablist"] > div[data-baseweb="tab-highlight"] {
@@ -201,7 +375,7 @@ def apply_style():
         font-family: 'Outfit', sans-serif;
         font-size: 2.6rem;
         font-weight: 800;
-        background: linear-gradient(135deg, #ffffff 0%, #e2e8f0 40%, #93c5fd 100%);
+        background: var(--title-gradient);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
@@ -212,7 +386,7 @@ def apply_style():
     }
     .page-sub {
         font-size: 0.87rem;
-        color: #64748b;
+        color: var(--text-muted);
         margin-top: 8px;
         letter-spacing: 0.3px;
     }
@@ -220,7 +394,7 @@ def apply_style():
         font-family: 'Outfit', sans-serif;
         font-size: 0.78rem;
         font-weight: 700;
-        color: #3b82f6;
+        color: var(--primary-color);
         text-transform: uppercase;
         letter-spacing: 2px;
         margin-top: 20px;
@@ -234,7 +408,7 @@ def apply_style():
         display: inline-block;
         width: 3px;
         height: 14px;
-        background: linear-gradient(180deg, #3b82f6, #8b5cf6);
+        background: linear-gradient(180deg, var(--primary-color), #8b5cf6);
         border-radius: 2px;
         flex-shrink: 0;
     }
@@ -243,13 +417,13 @@ def apply_style():
        METRIC CARDS — Glassmorphism with glow
     ═══════════════════════════════════════════════ */
     [data-testid="metric-container"] {
-        background: linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(20, 30, 55, 0.9)) !important;
-        border: 1px solid rgba(59, 130, 246, 0.15) !important;
+        background: var(--card-bg) !important;
+        border: 1px solid var(--border-card) !important;
         border-radius: 16px !important;
         padding: 20px 24px !important;
         box-shadow:
             0 1px 0 rgba(255, 255, 255, 0.04) inset,
-            0 8px 32px rgba(0, 0, 0, 0.25),
+            0 8px 32px var(--card-hover-shadow),
             0 0 0 0px rgba(59, 130, 246, 0) !important;
         transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease !important;
         position: relative;
@@ -260,7 +434,7 @@ def apply_style():
         position: absolute;
         top: 0; left: 0; right: 0;
         height: 2px;
-        background: linear-gradient(90deg, #3b82f6, #8b5cf6, #06b6d4);
+        background: linear-gradient(90deg, var(--primary-color), #8b5cf6, #06b6d4);
         opacity: 0.8;
     }
     [data-testid="metric-container"]:hover {
@@ -268,20 +442,20 @@ def apply_style():
         border-color: rgba(59, 130, 246, 0.3) !important;
         box-shadow:
             0 1px 0 rgba(255, 255, 255, 0.05) inset,
-            0 16px 48px rgba(0, 0, 0, 0.35),
+            0 16px 48px var(--card-hover-shadow),
             0 0 30px rgba(59, 130, 246, 0.1) !important;
     }
     [data-testid="stMetricValue"] {
         font-family: 'Outfit', sans-serif !important;
         font-size: 2rem !important;
         font-weight: 700 !important;
-        color: #ffffff !important;
+        color: var(--metric-value) !important;
         letter-spacing: -0.5px !important;
         margin-top: 6px !important;
     }
     [data-testid="stMetricLabel"] {
         font-size: 0.75rem !important;
-        color: #64748b !important;
+        color: var(--text-muted) !important;
         text-transform: uppercase !important;
         letter-spacing: 1px !important;
         font-weight: 600 !important;
@@ -295,24 +469,24 @@ def apply_style():
        CARDS & PANELS
     ═══════════════════════════════════════════════ */
     .card-wrap {
-        background: rgba(15, 23, 42, 0.8);
-        border: 1px solid rgba(255, 255, 255, 0.06);
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
         border-radius: 16px;
         padding: 22px;
         backdrop-filter: blur(12px);
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        box-shadow: 0 8px 32px var(--card-hover-shadow);
         transition: transform 0.25s ease, box-shadow 0.25s ease;
     }
     .card-wrap:hover {
         transform: translateY(-2px);
-        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+        box-shadow: 0 12px 40px var(--card-hover-shadow);
     }
 
     .badge {
         font-size: 0.7rem;
         font-weight: 700;
         background: rgba(59, 130, 246, 0.15);
-        color: #60a5fa;
+        color: var(--primary-color);
         border: 1px solid rgba(59, 130, 246, 0.3);
         border-radius: 20px;
         padding: 4px 12px;
@@ -325,22 +499,22 @@ def apply_style():
         justify-content: space-between;
         align-items: center;
         padding: 11px 0;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        border-bottom: 1px solid var(--border-color);
         font-size: 0.85rem;
-        color: #94a3b8;
+        color: var(--text-muted);
         transition: background 0.15s;
     }
     .insight-row:last-child { border-bottom: none; }
-    .insight-row:hover { background: rgba(255,255,255,0.02); border-radius: 6px; padding-left: 6px; padding-right: 6px; }
+    .insight-row:hover { background: rgba(59, 130, 246, 0.05); border-radius: 6px; padding-left: 6px; padding-right: 6px; }
     .insight-val {
         font-weight: 700;
-        color: #e2e8f0;
+        color: var(--text-color);
         font-size: 0.9rem;
     }
 
     .divider {
         height: 1px;
-        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
+        background: linear-gradient(90deg, transparent, var(--border-color), transparent);
         margin: 28px 0;
     }
 
@@ -358,11 +532,11 @@ def apply_style():
     .stDateInput > div > div,
     .stSelectbox > div > div,
     .stMultiSelect > div > div {
-        background: #0a1228 !important;
-        background-color: #0a1228 !important;
-        border: 1px solid rgba(255, 255, 255, 0.08) !important;
+        background: var(--secondary-bg-color) !important;
+        background-color: var(--secondary-bg-color) !important;
+        border: 1px solid var(--border-color) !important;
         border-radius: 10px !important;
-        color: #e2e8f0 !important;
+        color: var(--text-color) !important;
         transition: all 0.2s ease !important;
     }
     
@@ -377,11 +551,11 @@ def apply_style():
     .stDateInput > div > div:focus-within,
     .stSelectbox > div > div:focus-within,
     .stMultiSelect > div > div:focus-within {
-        border-color: #3b82f6 !important;
-        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15) !important;
+        border-color: var(--primary-color) !important;
+        box-shadow: 0 0 0 3px var(--input-focus-shadow) !important;
     }
 
-    /* Target raw HTML input and textarea elements inside Streamlit widgets and force dark styling */
+    /* Target raw HTML input and textarea elements inside Streamlit widgets and force dynamic styling */
     [data-baseweb="base-input"] input,
     [data-baseweb="input"] input, 
     [data-baseweb="textarea"] textarea,
@@ -393,9 +567,9 @@ def apply_style():
     input, 
     textarea,
     select {
-        background-color: #0a1228 !important;
-        background: #0a1228 !important;
-        color: #e2e8f0 !important;
+        background-color: var(--secondary-bg-color) !important;
+        background: var(--secondary-bg-color) !important;
+        color: var(--text-color) !important;
         font-family: 'Inter', sans-serif !important;
         font-size: 0.88rem !important;
     }
@@ -406,15 +580,15 @@ def apply_style():
     input:-webkit-autofill:focus, 
     input:-webkit-autofill:active,
     input:-internal-autofill-selected {
-        -webkit-box-shadow: 0 0 0px 1000px #0a1228 inset !important;
-        -webkit-text-fill-color: #e2e8f0 !important;
-        box-shadow: 0 0 0px 1000px #0a1228 inset !important;
+        -webkit-box-shadow: 0 0 0px 1000px var(--secondary-bg-color) inset !important;
+        -webkit-text-fill-color: var(--text-color) !important;
+        box-shadow: 0 0 0px 1000px var(--secondary-bg-color) inset !important;
         transition: background-color 5000s ease-in-out 0s !important;
     }
 
     /* Placeholder text style override */
     input::placeholder, textarea::placeholder, [data-baseweb="input"] input::placeholder {
-        color: #64748b !important;
+        color: var(--text-muted) !important;
         opacity: 0.8 !important;
     }
 
@@ -425,29 +599,29 @@ def apply_style():
     ul[data-testid="stSelectboxVirtualDropdown"],
     ul[data-testid="stSelectboxVirtualDropdown"] *,
     div[data-baseweb="popover"] * {
-        background-color: #0a1228 !important;
-        background: #0a1228 !important;
-        color: #e2e8f0 !important;
+        background-color: var(--dropdown-bg) !important;
+        background: var(--dropdown-bg) !important;
+        color: var(--dropdown-text) !important;
     }
 
     /* Dropdown option hover & selected states */
     [role="option"]:hover,
     [role="option"][aria-selected="true"],
     [data-baseweb="popover"] li:hover {
-        background-color: #1e3a8a !important;
-        background: #1e3a8a !important;
-        color: #ffffff !important;
+        background-color: var(--dropdown-hover-bg) !important;
+        background: var(--dropdown-hover-bg) !important;
+        color: var(--dropdown-hover-text) !important;
     }
 
     /* Date picker calendar */
     [data-baseweb="calendar"] *,
     [data-baseweb="calendar"] {
-        background-color: #0a1228 !important;
-        background: #0a1228 !important;
-        color: #e2e8f0 !important;
+        background-color: var(--secondary-bg-color) !important;
+        background: var(--secondary-bg-color) !important;
+        color: var(--text-color) !important;
     }
     [data-baseweb="calendar"] [aria-selected="true"] {
-        background-color: #3b82f6 !important;
+        background-color: var(--primary-color) !important;
         color: #ffffff !important;
     }
 
@@ -466,15 +640,15 @@ def apply_style():
     .stButton > button,
     [data-testid="stFormSubmitButton"] > button {
         cursor: pointer !important;
-        background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 50%, #1d4ed8 100%) !important;
-        color: #ffffff !important;
+        background: var(--button-bg) !important;
+        color: var(--button-text) !important;
         font-family: 'Inter', sans-serif !important;
         font-weight: 600 !important;
         font-size: 0.87rem !important;
         border: none !important;
         border-radius: 10px !important;
         padding: 10px 20px !important;
-        box-shadow: 0 4px 15px rgba(37, 99, 235, 0.25) !important;
+        box-shadow: 0 4px 15px var(--button-shadow) !important;
         transition: all 0.25s ease !important;
         letter-spacing: 0.3px !important;
         position: relative !important;
@@ -493,7 +667,7 @@ def apply_style():
     .stButton > button:hover,
     [data-testid="stFormSubmitButton"] > button:hover {
         transform: translateY(-2px) !important;
-        box-shadow: 0 8px 25px rgba(37, 99, 235, 0.4) !important;
+        box-shadow: 0 8px 25px var(--button-hover-shadow) !important;
     }
     .stButton > button:active {
         transform: translateY(0) !important;
@@ -503,16 +677,17 @@ def apply_style():
        RADIO BUTTONS
     ═══════════════════════════════════════════════ */
     [data-testid="stRadio"] label {
-        background: rgba(15, 23, 42, 0.6) !important;
-        border: 1px solid rgba(255,255,255,0.07) !important;
+        background: var(--card-bg) !important;
+        border: 1px solid var(--border-color) !important;
         border-radius: 8px !important;
         padding: 6px 14px !important;
         cursor: pointer !important;
         transition: all 0.2s ease !important;
         font-size: 0.83rem !important;
+        color: var(--text-color) !important;
     }
     [data-testid="stRadio"] label:hover {
-        border-color: rgba(59, 130, 246, 0.3) !important;
+        border-color: var(--primary-color) !important;
         background: rgba(59, 130, 246, 0.08) !important;
     }
 
@@ -520,10 +695,10 @@ def apply_style():
        DATAFRAME / TABLES
     ═══════════════════════════════════════════════ */
     [data-testid="stDataFrame"] {
-        border: 1px solid rgba(255, 255, 255, 0.07) !important;
+        border: 1px solid var(--border-color) !important;
         border-radius: 14px !important;
         overflow: hidden !important;
-        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2) !important;
+        box-shadow: 0 8px 30px var(--card-hover-shadow) !important;
     }
     [data-testid="stDataFrame"] table {
         border-collapse: separate !important;
@@ -535,8 +710,9 @@ def apply_style():
     ═══════════════════════════════════════════════ */
     [data-testid="stAlert"] {
         border-radius: 12px !important;
-        border: 1px solid rgba(255,255,255,0.07) !important;
+        border: 1px solid var(--border-color) !important;
         backdrop-filter: blur(8px) !important;
+        color: var(--text-color) !important;
     }
 
     /* ═══════════════════════════════════════════════
@@ -550,7 +726,7 @@ def apply_style():
        SPINNER
     ═══════════════════════════════════════════════ */
     [data-testid="stSpinner"] > div {
-        border-color: #3b82f6 transparent transparent transparent !important;
+        border-color: var(--primary-color) transparent transparent transparent !important;
     }
 
     /* ═══════════════════════════════════════════════
@@ -562,8 +738,8 @@ def apply_style():
     [data-testid="stPlotlyChart"] {
         border-radius: 14px !important;
         overflow: visible !important;
-        border: 1px solid rgba(255,255,255,0.05) !important;
-        background: rgba(10, 15, 30, 0.5) !important;
+        border: 1px solid var(--border-color) !important;
+        background: var(--card-bg) !important;
         backdrop-filter: blur(10px);
     }
     /* The inner SVG/canvas must still stay clipped to its own bounds */
@@ -623,7 +799,7 @@ def apply_style():
        SCROLLBAR
     ═══════════════════════════════════════════════ */
     ::-webkit-scrollbar { width: 5px; height: 5px; }
-    ::-webkit-scrollbar-track { background: rgba(255,255,255,0.02); border-radius: 10px; }
+    ::-webkit-scrollbar-track { background: rgba(59,130,246,0.02); border-radius: 10px; }
     ::-webkit-scrollbar-thumb { background: rgba(59,130,246,0.25); border-radius: 10px; }
     ::-webkit-scrollbar-thumb:hover { background: rgba(59,130,246,0.5); }
 
@@ -701,29 +877,21 @@ def ensure_auth(allowed_roles=None):
 
 def sidebar_logo():
     st.sidebar.markdown("""
-    <div style='display:flex;align-items:center;gap:12px;padding:4px 0 8px 0;'>
-        <div style='
-            width:40px;height:40px;
-            background:linear-gradient(135deg,#1e3a8a,#3b82f6);
-            border-radius:12px;display:flex;align-items:center;
-            justify-content:center;font-size:20px;flex-shrink:0;
-            box-shadow:0 4px 16px rgba(59,130,246,0.4);
-        '>🏔️</div>
+    <div class='sidebar-logo-container'>
+        <div class='sidebar-logo-icon'>🏔️</div>
         <div>
-            <div style='font-size:0.7rem;font-weight:700;letter-spacing:3px;
-                        text-transform:uppercase;color:#3b82f6;line-height:1;'>Kashmir</div>
-            <div style='font-size:1.1rem;font-weight:800;
-                        color:#f1f5f9;line-height:1.3;letter-spacing:-0.3px;'>Analytics</div>
+            <div class='sidebar-logo-sub'>Kashmir</div>
+            <div class='sidebar-logo-main'>Analytics</div>
         </div>
     </div>
-    <div style='height:1px;background:linear-gradient(90deg,rgba(59,130,246,0.4),transparent);margin-bottom:4px;'></div>
+    <div class='sidebar-logo-divider'></div>
     """, unsafe_allow_html=True)
 
 
 def render_custom_navigation():
     st.markdown("""
     <div style='margin-top:14px;margin-bottom:6px;'>
-        <span style='font-size:0.65rem;color:#475569;text-transform:uppercase;letter-spacing:1.5px;font-weight:600;'>Navigation</span>
+        <span style='font-size:0.65rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:1.5px;font-weight:600;'>Navigation</span>
     </div>
     """, unsafe_allow_html=True)
     st.page_link("app.py", label="Dashboard", icon="📊")
@@ -743,31 +911,16 @@ def render_sidebar(hotel):
 
         plan_label = "Full Access" if hotel.get("hotel_id") == "ADMIN" else hotel.get("plan", "Basic").title()
         st.markdown(f"""
-        <div style='
-            background:linear-gradient(135deg,rgba(15,23,42,0.9),rgba(20,30,60,0.8));
-            border:1px solid rgba(59,130,246,0.15);
-            border-radius:12px;padding:14px 16px;margin:12px 0;
-            box-shadow:0 4px 20px rgba(0,0,0,0.2);
-        '>
-            <div style='font-size:0.65rem;color:#475569;text-transform:uppercase;
-                        letter-spacing:1.5px;margin-bottom:5px;'>Logged in as</div>
-            <div style='font-size:0.95rem;font-weight:700;color:#f1f5f9;'>{hotel["name"]}</div>
-            <div style='
-                display:inline-block;margin-top:5px;font-size:0.65rem;font-weight:700;
-                background:linear-gradient(135deg,rgba(37,99,235,0.2),rgba(59,130,246,0.1));
-                color:#60a5fa;border:1px solid rgba(59,130,246,0.25);
-                border-radius:20px;padding:2px 10px;text-transform:uppercase;letter-spacing:1px;
-            '>{plan_label} Plan</div>
+        <div class='logged-in-box'>
+            <div class='logged-in-box-label'>Logged in as</div>
+            <div class='logged-in-box-name'>{hotel["name"]}</div>
+            <div class='logged-in-box-plan'>{plan_label} Plan</div>
         </div>
         """, unsafe_allow_html=True)
 
         st.divider()
         st.markdown("""<a href='https://wa.me/918491828292' target='_blank' style='text-decoration:none;'>
-            <button style='width:100%;border-radius:10px;padding:11px;
-                           background:linear-gradient(135deg,#16a34a,#25d366);
-                           color:white;border:none;cursor:pointer;font-weight:600;
-                           font-size:0.85rem;box-shadow:0 4px 14px rgba(37,211,102,0.25);
-                           transition:all 0.2s;'>
+            <button class='support-btn'>
                 💬 Contact Support
             </button></a>""", unsafe_allow_html=True)
         st.markdown("<div style='height:8px;'></div>", unsafe_allow_html=True)

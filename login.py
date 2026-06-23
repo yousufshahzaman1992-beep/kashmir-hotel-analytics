@@ -18,8 +18,48 @@ def show_login():
     [data-testid="stSidebarNav"],
     button[kind="headerNoPadding"] { display: none !important; }
 
+    :root, [data-theme="dark"] {
+        --login-bg: linear-gradient(135deg, #0f172a 0%, #1e3a5f 50%, #0f172a 100%);
+        --login-card-bg: rgba(15, 23, 42, 0.95);
+        --login-card-border: rgba(255,255,255,0.08);
+        --login-text-primary: #f8fafc;
+        --login-text-secondary: #94a3b8;
+        --login-text-muted: #64748b;
+        --login-badge-bg: rgba(59,130,246,0.08);
+        --login-badge-border: rgba(59,130,246,0.2);
+        --login-badge-text: #93c5fd;
+        --login-input-bg: #0a1228;
+        --login-input-border: rgba(255,255,255,0.12);
+        --login-button-bg: linear-gradient(135deg, #1e3a8a 0%, #2563eb 50%, #1d4ed8 100%);
+        --login-button-text: #ffffff;
+        --login-button-shadow: rgba(59, 130, 246, 0.4);
+        --login-chip-bg: rgba(255,255,255,0.05);
+        --login-chip-border: rgba(255,255,255,0.08);
+        --login-shadow: rgba(0,0,0,0.35);
+    }
+    
+    [data-theme="light"] {
+        --login-bg: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 50%, #f8fafc 100%);
+        --login-card-bg: rgba(255,255,255,0.95);
+        --login-card-border: rgba(0,0,0,0.08);
+        --login-text-primary: #0f172a;
+        --login-text-secondary: #475569;
+        --login-text-muted: #64748b;
+        --login-badge-bg: rgba(37,99,235,0.05);
+        --login-badge-border: rgba(37,99,235,0.15);
+        --login-badge-text: #2563eb;
+        --login-input-bg: #ffffff;
+        --login-input-border: rgba(0,0,0,0.12);
+        --login-button-bg: linear-gradient(135deg, #2563eb 0%, #3b82f6 50%, #1d4ed8 100%);
+        --login-button-text: #ffffff;
+        --login-button-shadow: rgba(37, 99, 235, 0.2);
+        --login-chip-bg: rgba(0,0,0,0.03);
+        --login-chip-border: rgba(0,0,0,0.06);
+        --login-shadow: rgba(0,0,0,0.08);
+    }
+
     .stApp {
-        background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 50%, #0f172a 100%) !important;
+        background: var(--login-bg) !important;
         min-height: 100vh;
     }
     .block-container {
@@ -32,21 +72,21 @@ def show_login():
         display: inline-flex;
         align-items: center;
         gap: 8px;
-        background: rgba(59,130,246,0.08);
-        border: 1px solid rgba(59,130,246,0.2);
+        background: var(--login-badge-bg);
+        border: 1px solid var(--login-badge-border);
         backdrop-filter: blur(10px);
         border-radius: 100px;
         padding: 6px 16px;
         font-size: 0.75rem;
-        color: #93c5fd;
+        color: var(--login-badge-text);
         letter-spacing: 0.5px;
     }
     .lg-dot {
         width: 6px; height: 6px;
-        background: #3b82f6;
+        background: var(--login-badge-text);
         border-radius: 50%;
         display: inline-block;
-        box-shadow: 0 0 6px #3b82f6;
+        box-shadow: 0 0 6px var(--login-badge-text);
     }
     .lg-logo { text-align: center; margin-bottom: 32px; }
     .lg-icon {
@@ -54,36 +94,36 @@ def show_login():
         align-items: center;
         justify-content: center;
         width: 64px; height: 64px;
-        background: linear-gradient(135deg, #1d4ed8, #60a5fa);
+        background: var(--login-button-bg);
         border-radius: 18px;
         font-size: 32px;
-        box-shadow: 0 0 0 1px rgba(59,130,246,0.3),
-                    0 8px 32px rgba(59,130,246,0.5);
+        box-shadow: 0 0 0 1px var(--login-badge-border),
+                    0 8px 32px var(--login-button-shadow);
         margin-bottom: 16px;
     }
     .lg-name {
         font-size: 1.5rem; font-weight: 700;
-        color: #f8fafc; letter-spacing: -0.5px; margin-bottom: 4px;
+        color: var(--login-text-primary); letter-spacing: -0.5px; margin-bottom: 4px;
     }
-    .lg-tagline { font-size: 0.82rem; color: #64748b; letter-spacing: 0.3px; }
+    .lg-tagline { font-size: 0.82rem; color: var(--login-text-muted); letter-spacing: 0.3px; }
     [data-testid="stForm"] {
-        background: rgba(255,255,255,0.03) !important;
+        background: var(--login-card-bg) !important;
         backdrop-filter: blur(20px) !important;
         -webkit-backdrop-filter: blur(20px) !important;
-        border: 1px solid rgba(255,255,255,0.1) !important;
+        border: 1px solid var(--login-card-border) !important;
         border-radius: 20px !important;
         padding: 32px 36px !important;
-        box-shadow: 0 8px 32px rgba(0,0,0,0.2) !important;
+        box-shadow: 0 8px 32px var(--login-shadow) !important;
         margin-bottom: 24px !important;
     }
     .lg-card-title {
         font-size: 1.25rem; font-weight: 700;
-        color: #f8fafc; margin-bottom: 6px; letter-spacing: -0.4px;
+        color: var(--login-text-primary); margin-bottom: 6px; letter-spacing: -0.4px;
     }
-    .lg-card-sub { font-size: 0.85rem; color: #94a3b8; margin-bottom: 24px; }
+    .lg-card-sub { font-size: 0.85rem; color: var(--login-text-secondary); margin-bottom: 24px; }
     .lg-contact {
-        background: rgba(59,130,246,0.07);
-        border: 1px solid rgba(59,130,246,0.2);
+        background: var(--login-badge-bg);
+        border: 1px solid var(--login-badge-border);
         border-radius: 12px;
         padding: 16px 20px;
         text-align: center;
@@ -92,19 +132,19 @@ def show_login():
     .lg-contact-title {
         font-size: 0.85rem;
         font-weight: 600;
-        color: #93c5fd;
+        color: var(--login-badge-text);
         margin-bottom: 6px;
     }
     .lg-contact-text {
         font-size: 0.78rem;
-        color: #64748b;
+        color: var(--login-text-muted);
         line-height: 1.6;
     }
-    .lg-contact-email { color: #3b82f6; font-weight: 500; }
+    .lg-contact-email { color: var(--login-badge-text); font-weight: 500; }
     input[type="text"], input[type="password"] {
-        background: var(--secondary-background-color) !important;
-        border: 1px solid rgba(255,255,255,0.12) !important;
-        color: var(--text-color) !important;
+        background: var(--login-input-bg) !important;
+        border: 1px solid var(--login-input-border) !important;
+        color: var(--login-text-primary) !important;
         border-radius: 10px !important;
     }
     input[type="text"]:-webkit-autofill,
@@ -115,34 +155,34 @@ def show_login():
     input[type="password"]:-webkit-autofill:hover, 
     input[type="password"]:-webkit-autofill:focus, 
     input[type="password"]:-webkit-autofill:active {
-        -webkit-box-shadow: 0 0 0 1000px var(--secondary-background-color) inset !important;
-        -webkit-text-fill-color: var(--text-color) !important;
-        box-shadow: 0 0 0 1000px var(--secondary-background-color) inset !important;
+        -webkit-box-shadow: 0 0 0 1000px var(--login-input-bg) inset !important;
+        -webkit-text-fill-color: var(--login-text-primary) !important;
+        box-shadow: 0 0 0 1000px var(--login-input-bg) inset !important;
         transition: background-color 5000s ease-in-out 0s !important;
     }
     input[type="text"]:focus, input[type="password"]:focus {
-        border-color: rgba(59,130,246,0.6) !important;
-        box-shadow: 0 0 0 3px rgba(59,130,246,0.15) !important;
+        border-color: var(--login-badge-text) !important;
+        box-shadow: 0 0 0 3px var(--login-badge-border) !important;
     }
     label[data-testid="stWidgetLabel"] p {
-        color: #94a3b8 !important;
+        color: var(--login-text-secondary) !important;
         font-size: 0.8rem !important;
         font-weight: 500 !important;
     }
     .stFormSubmitButton > button {
-        background: linear-gradient(135deg, #1d4ed8, #3b82f6) !important;
-        color: #ffffff !important;
+        background: var(--login-button-bg) !important;
+        color: var(--login-button-text) !important;
         border: none !important;
         border-radius: 10px !important;
         font-size: 0.9rem !important;
         font-weight: 700 !important;
         letter-spacing: 0.4px !important;
         padding: 14px !important;
-        box-shadow: 0 4px 16px rgba(59,130,246,0.4) !important;
+        box-shadow: 0 4px 16px var(--login-button-shadow) !important;
         margin-top: 6px !important;
     }
     .stFormSubmitButton > button:hover {
-        box-shadow: 0 6px 24px rgba(59,130,246,0.55) !important;
+        box-shadow: 0 6px 24px var(--login-button-shadow) !important;
         transform: translateY(-1px) !important;
     }
     .lg-features {
@@ -151,14 +191,14 @@ def show_login():
     }
     .lg-chip {
         display: inline-flex; align-items: center; gap: 5px;
-        background: rgba(255,255,255,0.05);
-        border: 1px solid rgba(255,255,255,0.08);
+        background: var(--login-chip-bg);
+        border: 1px solid var(--login-chip-border);
         border-radius: 100px; padding: 5px 12px;
-        font-size: 0.72rem; color: #64748b;
+        font-size: 0.72rem; color: var(--login-text-muted);
     }
     .lg-footer {
         text-align: center; font-size: 0.72rem;
-        color: #64748b; margin-top: 20px;
+        color: var(--login-text-muted); margin-top: 20px;
         line-height: 2;
     }
     </style>

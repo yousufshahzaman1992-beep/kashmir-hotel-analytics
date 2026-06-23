@@ -21,28 +21,15 @@ with st.sidebar:
     render_custom_navigation()
     st.divider()
     st.markdown("""
-    <div style='
-        background:linear-gradient(135deg,rgba(15,23,42,0.9),rgba(20,30,60,0.8));
-        border:1px solid rgba(239,68,68,0.2);border-radius:12px;
-        padding:14px 16px;margin-bottom:12px;
-    '>
-        <div style='font-size:0.65rem;color:#475569;text-transform:uppercase;
-                    letter-spacing:1.5px;margin-bottom:5px;'>Session</div>
-        <div style='font-size:0.95rem;font-weight:700;color:#f1f5f9;'>Administrator</div>
-        <div style='
-            display:inline-block;margin-top:5px;font-size:0.65rem;font-weight:700;
-            background:rgba(239,68,68,0.15);color:#f87171;
-            border:1px solid rgba(239,68,68,0.3);
-            border-radius:20px;padding:2px 10px;text-transform:uppercase;letter-spacing:1px;
-        '>⚡ Full Access</div>
+    <div class='logged-in-box'>
+        <div class='logged-in-box-label'>Session</div>
+        <div class='logged-in-box-name'>Administrator</div>
+        <div class='logged-in-box-plan' style='background:rgba(239,68,68,0.15);color:#f87171;border:1px solid rgba(239,68,68,0.3);'>⚡ Full Access</div>
     </div>
     """, unsafe_allow_html=True)
     st.divider()
     st.markdown("""<a href='https://wa.me/918491828292' target='_blank' style='text-decoration:none;'>
-        <button style='width:100%;border-radius:10px;padding:11px;
-                       background:linear-gradient(135deg,#16a34a,#25d366);
-                       color:white;border:none;cursor:pointer;font-weight:600;
-                       font-size:0.85rem;box-shadow:0 4px 14px rgba(37,211,102,0.25);'>
+        <button class='support-btn'>
             💬 Contact Support
         </button></a>""", unsafe_allow_html=True)
     st.markdown("<div style='height:8px;'></div>", unsafe_allow_html=True)
@@ -152,13 +139,13 @@ with tab1:
 
     # Info card
     st.markdown("""
-    <div style='background:rgba(59,130,246,0.06);border:1px solid rgba(59,130,246,0.2);
+    <div style='background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.2);
                 border-radius:12px;padding:14px 18px;margin-bottom:20px;'>
-        <div style='font-size:0.85rem;color:#93c5fd;font-weight:600;margin-bottom:4px;'>
+        <div style='font-size:0.85rem;color:var(--primary-color);font-weight:600;margin-bottom:4px;'>
             📧 How it works
         </div>
-        <div style='font-size:0.82rem;color:#64748b;line-height:1.6;'>
-            Fill in the hotel details below and click <b style='color:#e2e8f0;'>Add Hotel &amp; Send Invite</b>.
+        <div style='font-size:0.82rem;color:var(--text-muted);line-height:1.6;'>
+            Fill in the hotel details below and click <b style='color:var(--text-color);'>Add Hotel &amp; Send Invite</b>.
             The hotel owner will receive an email with a link to set up their username and password.
         </div>
     </div>
@@ -211,15 +198,15 @@ with tab2:
         selected_data = hotels_df[hotels_df["hotel_id"] == selected_id].iloc[0]
 
         st.markdown(f"""
-        <div style='background:rgba(15,23,42,0.6);border:1px solid rgba(255,255,255,0.06);
+        <div style='background:var(--secondary-bg-color);border:1px solid var(--border-color);
                     border-radius:10px;padding:12px 16px;margin-bottom:16px;
                     display:flex;gap:24px;flex-wrap:wrap;'>
-            <div><span style='color:#475569;font-size:0.75rem;'>Hotel ID</span>
-                 <div style='color:#93c5fd;font-weight:600;'>{selected_id}</div></div>
-            <div><span style='color:#475569;font-size:0.75rem;'>Current Plan</span>
-                 <div style='color:#e2e8f0;font-weight:600;'>{selected_data.get("plan","basic").title()}</div></div>
-            <div><span style='color:#475569;font-size:0.75rem;'>Email</span>
-                 <div style='color:#e2e8f0;font-weight:600;'>{selected_data.get("email","—")}</div></div>
+            <div><span style='color:var(--text-muted);font-size:0.75rem;'>Hotel ID</span>
+                 <div style='color:var(--primary-color);font-weight:600;'>{selected_id}</div></div>
+            <div><span style='color:var(--text-muted);font-size:0.75rem;'>Current Plan</span>
+                 <div style='color:var(--text-color);font-weight:600;'>{selected_data.get("plan","basic").title()}</div></div>
+            <div><span style='color:var(--text-muted);font-size:0.75rem;'>Email</span>
+                 <div style='color:var(--text-color);font-weight:600;'>{selected_data.get("email","—")}</div></div>
         </div>
         """, unsafe_allow_html=True)
 
@@ -265,13 +252,13 @@ with tab3:
         del_id   = hotel_options_del[del_name]
 
         st.markdown(f"""
-        <div style='background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.2);
+        <div style='background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);
                     border-radius:12px;padding:14px 18px;margin:16px 0;'>
             <div style='font-size:0.85rem;color:#f87171;font-weight:600;margin-bottom:4px;'>
                 ⚠️ Destructive Action
             </div>
-            <div style='font-size:0.82rem;color:#94a3b8;line-height:1.6;'>
-                Deleting <b style='color:#e2e8f0;'>{del_name}</b> will permanently remove their account
+            <div style='font-size:0.82rem;color:var(--text-muted);line-height:1.6;'>
+                Deleting <b style='color:var(--text-color);'>{del_name}</b> will permanently remove their account
                 and login access. Their booking records will <b>NOT</b> be deleted.
                 This cannot be undone.
             </div>
