@@ -851,21 +851,89 @@ with tab_risk:
         </div>
         """, unsafe_allow_html=True)
 
-    with g2:
-        st.markdown("<div class='section-title'>Route Cancellation Probability by Month</div>", unsafe_allow_html=True)
-        months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
-        cancel_prob = [72, 68, 45, 20, 15, 10, 8, 12, 18, 30, 55, 78]
-        colors_bar = ["#ef4444" if p >= 60 else "#f59e0b" if p >= 30 else "#10b981" for p in cancel_prob]
-        fig_cancel = go.Figure(go.Bar(
-            x=months, y=cancel_prob,
-            marker_color=colors_bar,
-            text=[f"{p}%" for p in cancel_prob],
-            textposition="outside",
-            hovertemplate="<b>%{x}</b>: %{y}% cancellation risk<extra></extra>"
-        ))
-        fig_cancel.update_layout(**CHART)
-        fig_cancel.update_yaxes(range=[0, 100], ticksuffix="%", gridcolor="rgba(255,255,255,0.05)", showline=False, zeroline=False)
-        st.plotly_chart(fig_cancel, use_container_width=True)
+        st.markdown("<div class='section-title'>💬 Guest Outreach — Send WhatsApp Messages</div>", unsafe_allow_html=True)
+    st.markdown("<p style='font-size:0.85rem;color:var(--text-muted);margin-bottom:16px;'>Select any guest to send them a proactive WhatsApp message. Upcoming bookings are shown first.</p>", unsafe_allow_html=True)
+
+    today = date.today()
+    arriving_bookings = pd.DataFrame()
+    if not df.empty and "Check-in" in df.columns:
+        try:
+            df["Check-in-dt"] = pd.to_datetime(df["Check-in"], errors="coerce")
+
+            # Try upcoming (next 30 days) first
+            upcoming = df[
+                df["Check-in-dt"].dt.date >= today
+            ].copy().sort_values("Check-in-dt")
+
+            if not upcoming.empty:
+                arriving_bookings = upcoming
+            else:
+                # Fallback: show all bookings sorted by most recent check-in
+                arriving_bookings = df.dropna(subset=["Check-in-dt"]).copy().sort_values(
+                    "Check-in-dt", ascending=False
+                )
+        except Exception:
+            arriving_bookings = df.copy() if not df.empty else pd.DataFrame()
+
+    if not arriving_bookings.empty:
+        selected_guest = st.selectbox(
+            "Select guest to contact:",
+            options=arriving_bookings.index.tolist(),
+            format_func=lambda i: (
+                f"📅 {arriving_bookings.loc[i, 'Guest Name']} — Check-in: {arriving_bookings.loc[i, 'Check-in']}"
+            )
+        )
+        guest_row = arriving_bookings.loc[selected_guest]
+        guest_name = guest_row.get("Guest Name", "Guest")
+        guest_checkin = guest_row.get("Check-in", "soon")
+        guest_phone = str(guest_row.get("Phone", "")).replace("+", "").strip()
+
+        msg_type = st.radio(
+            "Message type:",
+            ["✈️ Flight Delay Alert", "🌡️ Weather Warning", "🏨 Arrival Reminder", "✏️ Custom"],
+            horizontal=True
+        )
+
+        if msg_type == "✈️ Flight Delay Alert":
+            custom_message = (
+                f"Dear {guest_name}, we at {hotel_name} wanted to inform you that Srinagar airport "
+                f"is experiencing flight delays due to adverse weather. Please contact your airline directly. "
+                f"We are ready to accommodate your adjusted arrival. Stay safe! 🏔️"
+            )
+        elif msg_type == "🌡️ Weather Warning":
+            custom_message = (
+                f"Dear {guest_name}, Srinagar is experiencing heavy snowfall this week. Your room at "
+                f"{hotel_name} is warm and fully prepared for your stay. We recommend packing thermal wear. "
+                f"Looking forward to hosting you on {guest_checkin}! ❄️"
+            )
+        elif msg_type == "🏨 Arrival Reminder":
+            custom_message = (
+                f"Dear {guest_name}, this is a friendly reminder from {hotel_name}. "
+                f"We are excited to welcome you on {guest_checkin}. "
+                f"Our team is ready to ensure a memorable stay. Please let us know your ETA. 🙏"
+            )
+        else:
+            custom_message = f"Dear {guest_name}, "
+
+        edited_message = st.text_area("✏️ Edit before sending:", value=custom_message, height=120)
+
+        if guest_phone and guest_phone != "nan":
+            encoded_msg = urllib.parse.quote(edited_message)
+            wa_url = f"https://wa.me/{guest_phone}?text={encoded_msg}"
+            st.markdown(f"""
+                <a href="{wa_url}" target="_blank" style="text-decoration:none;">
+                    <button style="width:100%; border-radius:10px; padding:12px; background:#25d366;
+                                   color:white; border:none; cursor:pointer; font-weight:600;
+                                   font-size:0.95rem; margin-top:8px;
+                                   box-shadow:0 4px 14px rgba(37,211,102,0.25);">
+                        💬 Send via WhatsApp to {guest_name}
+                    </button>
+                </a>
+            """, unsafe_allow_html=True)
+        else:
+            st.warning("⚠️ This guest has no valid phone number on record.")
+    else:
+        st.info("No bookings found. Add your first booking via the **Add Booking** page to enable guest outreach.")
 
     st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
 
