@@ -574,41 +574,81 @@ with tab_reviews:
 
                 st.markdown(f"""
                 <div class='review-sentiment-box'>
-                    <div class='flex-row'>
-                        <span style='font-size:0.8rem; color:var(--text-muted);'>Live Sentiment Score: <b>{score}</b></span>
-                        <span style='color:{text_color}; font-weight:700; font-size:0.9rem;'>{live_sent}</span>
-                    </div>
-                    <div style='margin-top:6px; font-size:0.8rem; color:var(--text-muted);
-                                display:flex; align-items:center; gap:6px; flex-wrap:wrap;'>
-                        <span>Aspects:</span>
-                        <div style='display:flex; gap:4px; flex-wrap:wrap;'>
-                            {" ".join([f"<span class='review-aspect-badge'>{a}</span>" for a in live_aspects])}
-                        </div>
-                    </div>
-                </div>
-                """, unsafe_allow_html=True)
+# ─────────────────────────────────────────────────────────────
+# REPLACE the entire "with col_sync:" block in app.py tab_reviews
+# with this simpler version — admin manages URLs, background
+# worker syncs automatically, hotel just sees the results.
+# ─────────────────────────────────────────────────────────────
 
-                with st.expander("✏️ Guest Metadata & Save Document", expanded=False):
-                    m_guest_name = st.text_input("Guest Name", value="Guest Name", placeholder="e.g. John Doe")
-                    m_source     = st.selectbox("Review Source", ["Google","Booking.com","Agoda","MakeMyTrip","Direct Customer"])
-                    m_date       = st.date_input("Review Date", value=date.today())
+with col_sync:
+    st.markdown(
+        "<p style='font-weight:600; color:var(--text-color); margin-bottom:8px; font-size:0.95rem;'>"
+        "⚡ OTA Review Sync Status</p>",
+        unsafe_allow_html=True
+    )
 
-                    if st.button("📥 Save Review to Firebase", use_container_width=True):
-                        if not m_review_text.strip():
-                            st.error("Please enter some review text first.")
-                        else:
-                            save_review_to_firebase({
-                                "hotel_id":    hotel_id,
-                                "guest_name":  m_guest_name.strip(),
-                                "rating":      int(m_rating),
-                                "review_text": m_review_text.strip(),
-                                "source":      m_source,
-                                "date":        m_date.strftime("%Y-%m-%d"),
-                            })
-                            st.success("Review saved and live charts updated!")
-                            st.rerun()
+    # Connected platform status (read-only for hotel user)
+    h_booking_url    = hotel.get("booking_review_url", "")
+    h_agoda_url      = hotel.get("agoda_review_url", "")
+    h_mmt_url        = hotel.get("mmt_review_url", "") or hotel.get("mmt_url", "")
+    h_google_place_id = hotel.get("google_place_id", "")
 
-    st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
+    status_items = []
+    if h_booking_url:    status_items.append("🟢 Booking.com")
+    else:                status_items.append("⚪ Booking.com")
+    if h_agoda_url:      status_items.append("🟢 Agoda")
+    else:                status_items.append("⚪ Agoda")
+    if h_mmt_url:        status_items.append("🟢 MakeMyTrip")
+    else:                status_items.append("⚪ MakeMyTrip")
+    if h_google_place_id: status_items.append("🟢 Google Places")
+    else:                status_items.append("⚪ Google Places")
+
+    st.markdown(f"""
+    <div style='background:var(--secondary-bg-color); border:1px solid var(--border-color);
+                border-radius:8px; padding:10px 12px; margin-bottom:12px;'>
+        <div style='font-size:0.75rem; color:var(--text-muted); text-transform:uppercase;
+                    letter-spacing:0.5px; margin-bottom:6px;'>Connected Platforms</div>
+        <div style='font-size:0.8rem; display:flex; gap:10px; flex-wrap:wrap; color:var(--text-color);'>
+            {" | ".join(status_items)}
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # Show how many reviews are in Firebase
+    total_in_db = len(reviews_raw) if reviews_raw else 0
+    any_configured = any([h_booking_url, h_agoda_url, h_mmt_url, h_google_place_id])
+
+    if any_configured:
+        st.markdown(f"""
+        <div style='background:rgba(16,185,129,0.08); border:1px solid rgba(16,185,129,0.2);
+                    border-radius:8px; padding:12px; margin-bottom:12px;'>
+            <div style='font-size:0.85rem; color:#10b981; font-weight:600; margin-bottom:4px;'>
+                ✅ Auto-Sync Active
+            </div>
+            <div style='font-size:0.78rem; color:var(--text-muted);'>
+                Reviews sync automatically every 6 hours from all connected OTA platforms.
+                <b>{total_in_db}</b> reviews currently in your database.
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+    else:
+        st.markdown("""
+        <div style='background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.2);
+                    border-radius:8px; padding:12px; margin-bottom:12px;'>
+            <div style='font-size:0.85rem; color:#f59e0b; font-weight:600; margin-bottom:4px;'>
+                ⚠️ No OTA Platforms Configured
+            </div>
+            <div style='font-size:0.78rem; color:var(--text-muted);'>
+                Contact your administrator to connect your Booking.com, Agoda, and Google profiles.
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    # Manual refresh — just reloads from Firebase (instant, no scraping)
+    if st.button("🔄 Refresh Reviews", use_container_width=True):
+        st.cache_data.clear()
+        st.rerun()
+
 
     processed_reviews = []
     for r in reviews_raw:
