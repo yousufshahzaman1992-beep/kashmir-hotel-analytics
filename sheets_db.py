@@ -774,3 +774,19 @@ def get_srinagar_live_risk_data():
                 }
             ]
         }
+# ── Operational Checklist ─────────────────────────────────
+def load_checklist(hotel_id: str) -> dict:
+    db = get_db()
+    hotel_id = str(hotel_id).strip().upper()
+    doc = db.collection("checklists").document(hotel_id).get()
+    if doc.exists:
+        return doc.to_dict()
+    return {}
+
+
+def save_checklist(hotel_id: str, checklist_state: dict):
+    db = get_db()
+    hotel_id = str(hotel_id).strip().upper()
+    db.collection("checklists").document(hotel_id).set(
+        checklist_state, merge=True
+    )
