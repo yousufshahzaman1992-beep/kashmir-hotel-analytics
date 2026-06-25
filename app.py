@@ -5,7 +5,7 @@ import plotly.express as px
 import os
 import urllib.parse
 import sys
-from datetime import date, datetime
+from datetime import date
 
 project_root = os.path.abspath(os.path.dirname(__file__))
 if project_root not in sys.path:
@@ -20,8 +20,6 @@ from sheets_db import (
     update_hotel_ota_links,
     sync_hotel_reviews,
     get_srinagar_live_risk_data,
-    load_checklist,
-    save_checklist,
 )
 from login import show_login
 from style import apply_style, sidebar_logo, render_custom_navigation
@@ -40,6 +38,8 @@ st.set_page_config(
 )
 
 # ── Flash prevention: hide sidebar & nav instantly on every load ──
+# This runs synchronously before any Python auth logic, preventing
+# the sidebar from flickering visible for a frame on page refresh.
 if not st.session_state.get("logged_in"):
     st.markdown("""
         <style>
@@ -77,15 +77,16 @@ CHART = dict(
         font_family="Inter", bordercolor="rgba(59,130,246,0.3)"
     ),
 )
-BLUES          = [[0, "#bfdbfe"], [1, "#2563eb"]]
+BLUES      = [[0, "#bfdbfe"], [1, "#2563eb"]]
 VIBRANT_PURPLE = "#8b5cf6"
-COLOR_SEQ      = ["#3b82f6", "#8b5cf6", "#06b6d4", "#10b981", "#f59e0b", "#ef4444"]
+COLOR_SEQ  = ["#3b82f6", "#8b5cf6", "#06b6d4", "#10b981", "#f59e0b", "#ef4444"]
 
 # ══════════════════════════════════════════════════════════
 # NOT LOGGED IN — handle invite links + session restore
 # ══════════════════════════════════════════════════════════
 if not st.session_state.get("logged_in"):
 
+    # Hide sidebar while not logged in
     st.markdown("""
         <style>
             section[data-testid="stSidebar"],
@@ -93,12 +94,14 @@ if not st.session_state.get("logged_in"):
         </style>
     """, unsafe_allow_html=True)
 
+    # Handle invite link
     invite_token = st.query_params.get("invite")
     if invite_token:
         st.session_state["invite_token"] = invite_token
         st.switch_page("pages/4_Setup_Account.py")
         st.stop()
 
+    # Restore session from URL
     hid = st.query_params.get("hid")
     if hid:
         if hid == "ADMIN":
@@ -122,8 +125,10 @@ hotel      = st.session_state.hotel
 hotel_id   = hotel["hotel_id"]
 hotel_name = hotel["name"]
 
+# Persist session in URL
 st.query_params["hid"] = hotel_id
 
+# Hide admin pages from non-admin users
 if hotel_id != "ADMIN":
     st.markdown("""
     <style>
@@ -174,9 +179,8 @@ with st.sidebar:
     st.divider()
 
     if st.button("🚪 Logout", use_container_width=True):
-        st.session_state.logged_in      = False
-        st.session_state.hotel          = None
-        st.session_state.pop("checklist_state", None)
+        st.session_state.logged_in = False
+        st.session_state.hotel     = None
         st.query_params.clear()
         st.cache_data.clear()
         st.rerun()
@@ -195,10 +199,11 @@ if hotel_id == "ADMIN":
 df = load_bookings(hotel_id)
 
 # ── Header ────────────────────────────────────────────────
-hc1, hc2 = st.columns([5, 1])
+hc1, hc2 = st.columns([5,1])
 with hc1:
     st.markdown(f"<p class='page-title'>{hotel_name}</p>", unsafe_allow_html=True)
-    st.markdown("<p class='page-sub'>Revenue & Occupancy Dashboard</p>", unsafe_allow_html=True)
+    st.markdown("<p class='page-sub'>Revenue & Occupancy Dashboard</p>",
+                unsafe_allow_html=True)
 with hc2:
     st.markdown(f"<br><span class='badge'>{season}</span>", unsafe_allow_html=True)
 
@@ -223,7 +228,7 @@ total_rev    = int(fdf["Amount (₹)"].sum())
 total_book   = len(fdf)
 total_nights = int(fdf["Nights"].sum())
 avg_nights   = round(fdf["Nights"].mean(), 1) if total_book else 0
-avg_book     = int(fdf["Amount (₹)"].mean())   if total_book else 0
+avg_book     = int(fdf["Amount (₹)"].mean())  if total_book else 0
 
 # ── Premium KPIs ──────────────────────────────────────────
 total_commission = fdf["commission_paid"].sum()
@@ -231,7 +236,7 @@ net_revenue      = total_rev - total_commission
 adr              = net_revenue / total_nights if total_nights > 0 else 0
 occupancy_rate   = (total_nights / (30 * 30)) * 100
 
-# ── Tabs ──────────────────────────────────────────────────
+# ── Create top-level dashboard tabs ──
 tab_overview, tab_bookings, tab_reviews, tab_risk = st.tabs([
     "📊 Financial Overview",
     "📋 Bookings & Operations",
@@ -239,15 +244,12 @@ tab_overview, tab_bookings, tab_reviews, tab_risk = st.tabs([
     "✈️ Travel Risk & Demand"
 ])
 
-# ══════════════════════════════════════════════════════════
-# TAB 1 — FINANCIAL OVERVIEW
-# ══════════════════════════════════════════════════════════
 with tab_overview:
     st.markdown("<div class='section-title'>Hospitality Performance Indicators</div>", unsafe_allow_html=True)
     with st.container():
         m1, m2, m3 = st.columns(3)
-        m1.metric("💰 Net Revenue",    f"₹{int(net_revenue):,}", help="Total Revenue minus OTA Commissions")
-        m2.metric("📈 ADR (Net)",      f"₹{int(adr):,}",        help="Average Daily Rate (Net Revenue / Total Nights)")
+        m1.metric("💰 Net Revenue", f"₹{int(net_revenue):,}", help="Total Revenue minus OTA Commissions")
+        m2.metric("📈 ADR (Net)", f"₹{int(adr):,}", help="Average Daily Rate (Net Revenue / Total Nights)")
         m3.metric("🏨 Occupancy Rate", f"{occupancy_rate:.1f}%", help="Based on 30 rooms baseline")
 
     st.markdown("<br>", unsafe_allow_html=True)
@@ -255,7 +257,8 @@ with tab_overview:
     if total_book == 0:
         st.info("No bookings for this season.")
     else:
-        c1, c2 = st.columns([3, 2])
+        # ── Row 1: Revenue + Origins ──
+        c1, c2 = st.columns([3,2])
         with c1:
             st.markdown("<div class='section-title'>Monthly Revenue</div>", unsafe_allow_html=True)
             rev = (fdf.groupby(["Month_Num","Month"])["Amount (₹)"]
@@ -268,7 +271,7 @@ with tab_overview:
                 hovertemplate="<b>%{x}</b><br>₹%{y:,}<extra></extra>"
             ))
             fig1.update_layout(**CHART)
-            st.plotly_chart(fig1, width="stretch")
+            st.plotly_chart(fig1, use_container_width=True)
 
         with c2:
             st.markdown("<div class='section-title'>Guest Origins</div>", unsafe_allow_html=True)
@@ -283,25 +286,30 @@ with tab_overview:
                 marker=dict(line=dict(color="#060b18", width=3))
             )
             fig2.update_layout(**CHART, showlegend=False)
-            st.plotly_chart(fig2, width="stretch")
+            st.plotly_chart(fig2, use_container_width=True)
 
         st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
 
-        c3, c4 = st.columns([2, 3])
+        # ── Row 2: Room Type + Trend ──
+        c3, c4 = st.columns([2,3])
         with c3:
             st.markdown("<div class='section-title'>Room Type</div>", unsafe_allow_html=True)
             rooms = fdf["Room Type"].value_counts().reset_index()
             rooms.columns = ["Room Type","Count"]
             fig3 = go.Figure(go.Bar(
                 x=rooms["Count"], y=rooms["Room Type"], orientation="h",
-                marker=dict(color=COLOR_SEQ[:len(rooms)], line=dict(width=0), opacity=0.9),
+                marker=dict(
+                    color=COLOR_SEQ[:len(rooms)],
+                    line=dict(width=0),
+                    opacity=0.9,
+                ),
                 text=rooms["Count"],
                 textposition="outside",
                 textfont=dict(color="#94a3b8", size=12),
                 hovertemplate="<b>%{y}</b>: %{x} bookings<extra></extra>"
             ))
             fig3.update_layout(**CHART)
-            st.plotly_chart(fig3, width="stretch")
+            st.plotly_chart(fig3, use_container_width=True)
 
         with c4:
             st.markdown("<div class='section-title'>Bookings Over Time</div>", unsafe_allow_html=True)
@@ -316,42 +324,40 @@ with tab_overview:
                 hovertemplate="<b>%{x}</b>: %{y}<extra></extra>"
             ))
             fig4.update_layout(**CHART)
-            st.plotly_chart(fig4, width="stretch")
+            st.plotly_chart(fig4, use_container_width=True)
 
-# ══════════════════════════════════════════════════════════
-# TAB 2 — BOOKINGS & OPERATIONS
-# ══════════════════════════════════════════════════════════
 with tab_bookings:
     if total_book == 0:
         st.info("No bookings for this season.")
     else:
-        ci1, ci2 = st.columns([1, 2])
+        # ── Insights + Recent Bookings ──
+        ci1, ci2 = st.columns([1,2])
         with ci1:
             st.markdown("<div class='section-title'>Quick Insights</div>", unsafe_allow_html=True)
-            src   = fdf["Source"].value_counts().reset_index()
+            src = fdf["Source"].value_counts().reset_index()
             src.columns = ["Source","Guests"]
             rooms = fdf["Room Type"].value_counts().reset_index()
             rooms.columns = ["Room Type","Count"]
-
-            top_src  = src.iloc[0]["Source"]       if len(src)   else "—"
-            top_room = rooms.iloc[0]["Room Type"]   if len(rooms) else "—"
+            
+            top_src  = src.iloc[0]["Source"] if len(src) else "—"
+            top_room = rooms.iloc[0]["Room Type"] if len(rooms) else "—"
             foreign  = src[src["Source"]=="Foreign"]["Guests"].sum() \
                        if "Foreign" in src["Source"].values else 0
-            fp       = round(foreign / src["Guests"].sum() * 100) \
-                       if src["Guests"].sum() > 0 else 0
+            fp       = round(foreign/src["Guests"].sum()*100) \
+                       if src["Guests"].sum()>0 else 0
             conf     = len(fdf[fdf["Status"]=="Confirmed"]) \
                        if "Confirmed" in fdf["Status"].values else 0
             rows = [
-                ("Top guest market",   top_src),
-                ("Most booked room",   top_room),
-                ("Foreign guests",     f"{fp}%"),
-                ("Confirmed bookings", str(conf)),
-                ("Total revenue",      f"₹{total_rev:,}"),
+                ("Top guest market",  top_src),
+                ("Most booked room",  top_room),
+                ("Foreign guests",    f"{fp}%"),
+                ("Confirmed bookings",str(conf)),
+                ("Total revenue",     f"₹{total_rev:,}"),
             ]
             html = "<div class='card-wrap'>"
-            for lbl, val in rows:
-                html += (f"<div class='insight-row'><span>{lbl}</span>"
-                         f"<span class='insight-val'>{val}</span></div>")
+            for lbl,val in rows:
+                html += f"<div class='insight-row'><span>{lbl}</span>" \
+                        f"<span class='insight-val'>{val}</span></div>"
             html += "</div>"
             st.markdown(html, unsafe_allow_html=True)
 
@@ -360,103 +366,23 @@ with tab_bookings:
             recent = fdf.sort_values("Check-in", ascending=False).head(8).copy()
 
             def generate_wa_link(row):
-                phone = str(row.get("Phone", "")).replace("+", "").strip()
+                phone = str(row.get("Phone","")).replace("+","").strip()
                 if not phone or phone == "nan":
                     return None
-                guest = row.get("Guest Name", "Guest")
+                guest = row.get("Guest Name","Guest")
                 msg   = f"Hello {guest}, this is {hotel_name} regarding your booking."
                 return f"https://wa.me/{phone}?text={urllib.parse.quote(msg)}"
 
             recent["WhatsApp"] = recent.apply(generate_wa_link, axis=1)
-            st.dataframe(recent, width="stretch", hide_index=True, column_config={
+            st.dataframe(recent, use_container_width=True, hide_index=True, column_config={
                 "WhatsApp": st.column_config.LinkColumn("Contact", display_text="💬 WhatsApp")
             })
 
-# ══════════════════════════════════════════════════════════
-# TAB 3 — REPUTATION & REVIEWS
-# ══════════════════════════════════════════════════════════
 with tab_reviews:
-    st.markdown("""
-    <style>
-    .review-container {
-        background: var(--secondary-bg-color) !important;
-        border: 1px solid var(--border-color) !important;
-        border-radius: 10px !important;
-        padding: 14px 16px !important;
-        margin-bottom: 16px !important;
-    }
-    .review-status-row {
-        display: flex !important;
-        flex-wrap: wrap !important;
-        gap: 6px 16px !important;
-        font-size: 0.8rem !important;
-        color: var(--text-color) !important;
-    }
-    .review-status-row span { white-space: nowrap !important; }
-    .review-sentiment-box {
-        background: var(--secondary-bg-color) !important;
-        border: 1px solid var(--border-color) !important;
-        border-radius: 8px !important;
-        padding: 12px 14px !important;
-        margin-bottom: 12px !important;
-    }
-    .review-sentiment-box .flex-row {
-        display: flex !important;
-        justify-content: space-between !important;
-        align-items: center !important;
-        flex-wrap: wrap !important;
-        gap: 6px 12px !important;
-    }
-    .review-aspect-badge {
-        background: rgba(59,130,246,0.15) !important;
-        color: var(--primary-color) !important;
-        border-radius: 4px !important;
-        padding: 2px 7px !important;
-        font-size: 0.7rem !important;
-        white-space: nowrap !important;
-        display: inline-block !important;
-        margin-right: 4px !important;
-    }
-    .review-item {
-        background: var(--secondary-bg-color) !important;
-        border: 1px solid var(--border-color) !important;
-        border-radius: 10px !important;
-        padding: 14px 16px !important;
-        margin-bottom: 10px !important;
-        overflow: hidden !important;
-    }
-    .review-item .review-header {
-        display: flex !important;
-        justify-content: space-between !important;
-        align-items: center !important;
-        margin-bottom: 6px !important;
-        flex-wrap: wrap !important;
-        gap: 4px 8px !important;
-    }
-    .review-item .review-text {
-        font-size: 0.85rem !important;
-        color: var(--text-muted) !important;
-        margin: 0 0 8px 0 !important;
-        word-break: break-word !important;
-        overflow-wrap: break-word !important;
-    }
-    .review-item .review-footer {
-        display: flex !important;
-        align-items: center !important;
-        gap: 8px !important;
-        flex-wrap: wrap !important;
-    }
-    @media (max-width: 600px) {
-        .review-item .review-header {
-            flex-direction: column !important;
-            align-items: flex-start !important;
-        }
-    }
-    </style>
-    """, unsafe_allow_html=True)
-
+    # ── Row 3: OTA Reputation & Sentiment Analytics ──
     st.markdown("<p class='section-title'>⭐ OTA Reputation & Sentiment Analytics</p>", unsafe_allow_html=True)
 
+    # Word lexicons for rule-based sentiment classifier
     POSITIVE_WORDS = {
         'excellent', 'amazing', 'great', 'beautiful', 'clean', 'friendly', 'helpful',
         'good', 'love', 'perfect', 'comfortable', 'wonderful', 'delicious', 'nice',
@@ -464,21 +390,22 @@ with tab_reviews:
         'exceptional', 'hospitable', 'polite', 'courteous', 'quick', 'fast', 'prompt',
         'outstanding', 'mesmerizing', 'spacious', 'fireplace'
     }
+
     NEGATIVE_WORDS = {
         'dirty', 'bad', 'worst', 'poor', 'rude', 'cold', 'unhelpful', 'slow', 'expensive',
         'noisy', 'disappointing', 'terrible', 'horrible', 'broken', 'smelly', 'hard',
         'old', 'uncomfortable', 'leak', 'freezing', 'delay', 'issue', 'problem', 'loud',
         'overpriced', 'average', 'fail', 'unpleasant', 'smell', 'dusty', 'cracked', 'forgot'
     }
+
     ASPECTS = {
-        "Food & Dining":         ['food','breakfast','dinner','lunch','buffet','taste','restaurant','chef','meal','delicious','rogan josh','kahwa','tea','mutton','eat'],
-        "Heating & Plumbing":    ['heating','heater','geyser','hot water','cold','freezing','water','plumbing','shower','bathroom','leak','warm'],
-        "Service & Hospitality": ['service','staff','manager','hospitality','friendly','rude','polite','help','reception','unhelpful','wait','order','management'],
-        "Room & Cleanliness":    ['room','clean','dirty','sheet','blanket','bed','spacious','dusty','comfortable','view','garden','cabin','wooden','heritage'],
+        "Food & Dining": ['food', 'breakfast', 'dinner', 'lunch', 'buffet', 'taste', 'restaurant', 'chef', 'meal', 'delicious', 'rogan josh', 'kahwa', 'tea', 'mutton', 'eat'],
+        "Heating & Plumbing": ['heating', 'heater', 'geyser', 'hot water', 'cold', 'freezing', 'water', 'plumbing', 'shower', 'bathroom', 'leak', 'warm'],
+        "Service & Hospitality": ['service', 'staff', 'manager', 'hospitality', 'friendly', 'rude', 'polite', 'help', 'reception', 'unhelpful', 'wait', 'order', 'management'],
+        "Room & Cleanliness": ['room', 'clean', 'dirty', 'sheet', 'blanket', 'bed', 'spacious', 'dusty', 'comfortable', 'view', 'garden', 'cabin', 'wooden', 'heritage']
     }
 
-    reviews_raw = load_reviews(hotel_id)
-
+    # ── Live OTA Sync & Real-Time Sentiment Control Center ──
     with st.container():
         st.markdown("""
         <div style='background:rgba(59,130,246,0.08); border:1px solid rgba(59,130,246,0.2); border-radius:12px; padding:18px; margin-bottom:20px;'>
@@ -488,176 +415,209 @@ with tab_reviews:
             </p>
         </div>
         """, unsafe_allow_html=True)
-
+        
         col_sync, col_manual = st.columns(2)
-
+        
         with col_sync:
-            st.markdown(
-                "<p style='font-weight:600; color:var(--text-color); margin-bottom:8px; font-size:0.95rem;'>"
-                "⚡ OTA Review Sync Status</p>",
-                unsafe_allow_html=True
-            )
-            h_booking_url     = hotel.get("booking_review_url", "")
-            h_agoda_url       = hotel.get("agoda_review_url", "")
-            h_mmt_url         = hotel.get("mmt_review_url", "") or hotel.get("mmt_url", "")
+            st.markdown("<p style='font-weight:600; color:var(--text-color); margin-bottom:8px; font-size:0.95rem;'>⚡ OTA Connection & Live Sync</p>", unsafe_allow_html=True)
+            
+            # Fetch current URLs from session state hotel info
+            h_booking_url = hotel.get("booking_review_url", "")
+            h_agoda_url = hotel.get("agoda_review_url", "")
+            h_mmt_url = hotel.get("mmt_review_url", "") or hotel.get("mmt_url", "")
             h_google_place_id = hotel.get("google_place_id", "")
-
-            status_items = [
-                "🟢 Booking.com"   if h_booking_url     else "⚪ Booking.com",
-                "🟢 Agoda"         if h_agoda_url        else "⚪ Agoda",
-                "🟢 MakeMyTrip"    if h_mmt_url          else "⚪ MakeMyTrip",
-                "🟢 Google Places" if h_google_place_id  else "⚪ Google Places",
-            ]
+            
+            with st.expander("⚙️ Configure OTA URLs & Place ID", expanded=False):
+                u_booking = st.text_input("Booking.com Review URL", value=h_booking_url, placeholder="https://www.booking.com/hotel/...")
+                u_agoda = st.text_input("Agoda Review URL", value=h_agoda_url, placeholder="https://www.agoda.com/...")
+                u_mmt = st.text_input("MakeMyTrip Review URL", value=h_mmt_url, placeholder="https://www.makemytrip.com/...")
+                u_google = st.text_input("Google Place ID", value=h_google_place_id, placeholder="e.g. ChIJ...")
+                
+                if st.button("💾 Save OTA URLs", use_container_width=True):
+                    success = update_hotel_ota_links(hotel_id, u_booking, u_agoda, u_mmt, u_google)
+                    if success:
+                        st.success("OTA URLs updated successfully!")
+                        # Update session state
+                        st.session_state.hotel = get_hotel_by_id(hotel_id)
+                        st.rerun()
+                    else:
+                        st.error("Failed to update URLs in database.")
+            
+            # Status Indicator for connected platforms
+            status_items = []
+            if h_booking_url: status_items.append("🟢 Booking.com")
+            else: status_items.append("⚪ Booking.com")
+            if h_agoda_url: status_items.append("🟢 Agoda")
+            else: status_items.append("⚪ Agoda")
+            if h_mmt_url: status_items.append("🟢 MakeMyTrip")
+            else: status_items.append("⚪ MakeMyTrip")
+            if h_google_place_id: status_items.append("🟢 Google Places")
+            else: status_items.append("⚪ Google Places")
+            
             st.markdown(f"""
-            <div class='review-container'>
-                <div style='font-size:0.75rem; color:var(--text-muted); text-transform:uppercase;
-                            letter-spacing:0.5px; margin-bottom:6px;'>Connected Platforms</div>
-                <div class='review-status-row'>
-                    {"".join([f"<span>{item}</span>" for item in status_items])}
+            <div style='background:var(--secondary-bg-color); border:1px solid var(--border-color); border-radius:8px; padding:10px 12px; margin-bottom:12px;'>
+                <div style='font-size:0.75rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px;'>Connected Platforms</div>
+                <div style='font-size:0.8rem; display:flex; gap:10px; flex-wrap:wrap; color:var(--text-color);'>
+                    {" | ".join(status_items)}
                 </div>
             </div>
             """, unsafe_allow_html=True)
-
-            total_in_db    = len(reviews_raw) if reviews_raw else 0
-            any_configured = any([h_booking_url, h_agoda_url, h_mmt_url, h_google_place_id])
-
-            if any_configured:
-                st.markdown(f"""
-                <div style='background:rgba(16,185,129,0.08); border:1px solid rgba(16,185,129,0.2);
-                            border-radius:8px; padding:12px; margin-bottom:12px;'>
-                    <div style='font-size:0.85rem; color:#10b981; font-weight:600; margin-bottom:4px;'>✅ Auto-Sync Active</div>
-                    <div style='font-size:0.78rem; color:var(--text-muted);'>
-                        Reviews sync automatically every 6 hours from all connected OTA platforms.
-                        <b>{total_in_db}</b> reviews currently in your database.
-                    </div>
-                </div>
-                """, unsafe_allow_html=True)
-            else:
-                st.markdown("""
-                <div style='background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.2);
-                            border-radius:8px; padding:12px; margin-bottom:12px;'>
-                    <div style='font-size:0.85rem; color:#f59e0b; font-weight:600; margin-bottom:4px;'>⚠️ No OTA Platforms Configured</div>
-                    <div style='font-size:0.78rem; color:var(--text-muted);'>
-                        Contact your administrator to connect your Booking.com, Agoda, and Google profiles.
-                    </div>
-                </div>
-                """, unsafe_allow_html=True)
-
-            if st.button("🔄 Refresh Reviews", use_container_width=True):
-                st.cache_data.clear()
-                st.rerun()
-
+            
+            if st.button("🔄 Sync Live OTA Reviews", type="primary", use_container_width=True):
+                with st.spinner("Syncing reviews and executing sentiment classifier..."):
+                    saved_count, msg, sync_logs = sync_hotel_reviews(hotel_id, hotel_name)
+                    
+                    # Show nice results
+                    st.success(msg)
+                    with st.expander("📄 View Sync Technical Logs", expanded=True):
+                        for log in sync_logs:
+                            st.write(f"- {log}")
+                    
+                    # Wait a second and rerun
+                    st.rerun()
+        
         with col_manual:
             st.markdown("<p style='font-weight:600; color:var(--text-color); margin-bottom:8px; font-size:0.95rem;'>✍️ Real-Time Sentiment Analyzer Form</p>", unsafe_allow_html=True)
-            m_review_text = st.text_area("Review Text", height=82,
-                placeholder="Type/paste a guest review to analyze sentiment in real time...",
-                key="m_review_text_val")
+            
+            # Real-time text area
+            m_review_text = st.text_area("Review Text", height=82, placeholder="Type/paste a guest review to analyze sentiment in real time...", key="m_review_text_val")
+            
+            # Ratings slider
             m_rating = st.slider("Guest Rating Stars", 1, 5, 5, key="m_rating_val")
-
+            
+            # Interactive Real-Time Sentiment & Aspect Detection
             if m_review_text:
-                words     = m_review_text.lower().split()
+                # Live sentiment calculation
+                words = m_review_text.lower().split()
                 pos_count = sum(1 for w in words if w in POSITIVE_WORDS)
                 neg_count = sum(1 for w in words if w in NEGATIVE_WORDS)
-                score     = (m_rating - 3) * 2 + (pos_count - neg_count)
-
+                score = (m_rating - 3) * 2 + (pos_count - neg_count)
+                
                 if score > 0:
-                    live_sent, text_color = "🟢 Positive", "#10b981"
+                    live_sent = "🟢 Positive"
+                    text_color = "#10b981"
+                    bg_color = "rgba(16,185,129,0.1)"
                 elif score < 0:
-                    live_sent, text_color = "🔴 Negative", "#ef4444"
+                    live_sent = "🔴 Negative"
+                    text_color = "#ef4444"
+                    bg_color = "rgba(239,68,68,0.1)"
                 else:
-                    live_sent, text_color = "🟡 Neutral",  "#f59e0b"
-
-                text_lower   = m_review_text.lower()
-                live_aspects = [a for a, kws in ASPECTS.items() if any(kw in text_lower for kw in kws)]
+                    live_sent = "🟡 Neutral"
+                    text_color = "#f59e0b"
+                    bg_color = "rgba(245,158,11,0.1)"
+                    
+                # Live aspect detection
+                text_lower = m_review_text.lower()
+                live_aspects = []
+                for aspect, keywords in ASPECTS.items():
+                    if any(kw in text_lower for kw in keywords):
+                        live_aspects.append(aspect)
                 if not live_aspects:
                     live_aspects = ["General"]
-
+                
+                aspects_badges = " ".join([f"<span style='background:rgba(59,130,246,0.15);color:var(--primary-color);border-radius:4px;padding:2px 6px;font-size:0.7rem;'>{a}</span>" for a in live_aspects])
+                
                 st.markdown(f"""
-                <div class='review-sentiment-box'>
-                    <div class='flex-row'>
+                <div style='background:{bg_color}; border:1px solid {text_color}44; border-radius:8px; padding:12px; margin-bottom:12px;'>
+                    <div style='display:flex; justify-content:space-between; align-items:center;'>
                         <span style='font-size:0.8rem; color:var(--text-muted);'>Live Sentiment Score: <b>{score}</b></span>
                         <span style='color:{text_color}; font-weight:700; font-size:0.9rem;'>{live_sent}</span>
                     </div>
-                    <div style='margin-top:6px; font-size:0.8rem; color:var(--text-muted);
-                                display:flex; align-items:center; gap:6px; flex-wrap:wrap;'>
+                    <div style='margin-top:6px; font-size:0.8rem; color:var(--text-muted); display:flex; align-items:center; gap:6px;'>
                         <span>Aspects:</span>
-                        <div style='display:flex; gap:4px; flex-wrap:wrap;'>
-                            {" ".join([f"<span class='review-aspect-badge'>{a}</span>" for a in live_aspects])}
-                        </div>
+                        <div style='display:flex; gap:4px; flex-wrap:wrap;'>{aspects_badges}</div>
                     </div>
                 </div>
                 """, unsafe_allow_html=True)
-
-                with st.expander("✏️ Guest Metadata & Save Document", expanded=False):
-                    m_guest_name = st.text_input("Guest Name", value="Guest Name", placeholder="e.g. John Doe")
-                    m_source     = st.selectbox("Review Source", ["Google","Booking.com","Agoda","MakeMyTrip","Direct Customer"])
-                    m_date       = st.date_input("Review Date", value=date.today())
-
-                    if st.button("📥 Save Review to Firebase", use_container_width=True):
-                        if not m_review_text.strip():
-                            st.error("Please enter some review text first.")
-                        else:
-                            save_review_to_firebase({
-                                "hotel_id":    hotel_id,
-                                "guest_name":  m_guest_name.strip(),
-                                "rating":      int(m_rating),
-                                "review_text": m_review_text.strip(),
-                                "source":      m_source,
-                                "date":        m_date.strftime("%Y-%m-%d"),
-                            })
-                            st.success("Review saved and live charts updated!")
-                            st.rerun()
-
+            
+            with st.expander("✏️ Guest Metadata & Save Document", expanded=False):
+                m_guest_name = st.text_input("Guest Name", value="Guest Name", placeholder="e.g. John Doe")
+                m_source = st.selectbox("Review Source", ["Google", "Booking.com", "Agoda", "MakeMyTrip", "Direct Customer"])
+                m_date = st.date_input("Review Date", value=date.today())
+                
+                if st.button("📥 Save Review to Firebase", use_container_width=True):
+                    if not m_review_text.strip():
+                        st.error("Please enter some review text first.")
+                    else:
+                        review_data = {
+                            "hotel_id": hotel_id,
+                            "guest_name": m_guest_name.strip(),
+                            "rating": int(m_rating),
+                            "review_text": m_review_text.strip(),
+                            "source": m_source,
+                            "date": m_date.strftime("%Y-%m-%d")
+                        }
+                        save_review_to_firebase(review_data)
+                        st.success("Review saved and live charts updated!")
+                        st.rerun()
+                        
     st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
+
+    # Fetch reviews from database (with mock fallback)
+    reviews_raw = load_reviews(hotel_id)
 
     processed_reviews = []
     for r in reviews_raw:
-        text   = r.get("review_text", "")
+        text = r.get("review_text", "")
         rating = r.get("rating", 3)
-        words  = str(text).lower().split()
-        pos_c  = sum(1 for w in words if w in POSITIVE_WORDS)
-        neg_c  = sum(1 for w in words if w in NEGATIVE_WORDS)
-        sc     = (rating - 3) * 2 + (pos_c - neg_c)
-        sentiment = "Positive" if sc > 0 else ("Negative" if sc < 0 else "Neutral")
-
-        text_lower    = str(text).lower()
-        aspects_found = [a for a, kws in ASPECTS.items() if any(kw in text_lower for kw in kws)]
+        
+        # Simple lexical sentiment analyzer
+        words = str(text).lower().split()
+        pos_count = sum(1 for w in words if w in POSITIVE_WORDS)
+        neg_count = sum(1 for w in words if w in NEGATIVE_WORDS)
+        score = (rating - 3) * 2 + (pos_count - neg_count)
+        
+        if score > 0:
+            sentiment = "Positive"
+        elif score < 0:
+            sentiment = "Negative"
+        else:
+            sentiment = "Neutral"
+            
+        # Simple aspect detection
+        text_lower = str(text).lower()
+        aspects_found = []
+        for aspect, keywords in ASPECTS.items():
+            if any(kw in text_lower for kw in keywords):
+                aspects_found.append(aspect)
         if not aspects_found:
             aspects_found = ["General"]
-
+            
         processed_reviews.append({
-            "guest_name":  r.get("guest_name", "Guest"),
-            "rating":      rating,
+            "guest_name": r.get("guest_name", "Guest"),
+            "rating": rating,
             "review_text": text,
-            "source":      r.get("source", "Google"),
-            "date":        r.get("date", "2026-06-01"),
-            "sentiment":   sentiment,
-            "aspects":     aspects_found,
+            "source": r.get("source", "Google"),
+            "date": r.get("date", "2026-06-01"),
+            "sentiment": sentiment,
+            "aspects": aspects_found
         })
 
     rdf = pd.DataFrame(processed_reviews)
 
     if not rdf.empty:
+        # ── Summary KPIs ──
         total_count = len(rdf)
-        avg_rating  = rdf["rating"].mean()
-        pos_count   = len(rdf[rdf["sentiment"] == "Positive"])
-        pos_pct     = round((pos_count / total_count) * 100) if total_count > 0 else 0
-
+        avg_rating = rdf["rating"].mean()
+        pos_count = len(rdf[rdf["sentiment"] == "Positive"])
+        pos_pct = round((pos_count / total_count) * 100) if total_count > 0 else 0
+        
         m1, m2, m3 = st.columns(3)
-        m1.metric("⭐ Total OTA Reviews", total_count,             help="Aggregate reviews from all sources")
-        m2.metric("📈 Avg Rating Score",  f"{avg_rating:.1f} / 5.0", help="Average guest rating")
-        m3.metric("❤️ Positive Sentiment", f"{pos_pct}%",          help="Percentage of overall positive feedback")
-
+        m1.metric("⭐ Total OTA Reviews", total_count, help="Aggregate reviews from all sources")
+        m2.metric("📈 Avg Rating Score", f"{avg_rating:.1f} / 5.0", help="Average guest rating")
+        m3.metric("❤️ Positive Sentiment", f"{pos_pct}%", help="Percentage of overall positive feedback")
+        
+        # ── Sentiment Breakdown Bar ──
         neu_count = len(rdf[rdf["sentiment"] == "Neutral"])
         neg_count = len(rdf[rdf["sentiment"] == "Negative"])
-        pos_bar   = pos_count / total_count * 100 if total_count > 0 else 0
-        neu_bar   = neu_count / total_count * 100 if total_count > 0 else 0
-        neg_bar   = neg_count / total_count * 100 if total_count > 0 else 0
-
+        
+        pos_bar = (pos_count / total_count * 100) if total_count > 0 else 0
+        neu_bar = (neu_count / total_count * 100) if total_count > 0 else 0
+        neg_bar = (neg_count / total_count * 100) if total_count > 0 else 0
+        
         st.markdown(f"""
         <div style='margin: 15px 0 25px 0;'>
-            <div style='display:flex; justify-content:space-between; align-items:center;
-                        font-size:0.8rem; color:var(--text-muted); margin-bottom:6px; flex-wrap:wrap; gap:4px;'>
+            <div style='display:flex; justify-content:space-between; align-items:center; font-size:0.8rem; color:var(--text-muted); margin-bottom:6px; flex-wrap:wrap; gap:4px;'>
                 <span>Guest Sentiment Distribution</span>
                 <span>🟢 Positive ({pos_bar:.0f}%) | 🟡 Neutral ({neu_bar:.0f}%) | 🔴 Negative ({neg_bar:.0f}%)</span>
             </div>
@@ -668,110 +628,173 @@ with tab_reviews:
             </div>
         </div>
         """, unsafe_allow_html=True)
-
+        
+        # ── Aspect Breakdown Grid ──
         aspect_sentiment = {}
         for aspect in ASPECTS.keys():
             aspect_reviews = rdf[rdf["aspects"].apply(lambda x: aspect in x)]
             total_asp = len(aspect_reviews)
-            pct = round(len(aspect_reviews[aspect_reviews["sentiment"] == "Positive"]) / total_asp * 100) if total_asp > 0 else None
+            if total_asp > 0:
+                pos_asp = len(aspect_reviews[aspect_reviews["sentiment"] == "Positive"])
+                pct = round((pos_asp / total_asp) * 100)
+            else:
+                pct = None
             aspect_sentiment[aspect] = (pct, total_asp)
-
+            
         st.markdown("<div class='section-title'>Aspect-Based Guest Sentiment</div>", unsafe_allow_html=True)
         res_col1, res_col2 = st.columns(2)
-
-        def render_aspect(col, emoji, label, key, low_advice, high_advice, low_color="#fbbf24"):
-            score, count = aspect_sentiment[key]
-            with col:
-                if score is not None:
-                    color  = "#10b981" if score >= 70 else low_color
-                    advice = low_advice if score < 70 else high_advice
-                    st.markdown(f"""
-                    <div style='background:rgba(255,255,255,0.02); border:1px solid rgba(148,163,184,0.15);
-                                border-radius:10px; padding:15px; margin-bottom:15px;'>
-                        <div style='font-weight:600; display:flex; justify-content:space-between;
-                                    align-items:flex-start; margin-bottom:8px; flex-wrap:wrap; gap:4px; min-width:0;'>
-                            <span style='flex-shrink:0;'>{emoji} {label}</span>
-                            <span style='color:{color}; font-weight:700; text-align:right;'>{score}% Positive ({count} reviews)</span>
-                        </div>
-                        <div style='height:6px; border-radius:3px; background:#334155; margin-bottom:8px; overflow:hidden;'>
-                            <div style='width:{score}%; height:100%; background:{color};'></div>
-                        </div>
-                        <p style='font-size:0.8rem; opacity:0.8; margin:0;'><b>Operational Advice:</b> {advice}</p>
+        
+        with res_col1:
+            # Food & Dining
+            score, count = aspect_sentiment["Food & Dining"]
+            if score is not None:
+                color = "#10b981" if score >= 70 else "#fbbf24"
+                advice = ("Insulate room-service food carriers to prevent cold food. Review morning buffet temperature logs and conduct a chef taste-audit." 
+                          if score < 70 else 
+                          "Guests love the buffet and local Kashmiri Kahwa. Maintain current recipes and food safety standards.")
+                st.markdown(f"""
+                <div style='background:rgba(255,255,255,0.02); border:1px solid rgba(148,163,184,0.15); border-radius:10px; padding:15px; margin-bottom:15px;'>
+                    <div style='font-weight:600; display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px; flex-wrap:wrap; gap:4px; min-width:0;'>
+                        <span style='flex-shrink:0;'>🍴 Food & Dining</span>
+                        <span style='color:{color}; font-weight:700; text-align:right;'>{score}% Positive ({count} reviews)</span>
                     </div>
-                    """, unsafe_allow_html=True)
-                else:
-                    st.markdown(f"""
-                    <div style='background:rgba(255,255,255,0.02); border:1px solid rgba(148,163,184,0.15);
-                                border-radius:10px; padding:15px; margin-bottom:15px; opacity:0.6;'>
-                        <div style='font-weight:600;'>{emoji} {label}</div>
-                        <p style='font-size:0.8rem; margin:0;'>No guest reviews available yet.</p>
+                    <div style='height:6px; border-radius:3px; background:#334155; margin-bottom:8px; overflow:hidden;'>
+                        <div style='width:{score}%; height:100%; background:{color};'></div>
                     </div>
-                    """, unsafe_allow_html=True)
+                    <p style='font-size:0.8rem; opacity:0.8; margin:0;'><b>Operational Advice:</b> {advice}</p>
+                </div>
+                """, unsafe_allow_html=True)
+            else:
+                st.markdown("""
+                <div style='background:rgba(255,255,255,0.02); border:1px solid rgba(148,163,184,0.15); border-radius:10px; padding:15px; margin-bottom:15px; opacity:0.6;'>
+                    <div style='font-weight:600;'>🍴 Food & Dining</div>
+                    <p style='font-size:0.8rem; margin:0;'>No guest reviews available regarding the dining experience yet.</p>
+                </div>
+                """, unsafe_allow_html=True)
+                
+            # Heating & Plumbing
+            score, count = aspect_sentiment["Heating & Plumbing"]
+            if score is not None:
+                color = "#10b981" if score >= 70 else "#ef4444"
+                advice = ("Audit fuel limits for backup generators during freezing night hours. Ensure geyser timers are set 1 hour before peak guest wake-up times (6:00 AM)." 
+                          if score < 70 else 
+                          "Heating and hot water systems are operational and satisfying guests. Continue routine checks.")
+                st.markdown(f"""
+                <div style='background:rgba(255,255,255,0.02); border:1px solid rgba(148,163,184,0.15); border-radius:10px; padding:15px; margin-bottom:15px;'>
+                    <div style='font-weight:600; display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px; flex-wrap:wrap; gap:4px; min-width:0;'>
+                        <span style='flex-shrink:0;'>🔥 Heating & Plumbing</span>
+                        <span style='color:{color}; font-weight:700; text-align:right;'>{score}% Positive ({count} reviews)</span>
+                    </div>
+                    <div style='height:6px; border-radius:3px; background:#334155; margin-bottom:8px; overflow:hidden;'>
+                        <div style='width:{score}%; height:100%; background:{color};'></div>
+                    </div>
+                    <p style='font-size:0.8rem; opacity:0.8; margin:0;'><b>Operational Advice:</b> {advice}</p>
+                </div>
+                """, unsafe_allow_html=True)
+            else:
+                st.markdown("""
+                <div style='background:rgba(255,255,255,0.02); border:1px solid rgba(148,163,184,0.15); border-radius:10px; padding:15px; margin-bottom:15px; opacity:0.6;'>
+                    <div style='font-weight:600;'>🔥 Heating & Plumbing</div>
+                    <p style='font-size:0.8rem; margin:0;'>No guest reviews available regarding heating/plumbing yet.</p>
+                </div>
+                """, unsafe_allow_html=True)
 
-        render_aspect(res_col1, "🍴", "Food & Dining",         "Food & Dining",
-            "Insulate room-service food carriers to prevent cold food. Review morning buffet temperature logs and conduct a chef taste-audit.",
-            "Guests love the buffet and local Kashmiri Kahwa. Maintain current recipes and food safety standards.")
-        render_aspect(res_col1, "🔥", "Heating & Plumbing",    "Heating & Plumbing",
-            "Audit fuel limits for backup generators during freezing night hours. Ensure geyser timers are set 1 hour before peak guest wake-up times (6:00 AM).",
-            "Heating and hot water systems are operational and satisfying guests. Continue routine checks.",
-            low_color="#ef4444")
-        render_aspect(res_col2, "🛎️", "Service & Hospitality", "Service & Hospitality",
-            "Proactively address room service delay complaints. Conduct front-desk logging checks and coordination reviews.",
-            "Service hospitality levels are outstanding. Highlight polite and helpful staff members in the team meeting.",
-            low_color="#ef4444")
-        render_aspect(res_col2, "🛏️", "Room & Cleanliness",    "Room & Cleanliness",
-            "Audit blanket cleanliness, sheet changing processes, and verify that dusty corners in wood heritage cabins are cleaned.",
-            "Guests appreciate clean rooms, cozy linen, and garden/lake views. Maintain strict room inspection schedules.")
-
+        with res_col2:
+            # Service & Hospitality
+            score, count = aspect_sentiment["Service & Hospitality"]
+            if score is not None:
+                color = "#10b981" if score >= 70 else "#ef4444"
+                advice = ("Proactively address room service delay complaints. Conduct front-desk logging checks and coordination reviews." 
+                          if score < 70 else 
+                          "Service hospitality levels are outstanding. Highlight polite and helpful staff members in the team meeting.")
+                st.markdown(f"""
+                <div style='background:rgba(255,255,255,0.02); border:1px solid rgba(148,163,184,0.15); border-radius:10px; padding:15px; margin-bottom:15px;'>
+                    <div style='font-weight:600; display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px; flex-wrap:wrap; gap:4px; min-width:0;'>
+                        <span style='flex-shrink:0;'>🛎️ Service & Hospitality</span>
+                        <span style='color:{color}; font-weight:700; text-align:right;'>{score}% Positive ({count} reviews)</span>
+                    </div>
+                    <div style='height:6px; border-radius:3px; background:#334155; margin-bottom:8px; overflow:hidden;'>
+                        <div style='width:{score}%; height:100%; background:{color};'></div>
+                    </div>
+                    <p style='font-size:0.8rem; opacity:0.8; margin:0;'><b>Operational Advice:</b> {advice}</p>
+                </div>
+                """, unsafe_allow_html=True)
+            else:
+                st.markdown("""
+                <div style='background:rgba(255,255,255,0.02); border:1px solid rgba(148,163,184,0.15); border-radius:10px; padding:15px; margin-bottom:15px; opacity:0.6;'>
+                    <div style='font-weight:600;'>🛎️ Service & Hospitality</div>
+                    <p style='font-size:0.8rem; margin:0;'>No guest reviews available regarding services yet.</p>
+                </div>
+                """, unsafe_allow_html=True)
+                
+            # Room & Cleanliness
+            score, count = aspect_sentiment["Room & Cleanliness"]
+            if score is not None:
+                color = "#10b981" if score >= 70 else "#fbbf24"
+                advice = ("Audit blanket cleanliness, sheet changing processes, and verify that dusty corners in wood heritage cabins are cleaned." 
+                          if score < 70 else 
+                          "Guests appreciate clean rooms, cozy linen, and garden/lake views. Maintain strict room inspection schedules.")
+                st.markdown(f"""
+                <div style='background:rgba(255,255,255,0.02); border:1px solid rgba(148,163,184,0.15); border-radius:10px; padding:15px; margin-bottom:15px;'>
+                    <div style='font-weight:600; display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px; flex-wrap:wrap; gap:4px; min-width:0;'>
+                        <span style='flex-shrink:0;'>🛏️ Room & Cleanliness</span>
+                        <span style='color:{color}; font-weight:700; text-align:right;'>{score}% Positive ({count} reviews)</span>
+                    </div>
+                    <div style='height:6px; border-radius:3px; background:#334155; margin-bottom:8px; overflow:hidden;'>
+                        <div style='width:{score}%; height:100%; background:{color};'></div>
+                    </div>
+                    <p style='font-size:0.8rem; opacity:0.8; margin:0;'><b>Operational Advice:</b> {advice}</p>
+                </div>
+                """, unsafe_allow_html=True)
+            else:
+                st.markdown("""
+                <div style='background:rgba(255,255,255,0.02); border:1px solid rgba(148,163,184,0.15); border-radius:10px; padding:15px; margin-bottom:15px; opacity:0.6;'>
+                    <div style='font-weight:600;'>🛏️ Room & Cleanliness</div>
+                    <p style='font-size:0.8rem; margin:0;'>No guest reviews available regarding rooms yet.</p>
+                </div>
+                """, unsafe_allow_html=True)
+                
         st.markdown("<br>", unsafe_allow_html=True)
+
+        # ── Full review list ──
         st.markdown("<div class='section-title'>All Guest Reviews</div>", unsafe_allow_html=True)
         for _, row in rdf.iterrows():
-            stars       = "⭐" * int(row["rating"])
+            stars = "⭐" * int(row["rating"])
             badge_color = {"Positive": "#10b981", "Neutral": "#f59e0b", "Negative": "#ef4444"}.get(row["sentiment"], "#64748b")
-            aspects_html = " ".join([f"<span class='review-aspect-badge'>{a}</span>" for a in row["aspects"]])
+            aspects_html = " ".join([f"<span style='background:rgba(59,130,246,0.15);color:var(--primary-color);border-radius:4px;padding:2px 7px;font-size:0.7rem;margin-right:4px;'>{a}</span>" for a in row["aspects"]])
             st.markdown(f"""
-            <div class='review-item'>
-                <div class='review-header'>
-                    <span style='font-weight:600; color:var(--text-color);'>{row["guest_name"]}</span>
-                    <span style='color:#f59e0b; font-size:0.9rem; flex-shrink:0;'>{stars}</span>
+            <div style='background:var(--secondary-bg-color);border:1px solid var(--border-color);border-radius:10px;padding:14px;margin-bottom:10px;overflow:hidden;'>
+                <div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;flex-wrap:wrap;gap:4px;'>
+                    <span style='font-weight:600;color:var(--text-color);min-width:0;overflow:hidden;text-overflow:ellipsis;'>{row["guest_name"]}</span>
+                    <span style='color:#f59e0b;font-size:0.9rem;flex-shrink:0;'>{stars}</span>
                 </div>
-                <p class='review-text'>{row["review_text"]}</p>
-                <div class='review-footer'>
-                    <span style='background:{badge_color}; color:white; border-radius:4px;
-                                 padding:2px 8px; font-size:0.7rem; font-weight:600; flex-shrink:0;'>{row["sentiment"]}</span>
+                <p style='font-size:0.85rem;color:var(--text-muted);margin:0 0 8px 0;word-break:break-word;overflow-wrap:break-word;'>{row["review_text"]}</p>
+                <div style='display:flex;align-items:center;gap:8px;flex-wrap:wrap;'>
+                    <span style='background:{badge_color};color:white;border-radius:4px;padding:2px 8px;font-size:0.7rem;font-weight:600;flex-shrink:0;'>{row["sentiment"]}</span>
                     {aspects_html}
-                    <span style='color:var(--text-muted); font-size:0.75rem; margin-left:auto;
-                                 white-space:nowrap;'>{row["source"]} · {row["date"]}</span>
+                    <span style='color:var(--text-muted);font-size:0.75rem;margin-left:auto;white-space:nowrap;'>{row["source"]} · {row["date"]}</span>
                 </div>
             </div>
             """, unsafe_allow_html=True)
     else:
         st.info("No reviews found. Reviews will appear here once guests post on OTA platforms.")
 
-# ══════════════════════════════════════════════════════════
-# TAB 4 — TRAVEL RISK & DEMAND
-# ══════════════════════════════════════════════════════════
+# ── TAB 4: Travel Risk & Demand ──────────────────────────
 with tab_risk:
     st.markdown("<div class='section-title'>✈️ Srinagar Air Connectivity & Demand Risk Matrix</div>", unsafe_allow_html=True)
 
-    live_risk  = get_srinagar_live_risk_data()
+    # Fetch live Srinagar air connectivity risk data
+    live_risk = get_srinagar_live_risk_data()
     risk_score = live_risk["risk_score"]
-    weather    = live_risk["weather"]
+    weather = live_risk["weather"]
 
-    # ── Live Airport Weather Card ──
-    weather_icon = ("❄️" if weather["snow"] > 0 else
-                    "🌧️" if weather["rain"] > 0 else
-                    "🌫️" if weather["visibility_km"] < 2 else "☀️")
+    # ── Live Airport Weather Status Card ──
+    weather_icon = "❄️" if weather["snow"] > 0 else ("🌧️" if weather["rain"] > 0 else ("🌫️" if weather["visibility_km"] < 2 else "☀️"))
     st.markdown(f"""
-    <div style='background:var(--secondary-bg-color); border:1px solid var(--border-card);
-                border-radius:12px; padding:16px; margin-bottom:20px;
-                backdrop-filter:blur(10px); display:flex; justify-content:space-between;
-                align-items:center; flex-wrap:wrap;'>
+    <div style='background:var(--secondary-bg-color); border:1px solid var(--border-card); border-radius:12px; padding:16px; margin-bottom:20px; backdrop-filter:blur(10px); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap;'>
         <div>
-            <div style='font-size:0.75rem; color:var(--text-muted); text-transform:uppercase;
-                        letter-spacing:1px; font-weight:600;'>📍 Srinagar International Airport (SXR)</div>
-            <div style='font-size:1.15rem; font-weight:700; color:var(--text-color);
-                        display:flex; align-items:center; gap:8px; margin-top:2px;'>
+            <div style='font-size:0.75rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; font-weight:600;'>📍 Srinagar International Airport (SXR)</div>
+            <div style='font-size:1.15rem; font-weight:700; color:var(--text-color); display:flex; align-items:center; gap:8px; margin-top:2px;'>
                 <span>{weather_icon} {weather["desc"]}</span>
                 <span style='color:var(--text-muted);'>•</span>
                 <span style='color:var(--primary-color);'>{weather["temp"]}°C</span>
@@ -794,11 +817,9 @@ with tab_risk:
     </div>
     """, unsafe_allow_html=True)
 
-    # ── Risk gauge ──
-    risk_label  = ("High Risk"     if risk_score >= 70 else
-                   "Moderate Risk" if risk_score >= 40 else "Low Risk")
-    gauge_color = ("#ef4444" if risk_label == "High Risk" else
-                   "#f59e0b" if risk_label == "Moderate Risk" else "#10b981")
+    # ── Risk index gauge ──
+    risk_label = "Moderate Risk" if 40 <= risk_score < 70 else ("High Risk" if risk_score >= 70 else "Low Risk")
+    gauge_color = "#f59e0b" if risk_label == "Moderate Risk" else ("#ef4444" if risk_label == "High Risk" else "#10b981")
 
     fig_gauge = go.Figure(go.Indicator(
         mode="gauge+number+delta",
@@ -806,13 +827,13 @@ with tab_risk:
         title={"text": "Overall Demand Risk Index", "font": {"size": 14, "color": "#94a3b8"}},
         delta={"reference": 50, "increasing": {"color": "#ef4444"}, "decreasing": {"color": "#10b981"}},
         gauge={
-            "axis":  {"range": [0, 100], "tickcolor": "#475569", "tickfont": {"color": "#94a3b8"}},
-            "bar":   {"color": gauge_color},
+            "axis": {"range": [0, 100], "tickcolor": "#475569", "tickfont": {"color": "#94a3b8"}},
+            "bar": {"color": gauge_color},
             "bgcolor": "#1e293b",
             "steps": [
-                {"range": [0,  40], "color": "rgba(16,185,129,0.15)"},
+                {"range": [0, 40], "color": "rgba(16,185,129,0.15)"},
                 {"range": [40, 70], "color": "rgba(245,158,11,0.15)"},
-                {"range": [70,100], "color": "rgba(239,68,68,0.15)"},
+                {"range": [70, 100], "color": "rgba(239,68,68,0.15)"},
             ],
             "threshold": {"line": {"color": "white", "width": 2}, "thickness": 0.75, "value": risk_score},
         },
@@ -822,141 +843,113 @@ with tab_risk:
 
     g1, g2 = st.columns([2, 3])
     with g1:
-        st.plotly_chart(fig_gauge, width="stretch")
+        st.plotly_chart(fig_gauge, use_container_width=True)
         st.markdown(f"""
-        <div style='background:var(--secondary-bg-color); border:1px solid var(--border-color);
-                    border-radius:10px; padding:14px; margin-top:-10px;'>
-            <div style='font-size:1rem; font-weight:700; color:{gauge_color}; margin-bottom:4px;'>⚠️ {risk_label}</div>
-            <div style='font-size:0.8rem; color:var(--text-muted);'>Composite score based on flight cancellations,
-            weather events, political advisories, and seasonal demand patterns.</div>
+        <div style='background:var(--secondary-bg-color);border:1px solid var(--border-color);border-radius:10px;padding:14px;margin-top:-10px;'>
+            <div style='font-size:1rem;font-weight:700;color:{gauge_color};margin-bottom:4px;'>⚠️ {risk_label}</div>
+            <div style='font-size:0.8rem;color:var(--text-muted);'>Composite score based on flight cancellations, weather events, political advisories, and seasonal demand patterns.</div>
         </div>
         """, unsafe_allow_html=True)
 
     with g2:
-        st.markdown("<div class='section-title'>Seasonal Disruption Risk Estimate</div>", unsafe_allow_html=True)
-        st.caption("📊 Based on Srinagar's known winter fog & monsoon seasonality, blended with today's live weather conditions for the current month.")
-
-        months           = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
-        seasonal_baseline = [70, 65, 40, 18, 12, 8, 10, 14, 20, 28, 50, 72]
-        current_month_idx = datetime.now().month - 1
-        cancel_prob       = seasonal_baseline.copy()
-        cancel_prob[current_month_idx] = round((seasonal_baseline[current_month_idx] + risk_score) / 2)
-
+        st.markdown("<div class='section-title'>Route Cancellation Probability by Month</div>", unsafe_allow_html=True)
+        months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+        cancel_prob = [72, 68, 45, 20, 15, 10, 8, 12, 18, 30, 55, 78]
         colors_bar = ["#ef4444" if p >= 60 else "#f59e0b" if p >= 30 else "#10b981" for p in cancel_prob]
         fig_cancel = go.Figure(go.Bar(
             x=months, y=cancel_prob,
             marker_color=colors_bar,
             text=[f"{p}%" for p in cancel_prob],
             textposition="outside",
-            hovertemplate="<b>%{x}</b>: %{y}% disruption risk<extra></extra>"
+            hovertemplate="<b>%{x}</b>: %{y}% cancellation risk<extra></extra>"
         ))
         fig_cancel.update_layout(**CHART)
-        fig_cancel.update_yaxes(range=[0, 100], ticksuffix="%",
-                                gridcolor="rgba(255,255,255,0.05)", showline=False, zeroline=False)
-        st.plotly_chart(fig_cancel, width="stretch")
-        st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
+        fig_cancel.update_yaxes(range=[0, 100], ticksuffix="%", gridcolor="rgba(255,255,255,0.05)", showline=False, zeroline=False)
+        st.plotly_chart(fig_cancel, use_container_width=True)
 
-    # ── Risk Factor Matrix ──
+    st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
+
+    # ── Risk matrix table ──
     st.markdown("<div class='section-title'>Risk Factor Matrix</div>", unsafe_allow_html=True)
-
-    matrix_factors, matrix_likelihood, matrix_impact, matrix_level, matrix_mitigation = [], [], [], [], []
-
+    
+    matrix_factors = []
+    matrix_likelihood = []
+    matrix_impact = []
+    matrix_level = []
+    matrix_mitigation = []
+    
     for f in live_risk["active_factors"]:
         if f["factor"] == "☀️ Favorable Meteorological Conditions" and len(live_risk["active_factors"]) > 1:
             continue
         matrix_factors.append(f"⚡ Live: {f['factor']}")
         matrix_likelihood.append("Current")
         matrix_impact.append("High" if f["level"] in ["Critical", "High"] else "Medium")
-        matrix_level.append("🔴 Critical" if f["level"] == "Critical" else
-                             ("🟠 High" if f["level"] == "High" else "🟡 Moderate"))
+        matrix_level.append("🔴 Critical" if f["level"] == "Critical" else ("🟠 High" if f["level"] == "High" else "🟡 Moderate"))
         matrix_mitigation.append(f["mitigation"])
-
-    matrix_factors.extend([
+        
+    static_factors = [
         "❄️ Winter Fog (Dec–Feb)", "🌧️ Monsoon Disruptions (Jul–Sep)",
         "🔌 Airport Power Outage", "🌐 Political Advisory / Alerts",
         "📉 Off-Season Demand Drop", "🛫 Single-Runway Bottleneck",
-    ])
-    matrix_likelihood.extend(["High","Medium","Low","Medium","High","Medium"])
-    matrix_impact.extend(["High","Medium","High","High","Medium","High"])
-    matrix_level.extend(["🔴 Critical","🟡 Moderate","🟠 High","🔴 Critical","🟡 Moderate","🟠 High"])
-    matrix_mitigation.extend([
+    ]
+    static_likelihood = ["High", "Medium", "Low", "Medium", "High", "Medium"]
+    static_impact = ["High", "Medium", "High", "High", "Medium", "High"]
+    static_level = ["🔴 Critical", "🟡 Moderate", "🟠 High", "🔴 Critical", "🟡 Moderate", "🟠 High"]
+    static_mitigation = [
         "Flexible cancellation policy + proactive guest SMS alerts",
         "Monitor IMD forecasts 72 hrs ahead; maintain alternate road-trip packages",
         "Backup generator protocols; pre-check-in communication via WhatsApp",
         "Subscribe to MEA alerts; issue reassurance emails to confirmed bookings",
         "Launch winter packages & early-bird discounts by October",
         "Offer Jammu transfer packages as contingency for diverted flights",
-    ])
-
-    risk_df = pd.DataFrame({
-        "Risk Factor":       matrix_factors,
-        "Likelihood/State":  matrix_likelihood,
-        "Impact":            matrix_impact,
-        "Risk Level":        matrix_level,
+    ]
+    
+    matrix_factors.extend(static_factors)
+    matrix_likelihood.extend(static_likelihood)
+    matrix_impact.extend(static_impact)
+    matrix_level.extend(static_level)
+    matrix_mitigation.extend(static_mitigation)
+    
+    risk_data = {
+        "Risk Factor": matrix_factors,
+        "Likelihood/State": matrix_likelihood,
+        "Impact": matrix_impact,
+        "Risk Level": matrix_level,
         "Mitigation Strategy": matrix_mitigation,
-    })
-    st.dataframe(risk_df, width="stretch", hide_index=True)
+    }
+    
+    risk_df = pd.DataFrame(risk_data)
+    st.dataframe(risk_df, use_container_width=True, hide_index=True)
 
     st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
 
-    # ══════════════════════════════════════════════════════
-    # ── Operational Checklist (Firebase-backed) ──────────
-    # ══════════════════════════════════════════════════════
+    # ── Operational Checklist ──
     st.markdown("<div class='section-title'>📋 Pre-Season Operational Checklist</div>", unsafe_allow_html=True)
-
-    CHECKLIST_ITEMS = [
-        ("notam_alerts",         "Subscribe to airport NOTAM alerts"),
-        ("whatsapp_reminders",   "Set up 48-hr guest arrival reminders (WhatsApp)"),
-        ("ota_cancellation",     "Update cancellation policy on all OTAs"),
-        ("emergency_supplies",   "Stock emergency supplies for weather disruptions"),
-        ("alternate_transport",  "Prepare alternate transport contacts (taxi/road)"),
-        ("staff_delay_protocol", "Train staff on flight delay handling protocol"),
-        ("tour_operators",       "Set up local partnership with tour operators"),
-        ("weather_faq",          "Create weather-disruption guest FAQ sheet"),
-        ("auto_refund",          "Configure auto-refund rules for force majeure"),
-        ("generator_fuel",       "Verify generator fuel stock for winter months"),
-    ]
-
-    # Load from Firestore once per session
-    if "checklist_state" not in st.session_state:
-        st.session_state.checklist_state = load_checklist(hotel_id)
-
-    checklist_state = st.session_state.checklist_state
-
-    # Progress bar
-    total_items = len(CHECKLIST_ITEMS)
-    done_count  = sum(1 for key, _ in CHECKLIST_ITEMS if checklist_state.get(key, False))
-    progress    = done_count / total_items
-
-    bar_color = "#10b981" if progress == 1.0 else "#3b82f6"
-    st.markdown(f"""
-    <div style='margin-bottom:14px;'>
-        <div style='display:flex; justify-content:space-between; font-size:0.8rem;
-                    color:var(--text-muted); margin-bottom:6px;'>
-            <span>Checklist Progress</span>
-            <span>{done_count} / {total_items} completed</span>
-        </div>
-        <div style='height:8px; border-radius:4px; background:var(--border-color); overflow:hidden;'>
-            <div style='width:{progress*100:.0f}%; height:100%; background:{bar_color};'></div>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-
     chk1, chk2 = st.columns(2)
-    half = total_items // 2
-
-    def render_checklist_column(items, col):
-        with col:
-            for key, label in items:
-                current = checklist_state.get(key, False)
-                new_val = st.checkbox(label, value=current, key=f"chk_{key}")
-                if new_val != current:
-                    st.session_state.checklist_state[key] = new_val
-                    save_checklist(hotel_id, st.session_state.checklist_state)
-                    st.rerun()
-
-    render_checklist_column(CHECKLIST_ITEMS[:half], chk1)
-    render_checklist_column(CHECKLIST_ITEMS[half:], chk2)
+    with chk1:
+        checklist_items = [
+            ("Subscribe to airport NOTAM alerts", True),
+            ("Set up 48-hr guest arrival reminders (WhatsApp)", True),
+            ("Update cancellation policy on all OTAs", False),
+            ("Stock emergency supplies for weather disruptions", False),
+            ("Prepare alternate transport contacts (taxi/road)", True),
+        ]
+        for item, done in checklist_items:
+            icon = "✅" if done else "⬜"
+            color = "#10b981" if done else "var(--text-muted)"
+            st.markdown(f"<div style='padding:6px 0;font-size:0.85rem;color:{color};'>{icon} {item}</div>", unsafe_allow_html=True)
+    with chk2:
+        checklist_items2 = [
+            ("Train staff on flight delay handling protocol", False),
+            ("Set up local partnership with tour operators", True),
+            ("Create weather-disruption guest FAQ sheet", False),
+            ("Configure auto-refund rules for force majeure", False),
+            ("Verify generator fuel stock for winter months", True),
+        ]
+        for item, done in checklist_items2:
+            icon = "✅" if done else "⬜"
+            color = "#10b981" if done else "var(--text-muted)"
+            st.markdown(f"<div style='padding:6px 0;font-size:0.85rem;color:{color};'>{icon} {item}</div>", unsafe_allow_html=True)
 
     st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
 
@@ -964,15 +957,24 @@ with tab_risk:
     st.markdown("<div class='section-title'>💬 Guest Outreach — Send WhatsApp Messages</div>", unsafe_allow_html=True)
     st.markdown("<p style='font-size:0.85rem;color:var(--text-muted);margin-bottom:16px;'>Select any guest to send them a proactive WhatsApp message. Upcoming bookings are shown first.</p>", unsafe_allow_html=True)
 
-    today             = date.today()
+    today = date.today()
     arriving_bookings = pd.DataFrame()
-
     if not df.empty and "Check-in" in df.columns:
         try:
             df["Check-in-dt"] = pd.to_datetime(df["Check-in"], errors="coerce")
-            upcoming = df[df["Check-in-dt"].dt.date >= today].copy().sort_values("Check-in-dt")
-            arriving_bookings = upcoming if not upcoming.empty else \
-                df.dropna(subset=["Check-in-dt"]).copy().sort_values("Check-in-dt", ascending=False)
+
+            # Try upcoming (next 30 days) first
+            upcoming = df[
+                df["Check-in-dt"].dt.date >= today
+            ].copy().sort_values("Check-in-dt")
+
+            if not upcoming.empty:
+                arriving_bookings = upcoming
+            else:
+                # Fallback: show all bookings sorted by most recent check-in
+                arriving_bookings = df.dropna(subset=["Check-in-dt"]).copy().sort_values(
+                    "Check-in-dt", ascending=False
+                )
         except Exception:
             arriving_bookings = df.copy() if not df.empty else pd.DataFrame()
 
@@ -984,10 +986,10 @@ with tab_risk:
                 f"📅 {arriving_bookings.loc[i, 'Guest Name']} — Check-in: {arriving_bookings.loc[i, 'Check-in']}"
             )
         )
-        guest_row     = arriving_bookings.loc[selected_guest]
-        guest_name    = guest_row.get("Guest Name", "Guest")
+        guest_row = arriving_bookings.loc[selected_guest]
+        guest_name = guest_row.get("Guest Name", "Guest")
         guest_checkin = guest_row.get("Check-in", "soon")
-        guest_phone   = str(guest_row.get("Phone", "")).replace("+", "").strip()
+        guest_phone = str(guest_row.get("Phone", "")).replace("+", "").strip()
 
         msg_type = st.radio(
             "Message type:",
@@ -1020,7 +1022,7 @@ with tab_risk:
 
         if guest_phone and guest_phone != "nan":
             encoded_msg = urllib.parse.quote(edited_message)
-            wa_url      = f"https://wa.me/{guest_phone}?text={encoded_msg}"
+            wa_url = f"https://wa.me/{guest_phone}?text={encoded_msg}"
             st.markdown(f"""
                 <a href="{wa_url}" target="_blank" style="text-decoration:none;">
                     <button style="width:100%; border-radius:10px; padding:12px; background:#25d366;
@@ -1036,5 +1038,5 @@ with tab_risk:
     else:
         st.info("No bookings found. Add your first booking via the **Add Booking** page to enable guest outreach.")
 
-# CSS Unlock
+# CSS Unlock — triggers the dynamic has-selector to reveal the page
 st.markdown("<div class='app-unlocked'></div>", unsafe_allow_html=True)
