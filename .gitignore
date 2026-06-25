@@ -1,10 +1,25 @@
-# Firebase and Google Credentials
+# Sensitive credentials
+.streamlit/secrets.toml
+proxies.txt
 firebase_credentials.json
-credentials.json
 
-# Python environment and cache
+# Debug & scratch files
+debug_login.py
+booking_debug.png
+reviews_output.json
+scratch/
+test_*.py
+
+# Python
 __pycache__/
 *.pyc
-.venv/
+*.pyo
 .env
-.streamlit/secrets.toml
+
+# VS Code
+.vscode/
+
+# OS
+.DS_Store
+credentials.json
+logs/
