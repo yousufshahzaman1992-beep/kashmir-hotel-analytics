@@ -173,7 +173,7 @@ with st.sidebar:
 
     st.divider()
 
-    if st.button("🚪 Logout", width="stretch"):
+    if st.button("🚪 Logout", use_container_width=True):
         st.session_state.logged_in      = False
         st.session_state.hotel          = None
         st.session_state.pop("checklist_state", None)
@@ -543,7 +543,7 @@ with tab_reviews:
                 </div>
                 """, unsafe_allow_html=True)
 
-            if st.button("🔄 Refresh Reviews", width="stretch"):
+            if st.button("🔄 Refresh Reviews", use_container_width=True):
                 st.cache_data.clear()
                 st.rerun()
 
@@ -593,7 +593,7 @@ with tab_reviews:
                     m_source     = st.selectbox("Review Source", ["Google","Booking.com","Agoda","MakeMyTrip","Direct Customer"])
                     m_date       = st.date_input("Review Date", value=date.today())
 
-                    if st.button("📥 Save Review to Firebase", width="stretch"):
+                    if st.button("📥 Save Review to Firebase", use_container_width=True):
                         if not m_review_text.strip():
                             st.error("Please enter some review text first.")
                         else:
