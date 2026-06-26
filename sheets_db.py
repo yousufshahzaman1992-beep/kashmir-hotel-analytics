@@ -539,94 +539,117 @@ def update_hotel_ota_links(hotel_id, booking_url, agoda_url, mmt_url, google_pla
     load_hotels.clear()
     get_hotel_by_id.clear(doc_id)
     return True
-
 def sync_hotel_reviews(hotel_id, hotel_name):
     """
-    Main function to sync reviews from Google Places and scrape OTA review pages.
+    Main function to sync reviews from Google Places and OTA scrapers.
     Saves new reviews to Firebase.
     Returns: (saved_count, status_message, logs_list)
     """
     db = get_db()
     hotel_id_upper = str(hotel_id).strip().upper()
     hotel_doc = db.collection("hotels").document(hotel_id_upper).get()
-    
+
     if not hotel_doc.exists:
         return 0, f"Hotel '{hotel_id_upper}' not found in database.", []
-        
+
     hdata = hotel_doc.to_dict()
-    booking_url = hdata.get("booking_review_url")
-    google_place_id = hdata.get("google_place_id")
-    
+    booking_url     = hdata.get("booking_review_url", "")
+    agoda_url       = hdata.get("agoda_review_url", "")
+    mmt_url         = hdata.get("mmt_review_url", "") or hdata.get("mmt_url", "")
+    google_place_id = hdata.get("google_place_id", "")
+
     logs = []
     synced_reviews = []
-    
-    # 1. Fetch from Google Places API
+
+    # 1. Google Places API
     try:
         g_reviews = get_google_reviews(place_id=google_place_id, hotel_name=hotel_name)
         if g_reviews:
             for gr in g_reviews:
                 gr["hotel_id"] = hotel_id_upper
                 synced_reviews.append(gr)
-            logs.append(f"Successfully fetched {len(g_reviews)} reviews from Google Places API.")
+            logs.append(f"✅ Google Places: fetched {len(g_reviews)} reviews.")
         else:
-            logs.append("No reviews returned from Google Places (verify API Key / Place ID).")
+            logs.append("⚪ Google Places: 0 reviews (check API key / Place ID).")
     except Exception as e:
-        logs.append(f"Google Places sync failed: {str(e)}")
+        logs.append(f"❌ Google Places failed: {e}")
 
-    # 2. Attempt to scrape Booking.com
+    # 2. Booking.com — Playwright scraper
     if booking_url:
         try:
-            b_reviews = scrape_booking_reviews(booking_url)
+            from scraper import scrape_booking_reviews_with_proxy
+            b_reviews = scrape_booking_reviews_with_proxy(booking_url, headless=True, max_reviews=20)
             if b_reviews:
-                for br in b_reviews:
-                    br["hotel_id"] = hotel_id_upper
-                    synced_reviews.append(br)
-                logs.append(f"Successfully scraped {len(b_reviews)} reviews from Booking.com.")
+                for r in b_reviews:
+                    r["hotel_id"] = hotel_id_upper
+                    synced_reviews.append(r)
+                logs.append(f"✅ Booking.com: scraped {len(b_reviews)} reviews.")
             else:
-                logs.append("Booking.com scraping returned 0 reviews (rate-limited/blocked).")
+                logs.append("⚪ Booking.com: 0 reviews returned (may be blocked).")
         except Exception as e:
-            logs.append(f"Booking.com scraper failed: {str(e)}")
+            logs.append(f"❌ Booking.com scraper failed: {e}")
     else:
-        logs.append("Booking.com URL not configured.")
+        logs.append("⚪ Booking.com URL not configured.")
 
-    # 3. Fallback / Simulation for OTAs (if scraping is blocked or URLs are empty)
-    fallback_used = False
+    # 3. Agoda — Playwright scraper
+    if agoda_url:
+        try:
+            from scraper import scrape_agoda_reviews
+            a_reviews = scrape_agoda_reviews(agoda_url, headless=True, max_reviews=20)
+            if a_reviews:
+                for r in a_reviews:
+                    r["hotel_id"] = hotel_id_upper
+                    synced_reviews.append(r)
+                logs.append(f"✅ Agoda: scraped {len(a_reviews)} reviews.")
+            else:
+                logs.append("⚪ Agoda: 0 reviews returned (may be blocked).")
+        except Exception as e:
+            logs.append(f"❌ Agoda scraper failed: {e}")
+    else:
+        logs.append("⚪ Agoda URL not configured.")
+
+    # 4. MakeMyTrip — Playwright scraper
+    if mmt_url:
+        try:
+            from scraper import scrape_mmt_reviews
+            m_reviews = scrape_mmt_reviews(mmt_url, headless=True, max_reviews=20)
+            if m_reviews:
+                for r in m_reviews:
+                    r["hotel_id"] = hotel_id_upper
+                    synced_reviews.append(r)
+                logs.append(f"✅ MakeMyTrip: scraped {len(m_reviews)} reviews.")
+            else:
+                logs.append("⚪ MakeMyTrip: 0 reviews returned (may be blocked).")
+        except Exception as e:
+            logs.append(f"❌ MakeMyTrip scraper failed: {e}")
+    else:
+        logs.append("⚪ MakeMyTrip URL not configured.")
+
+    # NO fallback simulation — show honest result
     if not synced_reviews:
-        fallback_used = True
-        logs.append("No live reviews could be parsed due to rate limits. Switched to smart simulated sync...")
-        sim_reviews = generate_simulated_reviews(hotel_id_upper, hotel_name)
-        synced_reviews.extend(sim_reviews)
-        
-    # Save all fetched reviews to Firebase
+        return 0, "No reviews synced. Check OTA URLs and logs below.", logs
+
+    # Save to Firebase (dedup by MD5)
     saved_count = 0
     for r in synced_reviews:
         try:
-            # Generate doc ID
             text_prefix = r.get("review_text", "")[:50]
-            unique_str = f"{hotel_id_upper}_{r.get('source')}_{r.get('guest_name')}_{text_prefix}_{r.get('date')}"
-            doc_id = hashlib.md5(unique_str.encode("utf-8")).hexdigest()
-            
+            unique_str  = f"{hotel_id_upper}_{r.get('source')}_{r.get('guest_name')}_{text_prefix}_{r.get('date')}"
+            doc_id      = hashlib.md5(unique_str.encode("utf-8")).hexdigest()
             db.collection("reviews").document(doc_id).set({
-                "hotel_id": hotel_id_upper,
-                "guest_name": r.get("guest_name", "Guest"),
-                "rating": int(r.get("rating", 3)),
+                "hotel_id":    hotel_id_upper,
+                "guest_name":  r.get("guest_name", "Guest"),
+                "rating":      int(r.get("rating", 3)),
                 "review_text": r.get("review_text", ""),
-                "source": r.get("source", "Google"),
-                "date": r.get("date", "2026-06-21")
+                "source":      r.get("source", "Unknown"),
+                "date":        r.get("date", ""),
             })
             saved_count += 1
         except Exception as e:
-            print(f"Error saving review: {e}")
-            
-    # Clear cache
-    load_reviews.clear(hotel_id_upper)
-    
-    msg = f"Synced {len(synced_reviews)} reviews successfully!"
-    if fallback_used:
-        msg += " (Used smart simulated OTA sync as fallback)"
-        
-    return saved_count, msg, logs
+            logs.append(f"❌ Save error: {e}")
 
+    load_reviews.clear(hotel_id_upper)
+    return saved_count, f"✅ Synced {saved_count} real reviews from OTAs.", logs
 @st.cache_data(ttl=900, show_spinner=False)
 def get_srinagar_live_risk_data():
     """
