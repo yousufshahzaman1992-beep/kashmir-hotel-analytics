@@ -26,9 +26,11 @@ jobs:
         run: playwright install --with-deps chromium
 
       - name: Write Streamlit secrets file
+        env:
+          STREAMLIT_SECRETS: ${{ secrets.STREAMLIT_SECRETS }}
         run: |
           mkdir -p .streamlit
-          echo "${{ secrets.STREAMLIT_SECRETS }}" > .streamlit/secrets.toml
+          printf '%s' "$STREAMLIT_SECRETS" > .streamlit/secrets.toml
 
       - name: Run scraper
         run: python run_scraper.py
