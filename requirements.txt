@@ -8,3 +8,4 @@ fpdf2
 playwright>=1.40.0
 playwright-stealth>=1.0.6
 pyvirtualdisplay>=3.0
+
