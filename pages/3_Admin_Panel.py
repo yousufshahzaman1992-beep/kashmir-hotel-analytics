@@ -238,10 +238,9 @@ with tab4:
             🤖 Auto-Sync System
         </div>
         <div style='font-size:0.82rem;color:var(--text-muted);line-height:1.6;'>
-            Set the OTA URLs for each hotel here. The background sync worker picks these up automatically
-            every 6 hours and saves reviews to Firebase. Hotel users never wait — reviews load instantly.
-            <br><br>
-            <b style='color:var(--text-color);'>To start auto-sync:</b> run <code>bash setup_cron.sh</code> on your server once.
+            Set the OTA URLs for each hotel here. A scheduled GitHub Actions job picks these up
+            automatically every 6 hours and saves Booking.com / Agoda / MakeMyTrip reviews to Firebase.
+            Hotel users never wait — reviews load instantly from Firebase.
         </div>
     </div>
     """, unsafe_allow_html=True)
@@ -321,17 +320,26 @@ with tab4:
 
         st.divider()
 
-        # Manual sync trigger
-        st.markdown("#### ⚡ Manual Sync for This Hotel")
-        st.caption("Triggers an immediate scrape and saves results to Firebase. Takes 1-3 minutes.")
-        if st.button("🔄 Sync Reviews Now", use_container_width=True, key="manual_sync_btn"):
-            with st.spinner("Scraping OTA platforms and saving to Firebase..."):
+        # Manual sync trigger (Google Places only — OTA scraping runs via GitHub Actions)
+        st.markdown("#### ⚡ Manual Sync — Google Places Only")
+        st.caption(
+            "This button only fetches Google Places reviews. Booking.com, Agoda, and "
+            "MakeMyTrip reviews are scraped automatically every 6 hours by a separate "
+            "GitHub Actions job — go to your repo's Actions tab → 'Scrape OTA Reviews' → "
+            "'Run workflow' to trigger those manually."
+        )
+        if st.button("🔄 Sync Google Reviews Now", use_container_width=True, key="manual_sync_btn"):
+            with st.spinner("Fetching Google Places reviews and saving to Firebase..."):
                 from sheets_db import sync_hotel_reviews
                 saved, msg, logs = sync_hotel_reviews(selected_ota_id, hdata.get("name", ""))
                 st.success(msg)
                 with st.expander("📄 Sync Logs", expanded=True):
                     for line in logs:
                         st.write(f"- {line}")
+                st.info(
+                    "ℹ️ Any ❌ Booking.com / Agoda / MakeMyTrip errors above are expected — "
+                    "those platforms are handled by the scheduled GitHub Actions job instead."
+                )
 
         st.divider()
 
