@@ -6,17 +6,6 @@ import pandas as pd
 import hashlib
 import requests
 from google.cloud.firestore_v1.base_query import FieldFilter
-import subprocess
-import sys
-
-@st.cache_resource
-def install_playwright():
-    subprocess.run(
-        [sys.executable, "-m", "playwright", "install", "chromium"],
-        capture_output=True
-    )
-
-install_playwright()
 # ── Initialize Firebase once ──────────────────────────────
 @st.cache_resource
 def get_db():
