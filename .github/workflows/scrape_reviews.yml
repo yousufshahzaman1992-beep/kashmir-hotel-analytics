@@ -1,0 +1,38 @@
+name: Scrape OTA Reviews
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install -r scraper_requirements.txt
+
+      - name: Install Playwright browser (Chromium only)
+        run: playwright install --with-deps chromium
+
+      - name: Write Streamlit secrets file
+        run: |
+          mkdir -p .streamlit
+          echo "${{ secrets.STREAMLIT_SECRETS }}" > .streamlit/secrets.toml
+
+      - name: Run scraper
+        run: python run_scraper.py
+
+      - name: Remove secrets file
+        if: always()
+        run: rm -f .streamlit/secrets.toml
