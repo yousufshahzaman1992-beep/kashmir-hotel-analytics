@@ -61,6 +61,7 @@ apply_style()
 CHART = dict(
     paper_bgcolor="rgba(0,0,0,0)",
     plot_bgcolor="rgba(0,0,0,0)",
+    autosize=True,
     font=dict(family="Inter, sans-serif", color="#64748b", size=11),
     xaxis=dict(
         showgrid=False, showline=False, zeroline=False,
@@ -338,7 +339,7 @@ with tab_bookings:
             src.columns = ["Source","Guests"]
             rooms = fdf["Room Type"].value_counts().reset_index()
             rooms.columns = ["Room Type","Count"]
-            
+
             top_src  = src.iloc[0]["Source"] if len(src) else "—"
             top_room = rooms.iloc[0]["Room Type"] if len(rooms) else "—"
             foreign  = src[src["Source"]=="Foreign"]["Guests"].sum() \
@@ -415,24 +416,24 @@ with tab_reviews:
             </p>
         </div>
         """, unsafe_allow_html=True)
-        
+
         col_sync, col_manual = st.columns(2)
-        
+
         with col_sync:
             st.markdown("<p style='font-weight:600; color:var(--text-color); margin-bottom:8px; font-size:0.95rem;'>⚡ OTA Connection & Live Sync</p>", unsafe_allow_html=True)
-            
+
             # Fetch current URLs from session state hotel info
             h_booking_url = hotel.get("booking_review_url", "")
             h_agoda_url = hotel.get("agoda_review_url", "")
             h_mmt_url = hotel.get("mmt_review_url", "") or hotel.get("mmt_url", "")
             h_google_place_id = hotel.get("google_place_id", "")
-            
+
             with st.expander("⚙️ Configure OTA URLs & Place ID", expanded=False):
                 u_booking = st.text_input("Booking.com Review URL", value=h_booking_url, placeholder="https://www.booking.com/hotel/...")
                 u_agoda = st.text_input("Agoda Review URL", value=h_agoda_url, placeholder="https://www.agoda.com/...")
                 u_mmt = st.text_input("MakeMyTrip Review URL", value=h_mmt_url, placeholder="https://www.makemytrip.com/...")
                 u_google = st.text_input("Google Place ID", value=h_google_place_id, placeholder="e.g. ChIJ...")
-                
+
                 if st.button("💾 Save OTA URLs", use_container_width=True):
                     success = update_hotel_ota_links(hotel_id, u_booking, u_agoda, u_mmt, u_google)
                     if success:
@@ -442,7 +443,7 @@ with tab_reviews:
                         st.rerun()
                     else:
                         st.error("Failed to update URLs in database.")
-            
+
             # Status Indicator for connected platforms
             status_items = []
             if h_booking_url: status_items.append("🟢 Booking.com")
@@ -453,7 +454,7 @@ with tab_reviews:
             else: status_items.append("⚪ MakeMyTrip")
             if h_google_place_id: status_items.append("🟢 Google Places")
             else: status_items.append("⚪ Google Places")
-            
+
             st.markdown(f"""
             <div style='background:var(--secondary-bg-color); border:1px solid var(--border-color); border-radius:8px; padding:10px 12px; margin-bottom:12px;'>
                 <div style='font-size:0.75rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px;'>Connected Platforms</div>
@@ -462,29 +463,29 @@ with tab_reviews:
                 </div>
             </div>
             """, unsafe_allow_html=True)
-            
+
             if st.button("🔄 Sync Live OTA Reviews", type="primary", use_container_width=True):
                 with st.spinner("Syncing reviews and executing sentiment classifier..."):
                     saved_count, msg, sync_logs = sync_hotel_reviews(hotel_id, hotel_name)
-                    
+
                     # Show nice results
                     st.success(msg)
                     with st.expander("📄 View Sync Technical Logs", expanded=True):
                         for log in sync_logs:
                             st.write(f"- {log}")
-                    
+
                     # Wait a second and rerun
                     st.rerun()
-        
+
         with col_manual:
             st.markdown("<p style='font-weight:600; color:var(--text-color); margin-bottom:8px; font-size:0.95rem;'>✍️ Real-Time Sentiment Analyzer Form</p>", unsafe_allow_html=True)
-            
+
             # Real-time text area
             m_review_text = st.text_area("Review Text", height=82, placeholder="Type/paste a guest review to analyze sentiment in real time...", key="m_review_text_val")
-            
+
             # Ratings slider
             m_rating = st.slider("Guest Rating Stars", 1, 5, 5, key="m_rating_val")
-            
+
             # Interactive Real-Time Sentiment & Aspect Detection
             if m_review_text:
                 # Live sentiment calculation
@@ -492,7 +493,7 @@ with tab_reviews:
                 pos_count = sum(1 for w in words if w in POSITIVE_WORDS)
                 neg_count = sum(1 for w in words if w in NEGATIVE_WORDS)
                 score = (m_rating - 3) * 2 + (pos_count - neg_count)
-                
+
                 if score > 0:
                     live_sent = "🟢 Positive"
                     text_color = "#10b981"
@@ -505,7 +506,7 @@ with tab_reviews:
                     live_sent = "🟡 Neutral"
                     text_color = "#f59e0b"
                     bg_color = "rgba(245,158,11,0.1)"
-                    
+
                 # Live aspect detection
                 text_lower = m_review_text.lower()
                 live_aspects = []
@@ -514,9 +515,9 @@ with tab_reviews:
                         live_aspects.append(aspect)
                 if not live_aspects:
                     live_aspects = ["General"]
-                
+
                 aspects_badges = " ".join([f"<span style='background:rgba(59,130,246,0.15);color:var(--primary-color);border-radius:4px;padding:2px 6px;font-size:0.7rem;'>{a}</span>" for a in live_aspects])
-                
+
                 st.markdown(f"""
                 <div style='background:{bg_color}; border:1px solid {text_color}44; border-radius:8px; padding:12px; margin-bottom:12px;'>
                     <div style='display:flex; justify-content:space-between; align-items:center;'>
@@ -529,12 +530,12 @@ with tab_reviews:
                     </div>
                 </div>
                 """, unsafe_allow_html=True)
-            
+
             with st.expander("✏️ Guest Metadata & Save Document", expanded=False):
                 m_guest_name = st.text_input("Guest Name", value="Guest Name", placeholder="e.g. John Doe")
                 m_source = st.selectbox("Review Source", ["Google", "Booking.com", "Agoda", "MakeMyTrip", "Direct Customer"])
                 m_date = st.date_input("Review Date", value=date.today())
-                
+
                 if st.button("📥 Save Review to Firebase", use_container_width=True):
                     if not m_review_text.strip():
                         st.error("Please enter some review text first.")
@@ -550,7 +551,7 @@ with tab_reviews:
                         save_review_to_firebase(review_data)
                         st.success("Review saved and live charts updated!")
                         st.rerun()
-                        
+
     st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
 
     # Fetch reviews from database (with mock fallback)
@@ -560,20 +561,20 @@ with tab_reviews:
     for r in reviews_raw:
         text = r.get("review_text", "")
         rating = r.get("rating", 3)
-        
+
         # Simple lexical sentiment analyzer
         words = str(text).lower().split()
         pos_count = sum(1 for w in words if w in POSITIVE_WORDS)
         neg_count = sum(1 for w in words if w in NEGATIVE_WORDS)
         score = (rating - 3) * 2 + (pos_count - neg_count)
-        
+
         if score > 0:
             sentiment = "Positive"
         elif score < 0:
             sentiment = "Negative"
         else:
             sentiment = "Neutral"
-            
+
         # Simple aspect detection
         text_lower = str(text).lower()
         aspects_found = []
@@ -582,7 +583,7 @@ with tab_reviews:
                 aspects_found.append(aspect)
         if not aspects_found:
             aspects_found = ["General"]
-            
+
         processed_reviews.append({
             "guest_name": r.get("guest_name", "Guest"),
             "rating": rating,
@@ -601,20 +602,20 @@ with tab_reviews:
         avg_rating = rdf["rating"].mean()
         pos_count = len(rdf[rdf["sentiment"] == "Positive"])
         pos_pct = round((pos_count / total_count) * 100) if total_count > 0 else 0
-        
+
         m1, m2, m3 = st.columns(3)
         m1.metric("⭐ Total OTA Reviews", total_count, help="Aggregate reviews from all sources")
         m2.metric("📈 Avg Rating Score", f"{avg_rating:.1f} / 5.0", help="Average guest rating")
         m3.metric("❤️ Positive Sentiment", f"{pos_pct}%", help="Percentage of overall positive feedback")
-        
+
         # ── Sentiment Breakdown Bar ──
         neu_count = len(rdf[rdf["sentiment"] == "Neutral"])
         neg_count = len(rdf[rdf["sentiment"] == "Negative"])
-        
+
         pos_bar = (pos_count / total_count * 100) if total_count > 0 else 0
         neu_bar = (neu_count / total_count * 100) if total_count > 0 else 0
         neg_bar = (neg_count / total_count * 100) if total_count > 0 else 0
-        
+
         st.markdown(f"""
         <div style='margin: 15px 0 25px 0;'>
             <div style='display:flex; justify-content:space-between; align-items:center; font-size:0.8rem; color:var(--text-muted); margin-bottom:6px; flex-wrap:wrap; gap:4px;'>
@@ -628,7 +629,7 @@ with tab_reviews:
             </div>
         </div>
         """, unsafe_allow_html=True)
-        
+
         # ── Aspect Breakdown Grid ──
         aspect_sentiment = {}
         for aspect in ASPECTS.keys():
@@ -640,10 +641,10 @@ with tab_reviews:
             else:
                 pct = None
             aspect_sentiment[aspect] = (pct, total_asp)
-            
+
         st.markdown("<div class='section-title'>Aspect-Based Guest Sentiment</div>", unsafe_allow_html=True)
         res_col1, res_col2 = st.columns(2)
-        
+
         with res_col1:
             # Food & Dining
             score, count = aspect_sentiment["Food & Dining"]
@@ -671,7 +672,7 @@ with tab_reviews:
                     <p style='font-size:0.8rem; margin:0;'>No guest reviews available regarding the dining experience yet.</p>
                 </div>
                 """, unsafe_allow_html=True)
-                
+
             # Heating & Plumbing
             score, count = aspect_sentiment["Heating & Plumbing"]
             if score is not None:
@@ -726,7 +727,7 @@ with tab_reviews:
                     <p style='font-size:0.8rem; margin:0;'>No guest reviews available regarding services yet.</p>
                 </div>
                 """, unsafe_allow_html=True)
-                
+
             # Room & Cleanliness
             score, count = aspect_sentiment["Room & Cleanliness"]
             if score is not None:
@@ -753,7 +754,7 @@ with tab_reviews:
                     <p style='font-size:0.8rem; margin:0;'>No guest reviews available regarding rooms yet.</p>
                 </div>
                 """, unsafe_allow_html=True)
-                
+
         st.markdown("<br>", unsafe_allow_html=True)
 
         # ── Full review list ──
@@ -871,13 +872,13 @@ with tab_risk:
 
     # ── Risk matrix table ──
     st.markdown("<div class='section-title'>Risk Factor Matrix</div>", unsafe_allow_html=True)
-    
+
     matrix_factors = []
     matrix_likelihood = []
     matrix_impact = []
     matrix_level = []
     matrix_mitigation = []
-    
+
     for f in live_risk["active_factors"]:
         if f["factor"] == "☀️ Favorable Meteorological Conditions" and len(live_risk["active_factors"]) > 1:
             continue
@@ -886,7 +887,7 @@ with tab_risk:
         matrix_impact.append("High" if f["level"] in ["Critical", "High"] else "Medium")
         matrix_level.append("🔴 Critical" if f["level"] == "Critical" else ("🟠 High" if f["level"] == "High" else "🟡 Moderate"))
         matrix_mitigation.append(f["mitigation"])
-        
+
     static_factors = [
         "❄️ Winter Fog (Dec–Feb)", "🌧️ Monsoon Disruptions (Jul–Sep)",
         "🔌 Airport Power Outage", "🌐 Political Advisory / Alerts",
@@ -903,13 +904,13 @@ with tab_risk:
         "Launch winter packages & early-bird discounts by October",
         "Offer Jammu transfer packages as contingency for diverted flights",
     ]
-    
+
     matrix_factors.extend(static_factors)
     matrix_likelihood.extend(static_likelihood)
     matrix_impact.extend(static_impact)
     matrix_level.extend(static_level)
     matrix_mitigation.extend(static_mitigation)
-    
+
     risk_data = {
         "Risk Factor": matrix_factors,
         "Likelihood/State": matrix_likelihood,
@@ -917,7 +918,7 @@ with tab_risk:
         "Risk Level": matrix_level,
         "Mitigation Strategy": matrix_mitigation,
     }
-    
+
     risk_df = pd.DataFrame(risk_data)
     st.dataframe(risk_df, use_container_width=True, hide_index=True)
 
