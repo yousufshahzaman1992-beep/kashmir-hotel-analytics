@@ -259,7 +259,7 @@ with tab_overview:
         st.info("No bookings for this season.")
     else:
         # ── Row 1: Revenue + Origins ──
-        c1, c2 = st.columns([3,2])
+        c1, c2 = st.columns([3,2], gap="small")
         with c1:
             st.markdown("<div class='section-title'>Monthly Revenue</div>", unsafe_allow_html=True)
             rev = (fdf.groupby(["Month_Num","Month"])["Amount (₹)"]
@@ -292,7 +292,7 @@ with tab_overview:
         st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
 
         # ── Row 2: Room Type + Trend ──
-        c3, c4 = st.columns([2,3])
+        c3, c4 = st.columns([2,3], gap="small")
         with c3:
             st.markdown("<div class='section-title'>Room Type</div>", unsafe_allow_html=True)
             rooms = fdf["Room Type"].value_counts().reset_index()
@@ -842,7 +842,7 @@ with tab_risk:
     ))
     fig_gauge.update_layout(**CHART, height=280)
 
-    g1, g2 = st.columns([2, 3])
+    g1, g2 = st.columns([2, 3], gap="small")
     with g1:
         st.plotly_chart(fig_gauge, use_container_width=True)
         st.markdown(f"""
