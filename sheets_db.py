@@ -540,7 +540,8 @@ def update_hotel_ota_links(hotel_id, booking_url, agoda_url, mmt_url, google_pla
     return True
 def sync_hotel_reviews(hotel_id, hotel_name):
     """
-    Main function to sync reviews from Google Places and OTA scrapers.
+    Main function to sync reviews from Google Places only.
+    OTA scraping (Booking.com, Agoda, MakeMyTrip) runs via GitHub Actions workflow only.
     Saves new reviews to Firebase.
     Returns: (saved_count, status_message, logs_list)
     """
@@ -552,15 +553,12 @@ def sync_hotel_reviews(hotel_id, hotel_name):
         return 0, f"Hotel '{hotel_id_upper}' not found in database.", []
 
     hdata = hotel_doc.to_dict()
-    booking_url     = hdata.get("booking_review_url", "")
-    agoda_url       = hdata.get("agoda_review_url", "")
-    mmt_url         = hdata.get("mmt_review_url", "") or hdata.get("mmt_url", "")
     google_place_id = hdata.get("google_place_id", "")
 
     logs = []
     synced_reviews = []
 
-    # 1. Google Places API
+    # 1. Google Places API (only platform that works safely in Streamlit)
     try:
         g_reviews = get_google_reviews(place_id=google_place_id, hotel_name=hotel_name)
         if g_reviews:
@@ -573,60 +571,12 @@ def sync_hotel_reviews(hotel_id, hotel_name):
     except Exception as e:
         logs.append(f"❌ Google Places failed: {e}")
 
-    # 2. Booking.com — Playwright scraper
-    if booking_url:
-        try:
-            from scraper import scrape_booking_reviews_with_proxy
-            b_reviews = scrape_booking_reviews_with_proxy(booking_url, headless=True, max_reviews=20)
-            if b_reviews:
-                for r in b_reviews:
-                    r["hotel_id"] = hotel_id_upper
-                    synced_reviews.append(r)
-                logs.append(f"✅ Booking.com: scraped {len(b_reviews)} reviews.")
-            else:
-                logs.append("⚪ Booking.com: 0 reviews returned (may be blocked).")
-        except Exception as e:
-            logs.append(f"❌ Booking.com scraper failed: {e}")
-    else:
-        logs.append("⚪ Booking.com URL not configured.")
-
-    # 3. Agoda — Playwright scraper
-    if agoda_url:
-        try:
-            from scraper import scrape_agoda_reviews
-            a_reviews = scrape_agoda_reviews(agoda_url, headless=True, max_reviews=20)
-            if a_reviews:
-                for r in a_reviews:
-                    r["hotel_id"] = hotel_id_upper
-                    synced_reviews.append(r)
-                logs.append(f"✅ Agoda: scraped {len(a_reviews)} reviews.")
-            else:
-                logs.append("⚪ Agoda: 0 reviews returned (may be blocked).")
-        except Exception as e:
-            logs.append(f"❌ Agoda scraper failed: {e}")
-    else:
-        logs.append("⚪ Agoda URL not configured.")
-
-    # 4. MakeMyTrip — Playwright scraper
-    if mmt_url:
-        try:
-            from scraper import scrape_mmt_reviews
-            m_reviews = scrape_mmt_reviews(mmt_url, headless=True, max_reviews=20)
-            if m_reviews:
-                for r in m_reviews:
-                    r["hotel_id"] = hotel_id_upper
-                    synced_reviews.append(r)
-                logs.append(f"✅ MakeMyTrip: scraped {len(m_reviews)} reviews.")
-            else:
-                logs.append("⚪ MakeMyTrip: 0 reviews returned (may be blocked).")
-        except Exception as e:
-            logs.append(f"❌ MakeMyTrip scraper failed: {e}")
-    else:
-        logs.append("⚪ MakeMyTrip URL not configured.")
+    # OTA Scrapers (Booking.com, Agoda, MakeMyTrip) run via GitHub Actions only
+    logs.append("ℹ️ Booking.com, Agoda, MakeMyTrip: scraped automatically via GitHub Actions (every 6 hours).")
 
     # NO fallback simulation — show honest result
     if not synced_reviews:
-        return 0, "No reviews synced. Check OTA URLs and logs below.", logs
+        return 0, "No reviews synced. Check Google Place ID and API key. OTA scrapers run separately via GitHub Actions.", logs
 
     # Save to Firebase (dedup by MD5)
     saved_count = 0
