@@ -323,10 +323,8 @@ with tab4:
         # Manual sync trigger (Google Places only — OTA scraping runs via GitHub Actions)
         st.markdown("#### ⚡ Manual Sync — Google Places Only")
         st.caption(
-            "This button only fetches Google Places reviews. Booking.com, Agoda, and "
-            "MakeMyTrip reviews are scraped automatically every 6 hours by a separate "
-            "GitHub Actions job — go to your repo's Actions tab → 'Scrape OTA Reviews' → "
-            "'Run workflow' to trigger those manually."
+            "This button only fetches Google Places reviews. "
+            "Booking.com, Agoda, and MakeMyTrip reviews are scraped by a separate GitHub Actions workflow."
         )
         if st.button("🔄 Sync Google Reviews Now", use_container_width=True, key="manual_sync_btn"):
             with st.spinner("Fetching Google Places reviews and saving to Firebase..."):
@@ -336,10 +334,6 @@ with tab4:
                 with st.expander("📄 Sync Logs", expanded=True):
                     for line in logs:
                         st.write(f"- {line}")
-                st.info(
-                    "ℹ️ Any ❌ Booking.com / Agoda / MakeMyTrip errors above are expected — "
-                    "those platforms are handled by the scheduled GitHub Actions job instead."
-                )
 
         st.divider()
 

@@ -247,8 +247,8 @@ with tab_sync:
     st.markdown("### 🔄 OTA Sync Status & Manual Trigger")
 
     st.info(
-        "**Automatic sync** runs every 6 hours via cron (`setup_cron.sh`). "
-        "Use the button below to trigger a manual sync for a specific hotel."
+        "**Automatic sync** runs via GitHub Actions workflow for OTA reviews. "
+        "This manual trigger only syncs Google Places reviews."
     )
 
     hotels_df = load_hotels()
