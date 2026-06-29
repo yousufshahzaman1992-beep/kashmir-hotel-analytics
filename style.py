@@ -534,6 +534,17 @@ def apply_style():
         padding-left:   1.5rem !important;
         padding-right:  1.5rem !important;
         max-width:      100% !important;
+        min-height:     100vh !important;
+    }
+
+    /* Ensure the scrollable content column always stretches to fill the
+       viewport height — without this, on pages with shorter content
+       (e.g. Admin Panel, or after a tab switch shortens visible content)
+       the page background renders but the content column stays short,
+       leaving empty unstyled space below when scrolling on desktop. */
+    [data-testid="stAppViewContainer"],
+    [data-testid="stMain"] {
+        min-height: 100vh !important;
     }
 
     /* ═══════════════════════════════════════════════
@@ -1346,7 +1357,7 @@ def render_custom_navigation():
     st.page_link("app.py", label="Dashboard", icon="📊")
     st.page_link("pages/1_Add_Booking.py", label="Add Booking", icon="📝")
     st.page_link("pages/2_View_Bookings.py", label="View Bookings", icon="📋")
-    
+
     # Only show Admin Panel to ADMIN role
     if st.session_state.get("hotel", {}).get("hotel_id") == "ADMIN":
         st.page_link("pages/3_Admin_Panel.py", label="Admin Panel", icon="⚙️")
