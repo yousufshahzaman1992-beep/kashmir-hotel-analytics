@@ -4,4 +4,3 @@ pandas
 requests
 playwright>=1.40.0
 playwright-stealth>=1.0.6
-

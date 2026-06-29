@@ -66,7 +66,7 @@ with st.form("setup_form"):
                                placeholder="Min 6 characters")
     password2 = st.text_input("Confirm Password", type="password",
                                placeholder="Repeat password")
-    submit    = st.form_submit_button("✅ Create My Account", use_container_width=True)
+    submit    = st.form_submit_button("✅ Create My Account", width='stretch')
 
 if submit:
     if not username or not password:

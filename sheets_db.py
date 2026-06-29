@@ -540,8 +540,7 @@ def update_hotel_ota_links(hotel_id, booking_url, agoda_url, mmt_url, google_pla
     return True
 def sync_hotel_reviews(hotel_id, hotel_name):
     """
-    Main function to sync reviews from Google Places only.
-    OTA scraping (Booking.com, Agoda, MakeMyTrip) runs via GitHub Actions workflow only.
+    Main function to sync reviews from Google Places and OTA scrapers.
     Saves new reviews to Firebase.
     Returns: (saved_count, status_message, logs_list)
     """
@@ -553,12 +552,15 @@ def sync_hotel_reviews(hotel_id, hotel_name):
         return 0, f"Hotel '{hotel_id_upper}' not found in database.", []
 
     hdata = hotel_doc.to_dict()
+    booking_url     = hdata.get("booking_review_url", "")
+    agoda_url       = hdata.get("agoda_review_url", "")
+    mmt_url         = hdata.get("mmt_review_url", "") or hdata.get("mmt_url", "")
     google_place_id = hdata.get("google_place_id", "")
 
     logs = []
     synced_reviews = []
 
-    # 1. Google Places API (only platform that works safely in Streamlit)
+    # 1. Google Places API
     try:
         g_reviews = get_google_reviews(place_id=google_place_id, hotel_name=hotel_name)
         if g_reviews:
@@ -571,12 +573,60 @@ def sync_hotel_reviews(hotel_id, hotel_name):
     except Exception as e:
         logs.append(f"❌ Google Places failed: {e}")
 
-    # OTA Scrapers (Booking.com, Agoda, MakeMyTrip) run via GitHub Actions only
-    logs.append("ℹ️ Booking.com, Agoda, MakeMyTrip: scraped automatically via GitHub Actions (every 6 hours).")
+    # 2. Booking.com — Playwright scraper
+    if booking_url:
+        try:
+            from scraper import scrape_booking_reviews_with_proxy
+            b_reviews = scrape_booking_reviews_with_proxy(booking_url, headless=True, max_reviews=20)
+            if b_reviews:
+                for r in b_reviews:
+                    r["hotel_id"] = hotel_id_upper
+                    synced_reviews.append(r)
+                logs.append(f"✅ Booking.com: scraped {len(b_reviews)} reviews.")
+            else:
+                logs.append("⚪ Booking.com: 0 reviews returned (may be blocked).")
+        except Exception as e:
+            logs.append(f"❌ Booking.com scraper failed: {e}")
+    else:
+        logs.append("⚪ Booking.com URL not configured.")
+
+    # 3. Agoda — Playwright scraper
+    if agoda_url:
+        try:
+            from scraper import scrape_agoda_reviews
+            a_reviews = scrape_agoda_reviews(agoda_url, headless=True, max_reviews=20)
+            if a_reviews:
+                for r in a_reviews:
+                    r["hotel_id"] = hotel_id_upper
+                    synced_reviews.append(r)
+                logs.append(f"✅ Agoda: scraped {len(a_reviews)} reviews.")
+            else:
+                logs.append("⚪ Agoda: 0 reviews returned (may be blocked).")
+        except Exception as e:
+            logs.append(f"❌ Agoda scraper failed: {e}")
+    else:
+        logs.append("⚪ Agoda URL not configured.")
+
+    # 4. MakeMyTrip — Playwright scraper
+    if mmt_url:
+        try:
+            from scraper import scrape_mmt_reviews
+            m_reviews = scrape_mmt_reviews(mmt_url, headless=True, max_reviews=20)
+            if m_reviews:
+                for r in m_reviews:
+                    r["hotel_id"] = hotel_id_upper
+                    synced_reviews.append(r)
+                logs.append(f"✅ MakeMyTrip: scraped {len(m_reviews)} reviews.")
+            else:
+                logs.append("⚪ MakeMyTrip: 0 reviews returned (may be blocked).")
+        except Exception as e:
+            logs.append(f"❌ MakeMyTrip scraper failed: {e}")
+    else:
+        logs.append("⚪ MakeMyTrip URL not configured.")
 
     # NO fallback simulation — show honest result
     if not synced_reviews:
-        return 0, "No reviews synced. Check Google Place ID and API key. OTA scrapers run separately via GitHub Actions.", logs
+        return 0, "No reviews synced. Check OTA URLs and logs below.", logs
 
     # Save to Firebase (dedup by MD5)
     saved_count = 0
@@ -599,14 +649,21 @@ def sync_hotel_reviews(hotel_id, hotel_name):
 
     load_reviews.clear(hotel_id_upper)
     return saved_count, f"✅ Synced {saved_count} real reviews from OTAs.", logs
-@st.cache_data(ttl=900, show_spinner=False)
+@st.cache_data(ttl=1800, show_spinner=False)
 def get_srinagar_live_risk_data():
     """
-    Fetches real-time weather and connectivity conditions for Srinagar (SXR Airport)
-    from Open-Meteo API and calculates a dynamic risk index.
-    Cached for 15 minutes (ttl=900) to avoid a live HTTP call on every page render.
+    Fetches real-time weather for Srinagar (SXR Airport) from Open-Meteo API.
+    Cached for 30 minutes (ttl=1800) to reduce API call frequency.
+    Retries once on timeout with a 12-second limit.
     """
     import requests
+    from requests.adapters import HTTPAdapter
+    from urllib3.util.retry import Retry
+
+    session = requests.Session()
+    retry = Retry(total=2, backoff_factor=1, status_forcelist=[500, 502, 503, 504])
+    session.mount("https://", HTTPAdapter(max_retries=retry))
+
     try:
         # Srinagar coordinates: Lat 34.0837, Lon 74.7973
         url = "https://api.open-meteo.com/v1/forecast"
@@ -616,7 +673,7 @@ def get_srinagar_live_risk_data():
             "current": "temperature_2m,relative_humidity_2m,precipitation,rain,snowfall,weather_code,cloud_cover,wind_speed_10m,visibility",
             "timezone": "Asia/Kolkata"
         }
-        resp = requests.get(url, params=params, timeout=5).json()
+        resp = session.get(url, params=params, timeout=12).json()
         current = resp.get("current", {})
         
         # Extract variables
@@ -731,10 +788,10 @@ def get_srinagar_live_risk_data():
             "success": False,
             "risk_score": 35,  # Fallback moderate risk
             "weather": {
-                "temp": 12,
-                "visibility_km": 8.0,
-                "wind_speed": 10,
-                "desc": "Unavailable (Connection Error)",
+                "temp": "—",
+                "visibility_km": "—",
+                "wind_speed": "—",
+                "desc": "Weather feed offline — retrying in 30 min",
                 "snow": 0,
                 "rain": 0
             },
@@ -742,7 +799,7 @@ def get_srinagar_live_risk_data():
                 {
                     "factor": "⚠️ Weather Feed Offline",
                     "level": "Moderate",
-                    "mitigation": "Unable to fetch live weather data. Please monitor Srinagar Airport authority manual updates."
+                    "mitigation": "Live weather data unavailable. Monitor SXR Airport authority updates manually. Data will retry automatically."
                 }
             ]
         }

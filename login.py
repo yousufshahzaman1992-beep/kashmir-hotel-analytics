@@ -232,7 +232,7 @@ def show_login():
         username = st.text_input("Username", placeholder="your username")
         password = st.text_input("Password", type="password",
                                  placeholder="••••••••")
-        submit   = st.form_submit_button("Sign In  →", use_container_width=True)
+        submit   = st.form_submit_button("Sign In  →", width='stretch')
 
     if submit:
         if not username or not password:

@@ -73,7 +73,7 @@ with st.form("booking_form"):
         with col4:
             notes = st.text_area("Notes", height=80)
 
-    submit = st.form_submit_button("💾 Save Booking", use_container_width=True)
+    submit = st.form_submit_button("💾 Save Booking", width='stretch')
 
 # ── Save Logic ────────────────────────────────────────────
 if submit:

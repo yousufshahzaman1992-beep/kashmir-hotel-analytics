@@ -32,7 +32,7 @@ with st.sidebar:
     st.markdown("""<a href='https://wa.me/918491828292' target='_blank' style='text-decoration:none;'>
         <button class='support-btn'>💬 Contact Support</button></a>""", unsafe_allow_html=True)
     st.markdown("<div style='height:8px;'></div>", unsafe_allow_html=True)
-    if st.button("🚪 Logout", use_container_width=True):
+    if st.button("🚪 Logout", width='stretch'):
         st.session_state.logged_in = False
         st.session_state.hotel     = None
         st.query_params.clear()
@@ -79,10 +79,10 @@ if len(bookings_df) > 0 and "hotel_id" in bookings_df.columns:
     merged["Bookings"]   = merged["Bookings"].astype(int)
     merged["Avg_Nights"] = merged["Avg_Nights"].round(1)
     merged.columns       = ["Hotel ID","Name","Username","Plan","Email","Bookings","Revenue (₹)","Avg Nights"]
-    st.dataframe(merged, use_container_width=True, hide_index=True,
+    st.dataframe(merged, width='stretch', hide_index=True,
                  column_config={"Revenue (₹)": st.column_config.NumberColumn("Revenue (₹)", format="₹%d")})
 else:
-    st.dataframe(hotels_df[["hotel_id","name","username","plan","email"]], use_container_width=True, hide_index=True)
+    st.dataframe(hotels_df[["hotel_id","name","username","plan","email"]], width='stretch', hide_index=True)
 
 # ── Revenue by Hotel ──────────────────────────────────────────
 if len(bookings_df) > 0 and "hotel_id" in bookings_df.columns:
@@ -105,7 +105,7 @@ if len(bookings_df) > 0 and "hotel_id" in bookings_df.columns:
     ))
     fig_rev.update_layout(**CHART, height=260)
     st.markdown("<div class='section-title'>Revenue by Hotel</div>", unsafe_allow_html=True)
-    st.plotly_chart(fig_rev, use_container_width=True)
+    st.plotly_chart(fig_rev, width='stretch')
 
 st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
 
@@ -135,7 +135,7 @@ with tab1:
             new_plan  = st.selectbox("Subscription Plan", ["basic","pro","enterprise"])
         app_url = st.text_input("App URL", value="https://kashmir-hotel-analytics.streamlit.app",
                                 help="The public URL of your deployed app")
-        add = st.form_submit_button("➕ Add Hotel & Send Invite", use_container_width=True)
+        add = st.form_submit_button("➕ Add Hotel & Send Invite", width='stretch')
     if add:
         if not all([new_id, new_name, new_email]):
             st.error("❌ Please fill in all required fields.")
@@ -188,7 +188,7 @@ with tab2:
                 edit_email = st.text_input("Email", value=selected_data["email"])
                 edit_plan  = st.selectbox("Plan", ["basic","pro","enterprise"],
                                           index=["basic","pro","enterprise"].index(selected_data.get("plan","basic")))
-            save = st.form_submit_button("💾 Save Changes", use_container_width=True)
+            save = st.form_submit_button("💾 Save Changes", width='stretch')
         if save:
             db = get_db()
             db.collection("hotels").document(selected_id).update({
@@ -221,7 +221,7 @@ with tab3:
         """, unsafe_allow_html=True)
         confirm = st.checkbox(f"I understand — delete **{del_name}** permanently")
         if confirm:
-            if st.button("🗑️ Delete Hotel Account", use_container_width=True):
+            if st.button("🗑️ Delete Hotel Account", width='stretch'):
                 db = get_db()
                 db.collection("hotels").document(del_id).delete()
                 st.success(f"✅ **{del_name}** deleted successfully!")
@@ -308,7 +308,7 @@ with tab4:
             )
             st.caption("💡 Find Google Place ID at: https://developers.google.com/maps/documentation/places/web-service/place-id")
 
-            submitted = st.form_submit_button("💾 Save OTA URLs", use_container_width=True, type="primary")
+            submitted = st.form_submit_button("💾 Save OTA URLs", width='stretch', type="primary")
             if submitted:
                 ok = update_hotel_ota_links(selected_ota_id, u_booking, u_agoda, u_mmt, u_google)
                 if ok:
@@ -326,7 +326,7 @@ with tab4:
             "This button only fetches Google Places reviews. "
             "Booking.com, Agoda, and MakeMyTrip reviews are scraped by a separate GitHub Actions workflow."
         )
-        if st.button("🔄 Sync Google Reviews Now", use_container_width=True, key="manual_sync_btn"):
+        if st.button("🔄 Sync Google Reviews Now", width='stretch', key="manual_sync_btn"):
             with st.spinner("Fetching Google Places reviews and saving to Firebase..."):
                 from sheets_db import sync_hotel_reviews
                 saved, msg, logs = sync_hotel_reviews(selected_ota_id, hdata.get("name", ""))
@@ -352,6 +352,6 @@ with tab4:
                 "MakeMyTrip":  "✅" if (hd.get("mmt_review_url") or hd.get("mmt_url")) else "❌",
                 "Google":      "✅" if hd.get("google_place_id")     else "❌",
             })
-        st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
+        st.dataframe(pd.DataFrame(rows), width='stretch', hide_index=True)
 
 st.markdown("<div class='app-unlocked'></div>", unsafe_allow_html=True)

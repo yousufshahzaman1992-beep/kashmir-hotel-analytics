@@ -124,6 +124,7 @@ def apply_style():
         --input-bg:           #0a1228;
         --input-border:       rgba(255,255,255,0.12);
         --input-text:         #e2e8f0;
+        --input-focus-shadow: rgba(59, 130, 246, 0.25);
         --mesh-bg-gradient:
             radial-gradient(ellipse 80% 60% at 10% 0%,rgba(37,99,235,0.08) 0%,transparent 60%),
             radial-gradient(ellipse 60% 50% at 90% 100%,rgba(139,92,246,0.07) 0%,transparent 60%),
@@ -164,6 +165,7 @@ def apply_style():
         --input-bg:           #ffffff;
         --input-border:       rgba(0,0,0,0.12);
         --input-text:         #0f172a;
+        --input-focus-shadow: rgba(37, 99, 235, 0.15);
         --mesh-bg-gradient:   none;
     }
 
@@ -516,10 +518,22 @@ def apply_style():
     /* ═══════════════════════════════════════════════
        LAYOUT
     ═══════════════════════════════════════════════ */
+    /* Narrow sidebar so the dashboard gets maximum horizontal space */
+    [data-testid="stSidebar"] {
+        min-width: 220px !important;
+        max-width: 220px !important;
+        width:     220px !important;
+    }
+    [data-testid="stSidebar"] > div:first-child {
+        width: 220px !important;
+    }
+
     .block-container {
-        padding-top: 4rem !important;
-        padding-bottom: 3rem;
-        max-width: 1280px;
+        padding-top:    3rem !important;
+        padding-bottom: 2rem !important;
+        padding-left:   1.5rem !important;
+        padding-right:  1.5rem !important;
+        max-width:      100% !important;
     }
 
     /* ═══════════════════════════════════════════════
@@ -1018,8 +1032,250 @@ def apply_style():
         100% { background-position: 200% center; }
     }
 
+    /* ═══════════════════════════════════════════════
+       PREMIUM ENHANCEMENTS — Page entry animations,
+       richer cards, styled progress, checkboxes
+    ═══════════════════════════════════════════════ */
+
+    /* Smooth page-entry fade+slide for main block */
+    [data-testid="stMainBlockContainer"] {
+        animation: pageEntry 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+    @keyframes pageEntry {
+        from { opacity: 0; transform: translateY(14px); }
+        to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Stagger-fade for vertical blocks inside main */
+    [data-testid="stVerticalBlock"] > [data-testid="stVerticalBlock"] {
+        animation: fadeUp 0.4s ease both;
+    }
+    @keyframes fadeUp {
+        from { opacity: 0; transform: translateY(10px); }
+        to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Metric cards: bigger glow, animated top stripe ── */
+    [data-testid="metric-container"] {
+        position: relative;
+        overflow: hidden;
+        transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1),
+                    box-shadow 0.3s ease, border-color 0.3s ease !important;
+    }
+    [data-testid="metric-container"]::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(ellipse 80% 60% at 50% 0%,
+            rgba(59,130,246,0.06) 0%, transparent 70%);
+        pointer-events: none;
+    }
+    [data-testid="metric-container"]:hover {
+        transform: translateY(-5px) scale(1.012) !important;
+        border-color: rgba(59,130,246,0.35) !important;
+        box-shadow:
+            0 1px 0 rgba(255,255,255,0.06) inset,
+            0 20px 60px rgba(0,0,0,0.4),
+            0 0 40px rgba(59,130,246,0.15) !important;
+    }
+
+    /* ── Streamlit native st.progress() — make it premium ── */
+    [data-testid="stProgressBar"] > div {
+        height: 10px !important;
+        border-radius: 6px !important;
+        background: var(--border-color) !important;
+        overflow: hidden !important;
+    }
+    [data-testid="stProgressBar"] > div > div {
+        height: 10px !important;
+        border-radius: 6px !important;
+        background: linear-gradient(90deg,
+            #3b82f6 0%, #8b5cf6 50%, #06b6d4 100%) !important;
+        background-size: 200% 100% !important;
+        animation: progressShimmer 2.5s linear infinite !important;
+        box-shadow: 0 0 12px rgba(59,130,246,0.5) !important;
+        transition: width 0.6s cubic-bezier(0.4,0,0.2,1) !important;
+    }
+    @keyframes progressShimmer {
+        0%   { background-position: 200% center; }
+        100% { background-position: -200% center; }
+    }
+
+    /* ── Checkboxes — larger, coloured, satisfying ── */
+    [data-testid="stCheckbox"] > label {
+        display: flex !important;
+        align-items: center !important;
+        gap: 10px !important;
+        padding: 9px 12px !important;
+        border-radius: 10px !important;
+        border: 1px solid transparent !important;
+        cursor: pointer !important;
+        transition: all 0.2s ease !important;
+        font-size: 0.87rem !important;
+    }
+    [data-testid="stCheckbox"] > label:hover {
+        background: rgba(59,130,246,0.07) !important;
+        border-color: rgba(59,130,246,0.2) !important;
+    }
+    [data-testid="stCheckbox"] input[type="checkbox"] {
+        width: 18px !important;
+        height: 18px !important;
+        accent-color: #3b82f6 !important;
+        cursor: pointer !important;
+    }
+
+    /* ── Section titles — animated left-bar glow ── */
+    .section-title {
+        position: relative;
+    }
+    .section-title::before {
+        background: linear-gradient(180deg, #3b82f6, #8b5cf6) !important;
+        box-shadow: 0 0 8px rgba(59,130,246,0.5) !important;
+        transition: height 0.3s ease !important;
+    }
+
+    /* ── Sidebar — premium glow accent at top ── */
+    [data-testid="stSidebar"]::after {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0;
+        height: 3px;
+        background: linear-gradient(90deg, #1e3a8a, #3b82f6, #8b5cf6);
+        border-radius: 0 0 4px 4px;
+        opacity: 0.9;
+    }
+    [data-testid="stSidebar"] {
+        position: relative;
+        box-shadow: 4px 0 40px rgba(0,0,0,0.4), 0 0 1px rgba(59,130,246,0.2) !important;
+    }
+
+    /* ── Sidebar nav links — pill with glow on active ── */
+    [data-testid="stPageLink"][aria-current="page"] a {
+        box-shadow: 0 0 16px rgba(59,130,246,0.15) !important;
+    }
+
+    /* ── Alert boxes with coloured left border ── */
+    [data-testid="stAlert"][data-baseweb="notification"] {
+        border-left: 4px solid var(--primary-color) !important;
+        border-radius: 10px !important;
+        padding-left: 16px !important;
+    }
+
+    /* ── Divider — glowing gradient ── */
+    .divider {
+        background: linear-gradient(90deg,
+            transparent 0%, rgba(59,130,246,0.4) 30%,
+            rgba(139,92,246,0.4) 70%, transparent 100%) !important;
+        height: 1px !important;
+    }
+
+    /* ── Expander — polished header ── */
+    [data-testid="stExpander"] summary {
+        border-radius: 10px !important;
+        padding: 12px 16px !important;
+        font-weight: 600 !important;
+        font-size: 0.88rem !important;
+        transition: background 0.2s ease !important;
+    }
+    [data-testid="stExpander"] summary:hover {
+        background: rgba(59,130,246,0.06) !important;
+    }
+    [data-testid="stExpander"] {
+        border: 1px solid var(--border-color) !important;
+        border-radius: 12px !important;
+        overflow: hidden !important;
+    }
+
+    /* ── Floating background orb ── */
+    [data-testid="stAppViewContainer"]::after {
+        content: '';
+        position: fixed;
+        width: 600px;
+        height: 600px;
+        border-radius: 50%;
+        background: radial-gradient(circle,
+            rgba(59,130,246,0.04) 0%, transparent 70%);
+        bottom: -200px; right: -100px;
+        pointer-events: none;
+        z-index: 0;
+        animation: orbFloat 8s ease-in-out infinite;
+    }
+    @keyframes orbFloat {
+        0%, 100% { transform: translateY(0) scale(1); }
+        50%       { transform: translateY(-30px) scale(1.05); }
+    }
+
+    /* ── Success message styling ── */
+    [data-testid="stSuccess"] {
+        border-left: 4px solid #10b981 !important;
+        background: rgba(16,185,129,0.08) !important;
+        border-radius: 10px !important;
+    }
+    [data-testid="stWarning"] {
+        border-left: 4px solid #f59e0b !important;
+        background: rgba(245,158,11,0.08) !important;
+        border-radius: 10px !important;
+    }
+    [data-testid="stError"] {
+        border-left: 4px solid #ef4444 !important;
+        background: rgba(239,68,68,0.08) !important;
+        border-radius: 10px !important;
+    }
+    [data-testid="stInfo"] {
+        border-left: 4px solid #3b82f6 !important;
+        background: rgba(59,130,246,0.08) !important;
+        border-radius: 10px !important;
+    }
+
+    /* ── Tabs — hover lift ── */
+    [data-testid="stTabs"] button[role="tab"]:hover {
+        transform: translateY(-1px) !important;
+    }
+    [data-testid="stTabs"] button[role="tab"][aria-selected="true"] {
+        box-shadow: 0 4px 20px rgba(37,99,235,0.35) !important;
+    }
+
+    /* ── Badge in sidebar logged-in-box ── */
+    .logged-in-box {
+        background: linear-gradient(135deg,
+            rgba(15,23,42,0.9) 0%,
+            rgba(30,58,138,0.15) 100%) !important;
+        border-color: rgba(59,130,246,0.2) !important;
+        position: relative;
+        overflow: hidden;
+    }
+    .logged-in-box::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0;
+        height: 1px;
+        background: linear-gradient(90deg, transparent, rgba(59,130,246,0.5), transparent);
+    }
+
+    /* ── Button secondary style ── */
+    [data-testid="stBaseButton-secondary"] {
+        background: transparent !important;
+        border: 1px solid var(--border-color) !important;
+        color: var(--text-color) !important;
+        backdrop-filter: blur(8px) !important;
+    }
+    [data-testid="stBaseButton-secondary"]:hover {
+        border-color: rgba(59,130,246,0.4) !important;
+        background: rgba(59,130,246,0.06) !important;
+        transform: translateY(-1px) !important;
+    }
+
+    /* ── Tooltip / help icon ── */
+    [data-testid="stTooltipHoverTarget"] svg {
+        color: var(--text-muted) !important;
+        opacity: 0.6;
+        transition: opacity 0.2s;
+    }
+    [data-testid="stTooltipHoverTarget"]:hover svg { opacity: 1; }
+
     </style>
     """, unsafe_allow_html=True)
+
 
 
 def ensure_auth(allowed_roles=None):
@@ -1125,7 +1381,7 @@ def render_sidebar(hotel):
                 💬 Contact Support
             </button></a>""", unsafe_allow_html=True)
         st.markdown("<div style='height:8px;'></div>", unsafe_allow_html=True)
-        if st.button("🚪 Logout", use_container_width=True):
+        if st.button("🚪 Logout", width='stretch'):
             for key in list(st.session_state.keys()):
                 del st.session_state[key]
             st.query_params.clear()

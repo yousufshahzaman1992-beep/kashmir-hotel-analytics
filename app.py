@@ -17,9 +17,9 @@ from sheets_db import (
     get_google_reviews,
     load_reviews,
     save_review_to_firebase,
-    update_hotel_ota_links,
-    sync_hotel_reviews,
     get_srinagar_live_risk_data,
+    load_checklist,
+    save_checklist,
 )
 from login import show_login
 from style import apply_style, sidebar_logo, render_custom_navigation
@@ -158,7 +158,7 @@ with st.sidebar:
     </div>
     """, unsafe_allow_html=True)
 
-    if st.button("↻ Refresh Data", use_container_width=True):
+    if st.button("↻ Refresh Data", width='stretch'):
         st.cache_data.clear()
         st.rerun()
 
@@ -179,7 +179,7 @@ with st.sidebar:
 
     st.divider()
 
-    if st.button("🚪 Logout", use_container_width=True):
+    if st.button("🚪 Logout", width='stretch'):
         st.session_state.logged_in = False
         st.session_state.hotel     = None
         st.query_params.clear()
@@ -272,7 +272,7 @@ with tab_overview:
                 hovertemplate="<b>%{x}</b><br>₹%{y:,}<extra></extra>"
             ))
             fig1.update_layout(**CHART)
-            st.plotly_chart(fig1, use_container_width=True)
+            st.plotly_chart(fig1, width='stretch')
 
         with c2:
             st.markdown("<div class='section-title'>Guest Origins</div>", unsafe_allow_html=True)
@@ -287,7 +287,7 @@ with tab_overview:
                 marker=dict(line=dict(color="#060b18", width=3))
             )
             fig2.update_layout(**CHART, showlegend=False)
-            st.plotly_chart(fig2, use_container_width=True)
+            st.plotly_chart(fig2, width='stretch')
 
         st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
 
@@ -310,7 +310,7 @@ with tab_overview:
                 hovertemplate="<b>%{y}</b>: %{x} bookings<extra></extra>"
             ))
             fig3.update_layout(**CHART)
-            st.plotly_chart(fig3, use_container_width=True)
+            st.plotly_chart(fig3, width='stretch')
 
         with c4:
             st.markdown("<div class='section-title'>Bookings Over Time</div>", unsafe_allow_html=True)
@@ -325,7 +325,7 @@ with tab_overview:
                 hovertemplate="<b>%{x}</b>: %{y}<extra></extra>"
             ))
             fig4.update_layout(**CHART)
-            st.plotly_chart(fig4, use_container_width=True)
+            st.plotly_chart(fig4, width='stretch')
 
 with tab_bookings:
     if total_book == 0:
@@ -375,7 +375,7 @@ with tab_bookings:
                 return f"https://wa.me/{phone}?text={urllib.parse.quote(msg)}"
 
             recent["WhatsApp"] = recent.apply(generate_wa_link, axis=1)
-            st.dataframe(recent, use_container_width=True, hide_index=True, column_config={
+            st.dataframe(recent, width='stretch', hide_index=True, column_config={
                 "WhatsApp": st.column_config.LinkColumn("Contact", display_text="💬 WhatsApp")
             })
 
@@ -412,7 +412,7 @@ with tab_reviews:
         <div style='background:rgba(59,130,246,0.08); border:1px solid rgba(59,130,246,0.2); border-radius:12px; padding:18px; margin-bottom:20px;'>
             <h4 style='margin:0 0 6px 0; color:var(--primary-color); font-size:1.15rem;'>🔄 Live OTA Sync & Real-Time Sentiment Control Center</h4>
             <p style='font-size:0.8rem; color:var(--text-muted); margin:0;'>
-                Sync guest feedback automatically from Booking.com, Agoda, MakeMyTrip, and Google, or write a custom review below to perform instant sentiment analysis.
+                Reviews sync automatically from Booking.com, Agoda, MakeMyTrip, and Google on a schedule — or write a custom review below to perform instant sentiment analysis.
             </p>
         </div>
         """, unsafe_allow_html=True)
@@ -476,7 +476,6 @@ with tab_reviews:
 
                     # Wait a second and rerun
                     st.rerun()
-
         with col_manual:
             st.markdown("<p style='font-weight:600; color:var(--text-color); margin-bottom:8px; font-size:0.95rem;'>✍️ Real-Time Sentiment Analyzer Form</p>", unsafe_allow_html=True)
 
@@ -556,6 +555,25 @@ with tab_reviews:
 
     # Fetch reviews from database (with mock fallback)
     reviews_raw = load_reviews(hotel_id)
+    _using_mock_reviews = not bool(reviews_raw) or (
+        reviews_raw and reviews_raw[0].get("guest_name") in [
+            "Rohan Sharma", "Siddharth Goel", "John Doe", "Amit Verma"
+        ]
+    )
+    if _using_mock_reviews:
+        st.markdown("""
+        <div style='background:rgba(245,158,11,0.10); border:1px solid rgba(245,158,11,0.35); border-radius:10px;
+                    padding:12px 16px; margin-bottom:18px; display:flex; align-items:center; gap:10px;'>
+            <span style='font-size:1.2rem;'>🧪</span>
+            <div>
+                <div style='font-size:0.85rem; font-weight:700; color:#f59e0b;'>Demo Data — No Real Reviews Yet</div>
+                <div style='font-size:0.78rem; color:var(--text-muted); margin-top:2px;'>
+                    The reviews below are sample data for demonstration purposes.
+                    Real guest reviews will appear here once your OTA platforms are connected and synced via the Admin Panel.
+                </div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
 
     processed_reviews = []
     for r in reviews_raw:
@@ -790,7 +808,10 @@ with tab_risk:
     weather = live_risk["weather"]
 
     # ── Live Airport Weather Status Card ──
-    weather_icon = "❄️" if weather["snow"] > 0 else ("🌧️" if weather["rain"] > 0 else ("🌫️" if weather["visibility_km"] < 2 else "☀️"))
+    _w_snow = weather["snow"] if isinstance(weather["snow"], (int, float)) else 0
+    _w_rain = weather["rain"] if isinstance(weather["rain"], (int, float)) else 0
+    _w_vis  = weather["visibility_km"] if isinstance(weather["visibility_km"], (int, float)) else 10
+    weather_icon = "❄️" if _w_snow > 0 else ("🌧️" if _w_rain > 0 else ("🌫️" if _w_vis < 2 else "☀️"))
     st.markdown(f"""
     <div style='background:var(--secondary-bg-color); border:1px solid var(--border-card); border-radius:12px; padding:16px; margin-bottom:20px; backdrop-filter:blur(10px); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap;'>
         <div>
@@ -844,7 +865,7 @@ with tab_risk:
 
     g1, g2 = st.columns([2, 3], gap="small")
     with g1:
-        st.plotly_chart(fig_gauge, use_container_width=True)
+        st.plotly_chart(fig_gauge, width='stretch')
         st.markdown(f"""
         <div style='background:var(--secondary-bg-color);border:1px solid var(--border-color);border-radius:10px;padding:14px;margin-top:-10px;'>
             <div style='font-size:1rem;font-weight:700;color:{gauge_color};margin-bottom:4px;'>⚠️ {risk_label}</div>
@@ -856,7 +877,17 @@ with tab_risk:
         st.markdown("<div class='section-title'>Route Cancellation Probability by Month</div>", unsafe_allow_html=True)
         months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
         cancel_prob = [72, 68, 45, 20, 15, 10, 8, 12, 18, 30, 55, 78]
-        colors_bar = ["#ef4444" if p >= 60 else "#f59e0b" if p >= 30 else "#10b981" for p in cancel_prob]
+        _cur_month_idx = date.today().month - 1  # 0-indexed
+        colors_bar = []
+        for i, p in enumerate(cancel_prob):
+            if i == _cur_month_idx:
+                colors_bar.append("#8b5cf6")  # Highlight current month in purple
+            elif p >= 60:
+                colors_bar.append("#ef4444")
+            elif p >= 30:
+                colors_bar.append("#f59e0b")
+            else:
+                colors_bar.append("#10b981")
         fig_cancel = go.Figure(go.Bar(
             x=months, y=cancel_prob,
             marker_color=colors_bar,
@@ -866,7 +897,8 @@ with tab_risk:
         ))
         fig_cancel.update_layout(**CHART)
         fig_cancel.update_yaxes(range=[0, 100], ticksuffix="%", gridcolor="rgba(255,255,255,0.05)", showline=False, zeroline=False)
-        st.plotly_chart(fig_cancel, use_container_width=True)
+        st.plotly_chart(fig_cancel, width='stretch')
+        st.caption("📊 Historical probability estimates based on Srinagar Airport seasonal patterns (SXR). Not live flight data. Current month highlighted in purple.")
 
     st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
 
@@ -887,30 +919,37 @@ with tab_risk:
         matrix_impact.append("High" if f["level"] in ["Critical", "High"] else "Medium")
         matrix_level.append("🔴 Critical" if f["level"] == "Critical" else ("🟠 High" if f["level"] == "High" else "🟡 Moderate"))
         matrix_mitigation.append(f["mitigation"])
-
-    static_factors = [
-        "❄️ Winter Fog (Dec–Feb)", "🌧️ Monsoon Disruptions (Jul–Sep)",
-        "🔌 Airport Power Outage", "🌐 Political Advisory / Alerts",
-        "📉 Off-Season Demand Drop", "🛫 Single-Runway Bottleneck",
+        
+    # Only show static risk factors that are relevant to the current month
+    _cm = date.today().month  # 1–12
+    _all_static = [
+        # (factor, likelihood, impact, level, mitigation, relevant_months)
+        ("❄️ Winter Fog (Dec–Feb)", "High",   "High",   "🔴 Critical",
+         "Flexible cancellation policy + proactive guest SMS alerts",
+         [12, 1, 2]),
+        ("🌧️ Monsoon Disruptions (Jul–Sep)", "Medium", "Medium", "🟡 Moderate",
+         "Monitor IMD forecasts 72 hrs ahead; maintain alternate road-trip packages",
+         [7, 8, 9]),
+        ("🔌 Airport Power Outage", "Low",    "High",   "🟠 High",
+         "Backup generator protocols; pre-check-in communication via WhatsApp",
+         list(range(1, 13))),  # year-round risk
+        ("🌐 Political Advisory / Alerts", "Medium", "High", "🔴 Critical",
+         "Subscribe to MEA alerts; issue reassurance emails to confirmed bookings",
+         list(range(1, 13))),  # year-round risk
+        ("📉 Off-Season Demand Drop", "High",  "Medium", "🟡 Moderate",
+         "Launch winter packages & early-bird discounts by October",
+         [11, 12, 1, 2, 3]),
+        ("🛫 Single-Runway Bottleneck", "Medium", "High", "🟠 High",
+         "Offer Jammu transfer packages as contingency for diverted flights",
+         list(range(1, 13))),  # year-round risk
     ]
-    static_likelihood = ["High", "Medium", "Low", "Medium", "High", "Medium"]
-    static_impact = ["High", "Medium", "High", "High", "Medium", "High"]
-    static_level = ["🔴 Critical", "🟡 Moderate", "🟠 High", "🔴 Critical", "🟡 Moderate", "🟠 High"]
-    static_mitigation = [
-        "Flexible cancellation policy + proactive guest SMS alerts",
-        "Monitor IMD forecasts 72 hrs ahead; maintain alternate road-trip packages",
-        "Backup generator protocols; pre-check-in communication via WhatsApp",
-        "Subscribe to MEA alerts; issue reassurance emails to confirmed bookings",
-        "Launch winter packages & early-bird discounts by October",
-        "Offer Jammu transfer packages as contingency for diverted flights",
-    ]
-
-    matrix_factors.extend(static_factors)
-    matrix_likelihood.extend(static_likelihood)
-    matrix_impact.extend(static_impact)
-    matrix_level.extend(static_level)
-    matrix_mitigation.extend(static_mitigation)
-
+    for _sf, _sl, _si, _slv, _sm, _months in _all_static:
+        if _cm in _months:
+            matrix_factors.append(_sf)
+            matrix_likelihood.append(_sl)
+            matrix_impact.append(_si)
+            matrix_level.append(_slv)
+            matrix_mitigation.append(_sm)
     risk_data = {
         "Risk Factor": matrix_factors,
         "Likelihood/State": matrix_likelihood,
@@ -920,37 +959,114 @@ with tab_risk:
     }
 
     risk_df = pd.DataFrame(risk_data)
-    st.dataframe(risk_df, use_container_width=True, hide_index=True)
+    st.dataframe(risk_df, width='stretch', hide_index=True)
 
     st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
 
-    # ── Operational Checklist ──
+    # ── Operational Checklist (persisted per hotel in Firebase) ──
     st.markdown("<div class='section-title'>📋 Pre-Season Operational Checklist</div>", unsafe_allow_html=True)
+    st.markdown(
+        "<p style='font-size:0.82rem;color:var(--text-muted);margin-bottom:14px;'>"
+        "Check off items as your team completes them — progress updates live and is saved per hotel.</p>",
+        unsafe_allow_html=True
+    )
+
+    # Load saved state from Firebase
+    _saved_chk = load_checklist(hotel_id)
+
+    _chk_items = [
+        ("chk_notam",      "Subscribe to airport NOTAM alerts"),
+        ("chk_whatsapp",   "Set up 48-hr guest arrival reminders (WhatsApp)"),
+        ("chk_ota_policy", "Update cancellation policy on all OTAs"),
+        ("chk_supplies",   "Stock emergency supplies for weather disruptions"),
+        ("chk_transport",  "Prepare alternate transport contacts (taxi/road)"),
+        ("chk_staff",      "Train staff on flight delay handling protocol"),
+        ("chk_tour_ops",   "Set up local partnership with tour operators"),
+        ("chk_faq",        "Create weather-disruption guest FAQ sheet"),
+        ("chk_refund",     "Configure auto-refund rules for force majeure"),
+        ("chk_generator",  "Verify generator fuel stock for winter months"),
+    ]
+
+    # ── Step 1: Render checkboxes first → collect live state ──
     chk1, chk2 = st.columns(2)
-    with chk1:
-        checklist_items = [
-            ("Subscribe to airport NOTAM alerts", True),
-            ("Set up 48-hr guest arrival reminders (WhatsApp)", True),
-            ("Update cancellation policy on all OTAs", False),
-            ("Stock emergency supplies for weather disruptions", False),
-            ("Prepare alternate transport contacts (taxi/road)", True),
-        ]
-        for item, done in checklist_items:
-            icon = "✅" if done else "⬜"
-            color = "#10b981" if done else "var(--text-muted)"
-            st.markdown(f"<div style='padding:6px 0;font-size:0.85rem;color:{color};'>{icon} {item}</div>", unsafe_allow_html=True)
-    with chk2:
-        checklist_items2 = [
-            ("Train staff on flight delay handling protocol", False),
-            ("Set up local partnership with tour operators", True),
-            ("Create weather-disruption guest FAQ sheet", False),
-            ("Configure auto-refund rules for force majeure", False),
-            ("Verify generator fuel stock for winter months", True),
-        ]
-        for item, done in checklist_items2:
-            icon = "✅" if done else "⬜"
-            color = "#10b981" if done else "var(--text-muted)"
-            st.markdown(f"<div style='padding:6px 0;font-size:0.85rem;color:{color};'>{icon} {item}</div>", unsafe_allow_html=True)
+    _new_state = {}
+    for i, (key, label) in enumerate(_chk_items):
+        col = chk1 if i < 5 else chk2
+        with col:
+            _new_state[key] = st.checkbox(
+                label,
+                value=bool(_saved_chk.get(key, False)),
+                key=f"risk_chk_{key}"
+            )
+
+    # ── Step 2: Compute progress from live checkbox state ──
+    _total_items = len(_chk_items)
+    _done_items  = sum(1 for key, _ in _chk_items if _new_state.get(key, False))
+    _pct         = int((_done_items / _total_items) * 100)
+    _remaining   = _total_items - _done_items
+
+    if _pct == 100:
+        _bar_color = "#10b981"
+        _milestone = "🏆 All tasks complete — your hotel is fully prepared!"
+        _badge     = "  ✅ ACHIEVED"
+    elif _pct >= 70:
+        _bar_color = "#3b82f6"
+        _milestone = f"⭐ Great progress — {_remaining} task{'s' if _remaining > 1 else ''} left"
+        _badge     = ""
+    elif _pct >= 40:
+        _bar_color = "#f59e0b"
+        _milestone = f"🔧 Getting there — {_remaining} tasks remaining"
+        _badge     = ""
+    else:
+        _bar_color = "#ef4444"
+        _milestone = f"⚠️ {_remaining} tasks need attention before season opens"
+        _badge     = ""
+
+    # ── Step 3: Render progress bar using native widgets ──
+    st.markdown("<div style='height:12px;'></div>", unsafe_allow_html=True)
+
+    _col_label, _col_pct = st.columns([5, 1])
+    with _col_label:
+        st.markdown(
+            f"<p style='font-size:0.75rem;font-weight:700;color:var(--text-muted);"
+            f"text-transform:uppercase;letter-spacing:1px;margin:0;padding:0;'>"
+            f"Season Readiness{_badge}</p>",
+            unsafe_allow_html=True
+        )
+    with _col_pct:
+        st.markdown(
+            f"<p style='font-size:1.25rem;font-weight:800;color:{_bar_color};"
+            f"text-align:right;margin:0;padding:0;'>{_pct}%</p>",
+            unsafe_allow_html=True
+        )
+
+    st.progress(_pct / 100)
+
+    # Tick labels under the bar
+    _ticks = st.columns(5)
+    for _i, _mark in enumerate([0, 25, 50, 75, 100]):
+        with _ticks[_i]:
+            _align = "left" if _i == 0 else ("right" if _i == 4 else "center")
+            _col   = _bar_color if _pct >= _mark else "#475569"
+            st.markdown(
+                f"<p style='font-size:0.65rem;font-weight:600;color:{_col};"
+                f"text-align:{_align};margin:0;'>{_mark}%</p>",
+                unsafe_allow_html=True
+            )
+
+    st.markdown(
+        f"<p style='font-size:0.8rem;color:var(--text-muted);margin-top:6px;'>"
+        f"{_milestone} &nbsp;&nbsp;"
+        f"<strong style='color:{_bar_color};'>{_done_items}/{_total_items} done</strong></p>",
+        unsafe_allow_html=True
+    )
+
+    # ── Step 4: Save button ──
+    st.markdown("<div style='height:8px;'></div>", unsafe_allow_html=True)
+    if st.button("💾 Save Checklist", key="save_checklist_btn"):
+        save_checklist(hotel_id, _new_state)
+        st.success("✅ Checklist saved!")
+
 
     st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
 

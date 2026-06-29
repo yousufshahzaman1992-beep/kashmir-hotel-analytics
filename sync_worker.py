@@ -143,12 +143,11 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--hotel", default=None)
     args = parser.parse_args()
-    log("="*60); log("OTA Sync Worker started")
-    log("Note: OTA scraping has moved to separate GitHub repo. This worker handles Google Places sync only.")
+    log("="*60); log("OTA Sync Worker started"); log("="*60)
     try:
         import scraper; scrapers_available = True; log("Scraper: OK")
     except ImportError as e:
-        scrapers_available = False; log(f"Scraper: unavailable ({e}) - OTA scraping handled by separate GitHub Actions repo")
+        scrapers_available = False; log(f"Scraper: unavailable ({e})")
     google_api_key = get_google_api_key()
     log(f"Google API key: {'SET' if google_api_key else 'NOT SET'}")
     db = get_db(); log("Firebase: connected")
