@@ -20,6 +20,7 @@ from sheets_db import (
     get_srinagar_live_risk_data,
     load_checklist,
     save_checklist,
+    sync_hotel_reviews,
 )
 from login import show_login
 from style import apply_style, sidebar_logo, render_custom_navigation
