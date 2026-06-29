@@ -93,79 +93,79 @@ def apply_style():
     :root,
     html[data-theme="dark"] {
         color-scheme: dark;
-        --bg-color:           #060b18;
-        --secondary-bg-color: #0a1228;
+        --bg-color:           #050e0b;
+        --secondary-bg-color: #0a1814;
         --text-color:         #e2e8f0;
-        --primary-color:      #3b82f6;
-        --text-muted:         #64748b;
-        --text-highlight:     #93c5fd;
-        --text-active:        #60a5fa;
-        --border-color:       rgba(255,255,255,0.08);
-        --border-card:        rgba(59,130,246,0.15);
-        --card-bg:            rgba(15,23,42,0.95);
-        --card-bg-glow:       rgba(15,23,42,0.9);
-        --card-hover-shadow:  rgba(0,0,0,0.35);
-        --tab-bar-bg:         rgba(15,23,42,0.7);
-        --tab-button-text:    #64748b;
-        --tab-button-active-bg:   linear-gradient(135deg,#1e40af,#2563eb);
+        --primary-color:      #10b981;
+        --text-muted:         #647974;
+        --text-highlight:     #fbbf24;
+        --text-active:        #34d399;
+        --border-color:       rgba(255,255,255,0.07);
+        --border-card:        rgba(16,185,129,0.15);
+        --card-bg:            rgba(11,26,22,0.95);
+        --card-bg-glow:       rgba(11,26,22,0.9);
+        --card-hover-shadow:  rgba(0,0,0,0.4);
+        --tab-bar-bg:         rgba(11,26,22,0.7);
+        --tab-button-text:    #647974;
+        --tab-button-active-bg:   linear-gradient(135deg,#047857,#10b981);
         --tab-button-active-text: #ffffff;
-        --sidebar-bg:         linear-gradient(180deg,#080e1f 0%,#0a1228 60%,#080e1f 100%);
-        --sidebar-border:     rgba(59,130,246,0.08);
-        --dropdown-bg:        #0a1228;
+        --sidebar-bg:         linear-gradient(180deg,#06120e 0%,#0a1814 60%,#06120e 100%);
+        --sidebar-border:     rgba(16,185,129,0.08);
+        --dropdown-bg:        #0a1814;
         --dropdown-text:      #e2e8f0;
-        --dropdown-hover-bg:  #1e3a8a;
+        --dropdown-hover-bg:  #047857;
         --dropdown-hover-text:#ffffff;
-        --button-bg:          linear-gradient(135deg,#1e3a8a 0%,#2563eb 50%,#1d4ed8 100%);
+        --button-bg:          linear-gradient(135deg,#064e3b 0%,#10b981 50%,#047857 100%);
         --button-text:        #ffffff;
-        --button-shadow:      rgba(37,99,235,0.25);
-        --button-hover-shadow:rgba(37,99,235,0.4);
-        --title-gradient:     linear-gradient(135deg,#ffffff 0%,#e2e8f0 40%,#93c5fd 100%);
+        --button-shadow:      rgba(16,185,129,0.2);
+        --button-hover-shadow:rgba(16,185,129,0.35);
+        --title-gradient:     linear-gradient(135deg,#ffffff 0%,#e2e8f0 40%,#a7f3d0 100%);
         --metric-value:       #ffffff;
-        --input-bg:           #0a1228;
-        --input-border:       rgba(255,255,255,0.12);
+        --input-bg:           #0a1814;
+        --input-border:       rgba(255,255,255,0.1);
         --input-text:         #e2e8f0;
-        --input-focus-shadow: rgba(59, 130, 246, 0.25);
+        --input-focus-shadow: rgba(16, 185, 129, 0.2);
         --mesh-bg-gradient:
-            radial-gradient(ellipse 80% 60% at 10% 0%,rgba(37,99,235,0.08) 0%,transparent 60%),
-            radial-gradient(ellipse 60% 50% at 90% 100%,rgba(139,92,246,0.07) 0%,transparent 60%),
-            radial-gradient(ellipse 40% 40% at 50% 50%,rgba(6,182,212,0.04) 0%,transparent 70%);
+            radial-gradient(ellipse 80% 60% at 10% 0%,rgba(16,185,129,0.08) 0%,transparent 60%),
+            radial-gradient(ellipse 60% 50% at 90% 100%,rgba(245,158,11,0.06) 0%,transparent 60%),
+            radial-gradient(ellipse 40% 40% at 50% 50%,rgba(16,185,129,0.03) 0%,transparent 70%);
     }
 
     /* ── Light mode variables — pure white / dark text ── */
     html[data-theme="light"] {
         color-scheme: light;
         --bg-color:           #ffffff;
-        --secondary-bg-color: #f8fafc;
+        --secondary-bg-color: #f4f7f6;
         --text-color:         #0f172a;
-        --primary-color:      #2563eb;
+        --primary-color:      #047857;
         --text-muted:         #64748b;
-        --text-highlight:     #1d4ed8;
-        --text-active:        #2563eb;
+        --text-highlight:     #b45309;
+        --text-active:        #059669;
         --border-color:       rgba(0,0,0,0.09);
-        --border-card:        rgba(37,99,235,0.15);
+        --border-card:        rgba(4,120,87,0.15);
         --card-bg:            #ffffff;
         --card-bg-glow:       #ffffff;
         --card-hover-shadow:  rgba(0,0,0,0.07);
-        --tab-bar-bg:         rgba(241,245,249,0.9);
+        --tab-bar-bg:         rgba(244,247,246,0.9);
         --tab-button-text:    #475569;
-        --tab-button-active-bg:   linear-gradient(135deg,#2563eb,#3b82f6);
+        --tab-button-active-bg:   linear-gradient(135deg,#047857,#059669);
         --tab-button-active-text: #ffffff;
-        --sidebar-bg:         linear-gradient(180deg,#f8fafc 0%,#f1f5f9 60%,#f8fafc 100%);
-        --sidebar-border:     rgba(37,99,235,0.08);
+        --sidebar-bg:         linear-gradient(180deg,#f4f7f6 0%,#eef2f1 60%,#f4f7f6 100%);
+        --sidebar-border:     rgba(4,120,87,0.08);
         --dropdown-bg:        #ffffff;
         --dropdown-text:      #0f172a;
-        --dropdown-hover-bg:  #dbeafe;
-        --dropdown-hover-text:#1e40af;
-        --button-bg:          linear-gradient(135deg,#2563eb 0%,#3b82f6 50%,#1d4ed8 100%);
+        --dropdown-hover-bg:  #d1fae5;
+        --dropdown-hover-text:#065f46;
+        --button-bg:          linear-gradient(135deg,#047857 0%,#10b981 50%,#059669 100%);
         --button-text:        #ffffff;
-        --button-shadow:      rgba(37,99,235,0.2);
-        --button-hover-shadow:rgba(37,99,235,0.3);
-        --title-gradient:     linear-gradient(135deg,#0f172a 0%,#1e293b 60%,#2563eb 100%);
+        --button-shadow:      rgba(4,120,87,0.15);
+        --button-hover-shadow:rgba(4,120,87,0.25);
+        --title-gradient:     linear-gradient(135deg,#0f172a 0%,#064e3b 60%,#047857 100%);
         --metric-value:       #0f172a;
         --input-bg:           #ffffff;
         --input-border:       rgba(0,0,0,0.12);
         --input-text:         #0f172a;
-        --input-focus-shadow: rgba(37, 99, 235, 0.15);
+        --input-focus-shadow: rgba(4, 120, 87, 0.12);
         --mesh-bg-gradient:   none;
     }
 
@@ -433,14 +433,14 @@ def apply_style():
     .sidebar-logo-icon {
         width: 40px;
         height: 40px;
-        background: linear-gradient(135deg, #1e3a8a, #3b82f6);
+        background: linear-gradient(135deg, #064e3b, #10b981);
         border-radius: 12px;
         display: flex;
         align-items: center;
         justify-content: center;
         font-size: 20px;
         flex-shrink: 0;
-        box-shadow: 0 4px 16px rgba(59, 130, 246, 0.4);
+        box-shadow: 0 4px 16px rgba(16, 185, 129, 0.3);
     }
     .sidebar-logo-sub {
         font-size: 0.7rem;
@@ -1090,10 +1090,10 @@ def apply_style():
         height: 10px !important;
         border-radius: 6px !important;
         background: linear-gradient(90deg,
-            #3b82f6 0%, #8b5cf6 50%, #06b6d4 100%) !important;
+            #059669 0%, #10b981 50%, #fbbf24 100%) !important;
         background-size: 200% 100% !important;
         animation: progressShimmer 2.5s linear infinite !important;
-        box-shadow: 0 0 12px rgba(59,130,246,0.5) !important;
+        box-shadow: 0 0 12px rgba(16,185,129,0.4) !important;
         transition: width 0.6s cubic-bezier(0.4,0,0.2,1) !important;
     }
     @keyframes progressShimmer {
@@ -1114,13 +1114,13 @@ def apply_style():
         font-size: 0.87rem !important;
     }
     [data-testid="stCheckbox"] > label:hover {
-        background: rgba(59,130,246,0.07) !important;
-        border-color: rgba(59,130,246,0.2) !important;
+        background: rgba(16,185,129,0.07) !important;
+        border-color: rgba(16,185,129,0.2) !important;
     }
     [data-testid="stCheckbox"] input[type="checkbox"] {
         width: 18px !important;
         height: 18px !important;
-        accent-color: #3b82f6 !important;
+        accent-color: var(--primary-color) !important;
         cursor: pointer !important;
     }
 
@@ -1129,8 +1129,8 @@ def apply_style():
         position: relative;
     }
     .section-title::before {
-        background: linear-gradient(180deg, #3b82f6, #8b5cf6) !important;
-        box-shadow: 0 0 8px rgba(59,130,246,0.5) !important;
+        background: linear-gradient(180deg, var(--primary-color), var(--text-highlight)) !important;
+        box-shadow: 0 0 8px rgba(16,185,129,0.4) !important;
         transition: height 0.3s ease !important;
     }
 
@@ -1140,13 +1140,13 @@ def apply_style():
         position: absolute;
         top: 0; left: 0; right: 0;
         height: 3px;
-        background: linear-gradient(90deg, #1e3a8a, #3b82f6, #8b5cf6);
+        background: linear-gradient(90deg, #064e3b, #10b981, #fbbf24);
         border-radius: 0 0 4px 4px;
         opacity: 0.9;
     }
     [data-testid="stSidebar"] {
         position: relative;
-        box-shadow: 4px 0 40px rgba(0,0,0,0.4), 0 0 1px rgba(59,130,246,0.2) !important;
+        box-shadow: 4px 0 40px rgba(0,0,0,0.4), 0 0 1px rgba(16,185,129,0.2) !important;
     }
 
     /* ── Sidebar nav links — pill with glow on active ── */
@@ -1222,8 +1222,8 @@ def apply_style():
         border-radius: 10px !important;
     }
     [data-testid="stInfo"] {
-        border-left: 4px solid #3b82f6 !important;
-        background: rgba(59,130,246,0.08) !important;
+        border-left: 4px solid #10b981 !important;
+        background: rgba(16,185,129,0.08) !important;
         border-radius: 10px !important;
     }
 
@@ -1232,15 +1232,15 @@ def apply_style():
         transform: translateY(-1px) !important;
     }
     [data-testid="stTabs"] button[role="tab"][aria-selected="true"] {
-        box-shadow: 0 4px 20px rgba(37,99,235,0.35) !important;
+        box-shadow: 0 4px 20px var(--button-shadow) !important;
     }
 
     /* ── Badge in sidebar logged-in-box ── */
     .logged-in-box {
         background: linear-gradient(135deg,
-            rgba(15,23,42,0.9) 0%,
-            rgba(30,58,138,0.15) 100%) !important;
-        border-color: rgba(59,130,246,0.2) !important;
+            rgba(11,26,22,0.9) 0%,
+            rgba(16,185,129,0.1) 100%) !important;
+        border-color: rgba(16,185,129,0.15) !important;
         position: relative;
         overflow: hidden;
     }
@@ -1249,7 +1249,7 @@ def apply_style():
         position: absolute;
         top: 0; left: 0; right: 0;
         height: 1px;
-        background: linear-gradient(90deg, transparent, rgba(59,130,246,0.5), transparent);
+        background: linear-gradient(90deg, transparent, rgba(16,185,129,0.4), transparent);
     }
 
     /* ── Button secondary style ── */
@@ -1260,8 +1260,8 @@ def apply_style():
         backdrop-filter: blur(8px) !important;
     }
     [data-testid="stBaseButton-secondary"]:hover {
-        border-color: rgba(59,130,246,0.4) !important;
-        background: rgba(59,130,246,0.06) !important;
+        border-color: rgba(16,185,129,0.3) !important;
+        background: rgba(16,185,129,0.05) !important;
         transform: translateY(-1px) !important;
     }
 

@@ -13,139 +13,130 @@ def show_login():
     # calling it again would re-inject the JS lock, resetting the timer.
     st.markdown("""
     <style>
+    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap');
+
     /* Aggressively hide all sidebar components on login */
     section[data-testid="stSidebar"], 
     [data-testid="stSidebarNav"],
     button[kind="headerNoPadding"] { display: none !important; }
 
     :root, [data-theme="dark"] {
-        --login-bg: linear-gradient(135deg, #0f172a 0%, #1e3a5f 50%, #0f172a 100%);
-        --login-card-bg: rgba(15, 23, 42, 0.95);
-        --login-card-border: rgba(255,255,255,0.08);
+        --login-bg:           #050e0b;
+        --login-card-bg:      rgba(11, 26, 22, 0.75);
+        --login-card-border:  rgba(16, 185, 129, 0.12);
         --login-text-primary: #f8fafc;
         --login-text-secondary: #94a3b8;
-        --login-text-muted: #64748b;
-        --login-badge-bg: rgba(59,130,246,0.08);
-        --login-badge-border: rgba(59,130,246,0.2);
-        --login-badge-text: #93c5fd;
-        --login-input-bg: #0a1228;
-        --login-input-border: rgba(255,255,255,0.12);
-        --login-button-bg: linear-gradient(135deg, #1e3a8a 0%, #2563eb 50%, #1d4ed8 100%);
-        --login-button-text: #ffffff;
-        --login-button-shadow: rgba(59, 130, 246, 0.4);
-        --login-chip-bg: rgba(255,255,255,0.05);
-        --login-chip-border: rgba(255,255,255,0.08);
-        --login-shadow: rgba(0,0,0,0.35);
+        --login-text-muted:   #475569;
+        --login-badge-bg:     rgba(16, 185, 129, 0.08);
+        --login-badge-border: rgba(16, 185, 129, 0.2);
+        --login-badge-text:   #34d399;
+        --login-input-bg:     #071310;
+        --login-input-border: rgba(255, 255, 255, 0.06);
+        --login-button-bg:    linear-gradient(135deg, #064e3b 0%, #10b981 100%);
+        --login-button-text:  #ffffff;
+        --login-button-shadow: rgba(16, 185, 129, 0.25);
+        --login-shadow:       rgba(0, 0, 0, 0.5);
+        --mesh-bg-gradient:
+            radial-gradient(ellipse 60% 40% at 50% 0%, rgba(16,185,129,0.08) 0%, transparent 60%),
+            radial-gradient(ellipse 60% 50% at 50% 100%, rgba(245,158,11,0.04) 0%, transparent 60%);
+        --primary-color:      #10b981;
     }
     
     [data-theme="light"] {
-        --login-bg: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 50%, #f8fafc 100%);
-        --login-card-bg: rgba(255,255,255,0.95);
-        --login-card-border: rgba(0,0,0,0.08);
+        --login-bg:           #f8fafc;
+        --login-card-bg:      rgba(255, 255, 255, 0.9);
+        --login-card-border:  rgba(4, 120, 87, 0.08);
         --login-text-primary: #0f172a;
         --login-text-secondary: #475569;
-        --login-text-muted: #64748b;
-        --login-badge-bg: rgba(37,99,235,0.05);
-        --login-badge-border: rgba(37,99,235,0.15);
-        --login-badge-text: #2563eb;
-        --login-input-bg: #ffffff;
-        --login-input-border: rgba(0,0,0,0.12);
-        --login-button-bg: linear-gradient(135deg, #2563eb 0%, #3b82f6 50%, #1d4ed8 100%);
-        --login-button-text: #ffffff;
-        --login-button-shadow: rgba(37, 99, 235, 0.2);
-        --login-chip-bg: rgba(0,0,0,0.03);
-        --login-chip-border: rgba(0,0,0,0.06);
-        --login-shadow: rgba(0,0,0,0.08);
+        --login-text-muted:   #94a3b8;
+        --login-badge-bg:     rgba(4, 120, 87, 0.04);
+        --login-badge-border: rgba(4, 120, 87, 0.12);
+        --login-badge-text:   #047857;
+        --login-input-bg:     #ffffff;
+        --login-input-border: rgba(0, 0, 0, 0.08);
+        --login-button-bg:    linear-gradient(135deg, #047857 0%, #059669 100%);
+        --login-button-text:  #ffffff;
+        --login-button-shadow: rgba(4, 120, 87, 0.15);
+        --login-shadow:       rgba(15, 23, 42, 0.08);
+        --mesh-bg-gradient:
+            radial-gradient(ellipse 60% 40% at 50% 0%, rgba(4,120,87,0.03) 0%, transparent 60%),
+            radial-gradient(ellipse 60% 50% at 50% 100%, rgba(180,83,9,0.02) 0%, transparent 60%);
+        --primary-color:      #047857;
     }
 
     .stApp {
+        background-color: var(--login-bg) !important;
         background: var(--login-bg) !important;
         min-height: 100vh;
+        font-family: 'Inter', sans-serif;
     }
+    
+    /* Animated background mesh */
+    .stApp::before {
+        content: '';
+        position: fixed;
+        inset: 0;
+        background: var(--mesh-bg-gradient);
+        pointer-events: none;
+        z-index: 0;
+    }
+
     .block-container {
-        max-width: 440px !important;
-        padding-top: 8vh !important;
+        max-width: 420px !important;
+        padding-top: 10vh !important;
         margin: 0 auto !important;
+        position: relative;
+        z-index: 1;
     }
-    .lg-badge { text-align: center; margin-bottom: 24px; }
-    .lg-badge-inner {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        background: var(--login-badge-bg);
-        border: 1px solid var(--login-badge-border);
-        backdrop-filter: blur(10px);
-        border-radius: 100px;
-        padding: 6px 16px;
-        font-size: 0.75rem;
-        color: var(--login-badge-text);
-        letter-spacing: 0.5px;
-    }
-    .lg-dot {
-        width: 6px; height: 6px;
-        background: var(--login-badge-text);
-        border-radius: 50%;
-        display: inline-block;
-        box-shadow: 0 0 6px var(--login-badge-text);
-    }
-    .lg-logo { text-align: center; margin-bottom: 32px; }
+    .lg-logo { text-align: center; margin-bottom: 28px; }
     .lg-icon {
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        width: 64px; height: 64px;
-        background: var(--login-button-bg);
-        border-radius: 18px;
-        font-size: 32px;
-        box-shadow: 0 0 0 1px var(--login-badge-border),
-                    0 8px 32px var(--login-button-shadow);
-        margin-bottom: 16px;
+        width: 52px; height: 52px;
+        background: linear-gradient(135deg, #064e3b, #10b981);
+        border-radius: 14px;
+        font-size: 26px;
+        box-shadow: 0 4px 20px var(--login-button-shadow);
+        margin-bottom: 14px;
+        border: 1px solid rgba(255,255,255,0.08);
     }
     .lg-name {
-        font-size: 1.5rem; font-weight: 700;
-        color: var(--login-text-primary); letter-spacing: -0.5px; margin-bottom: 4px;
+        font-family: 'Outfit', sans-serif;
+        font-size: 1.45rem; font-weight: 800;
+        color: var(--login-text-primary);
+        letter-spacing: -0.6px; margin-bottom: 4px;
     }
-    .lg-tagline { font-size: 0.82rem; color: var(--login-text-muted); letter-spacing: 0.3px; }
+    .lg-tagline { 
+        font-size: 0.78rem; 
+        color: var(--login-text-secondary); 
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        font-weight: 600;
+    }
     [data-testid="stForm"] {
         background: var(--login-card-bg) !important;
         backdrop-filter: blur(20px) !important;
         -webkit-backdrop-filter: blur(20px) !important;
         border: 1px solid var(--login-card-border) !important;
-        border-radius: 20px !important;
-        padding: 32px 36px !important;
-        box-shadow: 0 8px 32px var(--login-shadow) !important;
+        border-radius: 16px !important;
+        padding: 32px 32px !important;
+        box-shadow: 0 12px 40px var(--login-shadow) !important;
         margin-bottom: 24px !important;
     }
     .lg-card-title {
-        font-size: 1.25rem; font-weight: 700;
-        color: var(--login-text-primary); margin-bottom: 6px; letter-spacing: -0.4px;
+        font-family: 'Outfit', sans-serif;
+        font-size: 1.2rem; font-weight: 700;
+        color: var(--login-text-primary); margin-bottom: 4px; letter-spacing: -0.3px;
     }
-    .lg-card-sub { font-size: 0.85rem; color: var(--login-text-secondary); margin-bottom: 24px; }
-    .lg-contact {
-        background: var(--login-badge-bg);
-        border: 1px solid var(--login-badge-border);
-        border-radius: 12px;
-        padding: 16px 20px;
-        text-align: center;
-        margin-top: 20px;
-    }
-    .lg-contact-title {
-        font-size: 0.85rem;
-        font-weight: 600;
-        color: var(--login-badge-text);
-        margin-bottom: 6px;
-    }
-    .lg-contact-text {
-        font-size: 0.78rem;
-        color: var(--login-text-muted);
-        line-height: 1.6;
-    }
-    .lg-contact-email { color: var(--login-badge-text); font-weight: 500; }
+    .lg-card-sub { font-size: 0.8rem; color: var(--login-text-secondary); margin-bottom: 24px; }
+    
     input[type="text"], input[type="password"] {
         background: var(--login-input-bg) !important;
         border: 1px solid var(--login-input-border) !important;
         color: var(--login-text-primary) !important;
-        border-radius: 10px !important;
+        border-radius: 8px !important;
+        padding: 10px 12px !important;
     }
     input[type="text"]:-webkit-autofill,
     input[type="text"]:-webkit-autofill:hover, 
@@ -161,57 +152,58 @@ def show_login():
         transition: background-color 5000s ease-in-out 0s !important;
     }
     input[type="text"]:focus, input[type="password"]:focus {
-        border-color: var(--login-badge-text) !important;
-        box-shadow: 0 0 0 3px var(--login-badge-border) !important;
+        border-color: var(--primary-color) !important;
+        box-shadow: 0 0 0 2px var(--login-badge-border) !important;
     }
     label[data-testid="stWidgetLabel"] p {
-        color: var(--login-text-secondary) !important;
-        font-size: 0.8rem !important;
-        font-weight: 500 !important;
+        color: var(--login-text-primary) !important;
+        font-size: 0.78rem !important;
+        font-weight: 600 !important;
+        margin-bottom: 6px !important;
     }
     .stFormSubmitButton > button {
         background: var(--login-button-bg) !important;
         color: var(--login-button-text) !important;
         border: none !important;
-        border-radius: 10px !important;
-        font-size: 0.9rem !important;
-        font-weight: 700 !important;
-        letter-spacing: 0.4px !important;
-        padding: 14px !important;
-        box-shadow: 0 4px 16px var(--login-button-shadow) !important;
-        margin-top: 6px !important;
+        border-radius: 8px !important;
+        font-size: 0.88rem !important;
+        font-weight: 600 !important;
+        letter-spacing: 0.2px !important;
+        padding: 12px !important;
+        box-shadow: 0 4px 12px var(--login-button-shadow) !important;
+        margin-top: 8px !important;
+        transition: all 0.2s ease !important;
     }
     .stFormSubmitButton > button:hover {
-        box-shadow: 0 6px 24px var(--login-button-shadow) !important;
+        box-shadow: 0 6px 18px var(--login-button-shadow) !important;
         transform: translateY(-1px) !important;
     }
-    .lg-features {
-        display: flex; justify-content: center;
-        gap: 6px; margin-top: 20px;
-    }
-    .lg-chip {
-        display: inline-flex; align-items: center; gap: 5px;
-        background: var(--login-chip-bg);
-        border: 1px solid var(--login-chip-border);
-        border-radius: 100px; padding: 5px 12px;
-        font-size: 0.72rem; color: var(--login-text-muted);
-    }
     .lg-footer {
-        text-align: center; font-size: 0.72rem;
-        color: var(--login-text-muted); margin-top: 20px;
-        line-height: 2;
+        text-align: center; font-size: 0.75rem;
+        color: var(--login-text-muted); margin-top: 32px;
+        line-height: 1.8;
+    }
+    .lg-footer-links {
+        margin-top: 8px;
+        display: flex;
+        justify-content: center;
+        gap: 12px;
+        font-size: 0.75rem;
+    }
+    .lg-footer-link {
+        color: var(--login-badge-text) !important;
+        text-decoration: none !important;
+        font-weight: 500;
+        transition: opacity 0.2s;
+    }
+    .lg-footer-link:hover {
+        opacity: 0.8;
+        text-decoration: underline !important;
+    }
+    .lg-footer-dot {
+        color: var(--login-text-muted);
     }
     </style>
-    """, unsafe_allow_html=True)
-
-    # ── Live badge ────────────────────────────────────────
-    st.markdown("""
-    <div class='lg-badge'>
-        <div class='lg-badge-inner'>
-            <span class='lg-dot'></span>
-            Platform is live and ready
-        </div>
-    </div>
     """, unsafe_allow_html=True)
 
     # ── Logo ──────────────────────────────────────────────
@@ -225,14 +217,14 @@ def show_login():
 
     with st.form("login_form"):
         st.markdown("""
-            <div class='lg-card-title'>Sign in to your account</div>
-            <div class='lg-card-sub'>Enter your credentials to continue</div>
+            <div class='lg-card-title'>Sign In</div>
+            <div class='lg-card-sub'>Enter your hotel credentials to access the platform.</div>
         """, unsafe_allow_html=True)
         
         username = st.text_input("Username", placeholder="your username")
         password = st.text_input("Password", type="password",
                                  placeholder="••••••••")
-        submit   = st.form_submit_button("Sign In  →", width='stretch')
+        submit   = st.form_submit_button("Sign In", width='stretch')
 
     if submit:
         if not username or not password:
@@ -248,41 +240,21 @@ def show_login():
             else:
                 st.error("❌ Incorrect username or password.")
 
-    # ── Privacy + Contact boxes ───────────────────────────
+    # ── Footer ────────────────────────────────────────────
     st.markdown("""
-    <div class='lg-contact'>
-        <div class='lg-contact-title'>🔒 Your Data is Private</div>
-        <div class='lg-contact-text'>
-            Only you can see your hotel's bookings and revenue.<br>
-            We never share your data with anyone.
-        </div>
-    </div>
-
-    <br>
-
-    <div class='lg-contact'>
-        <div class='lg-contact-title'>Want to get started?</div>
-        <div class='lg-contact-text'>
-            Contact us to set up your free account.<br><br>
-            📧 <span class='lg-contact-email'>Kashmirhotels6@gmail.com</span><br>
-            💬 WhatsApp: <span class='lg-contact-email'>+91 8491828292</span><br><br>
-            <span style='font-size:0.72rem;color:#475569'>
-            Need help? We respond within 2 hours on WhatsApp.
-            </span>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-
-    # ── Feature chips ─────────────────────────────────────
-    st.markdown("""
-    <div class='lg-features'>
-        <div class='lg-chip'>🔒 Private</div>
-        <div class='lg-chip'>📊 Live data</div>
-        <div class='lg-chip'>☁️ Cloud sync</div>
-        <div class='lg-chip'>🌙 Dark mode</div>
-    </div>
     <div class='lg-footer'>
-        © 2025 Kashmir Analytics · All rights reserved
+        <div style='margin-bottom: 4px; font-weight: 600; color: var(--login-text-primary);'>🔒 Enterprise-Grade Security</div>
+        <div style='color: var(--login-text-secondary); max-width: 320px; margin: 0 auto 12px auto; font-size: 0.72rem;'>
+            Only authorized hotel managers can access booking records and revenue analytics. Your data is encrypted and completely confidential.
+        </div>
+        <div class='lg-footer-links'>
+            <a href='mailto:Kashmirhotels6@gmail.com' class='lg-footer-link'>Email Support</a>
+            <span class='lg-footer-dot'>•</span>
+            <a href='https://wa.me/918491828292' target='_blank' class='lg-footer-link'>WhatsApp Helpdesk</a>
+        </div>
+        <div style='margin-top: 32px; font-size: 0.65rem; color: var(--login-text-muted); letter-spacing: 0.5px;'>
+            © 2026 KASHMIR ANALYTICS · ALL RIGHTS RESERVED
+        </div>
     </div>
     """, unsafe_allow_html=True)
 
