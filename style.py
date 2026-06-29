@@ -339,7 +339,7 @@ def apply_style():
     }
 
 
-    /* Animated background mesh */
+    /* Background mesh - promoted to composite layer for scrolling performance */
     [data-testid="stAppViewContainer"]::before {
         content: '';
         position: fixed;
@@ -347,6 +347,8 @@ def apply_style():
         background: var(--mesh-bg-gradient);
         pointer-events: none;
         z-index: 0;
+        transform: translate3d(0, 0, 0);
+        will-change: transform;
     }
 
     /* ═══════════════════════════════════════════════
@@ -355,8 +357,6 @@ def apply_style():
     [data-testid="stHeader"], header {
         background: var(--bg-color) !important;
         background-color: var(--bg-color) !important;
-        backdrop-filter: blur(20px) saturate(1.5) !important;
-        -webkit-backdrop-filter: blur(20px) saturate(1.5) !important;
         border-bottom: 1px solid var(--border-color) !important;
         color: var(--text-color) !important;
     }
@@ -548,7 +548,6 @@ def apply_style():
         border-radius: 14px;
         padding: 5px;
         gap: 4px;
-        backdrop-filter: blur(10px);
     }
     [data-testid="stTabs"] button[role="tab"] {
         background: transparent !important;
@@ -688,7 +687,6 @@ def apply_style():
         border: 1px solid var(--border-color);
         border-radius: 16px;
         padding: 22px;
-        backdrop-filter: blur(12px);
         box-shadow: 0 8px 32px var(--card-hover-shadow);
         transition: transform 0.25s ease, box-shadow 0.25s ease;
     }
@@ -926,7 +924,6 @@ def apply_style():
     [data-testid="stAlert"] {
         border-radius: 12px !important;
         border: 1px solid var(--border-color) !important;
-        backdrop-filter: blur(8px) !important;
         color: var(--text-color) !important;
     }
 
@@ -955,7 +952,6 @@ def apply_style():
         overflow: visible !important;
         border: 1px solid var(--border-color) !important;
         background: var(--card-bg) !important;
-        backdrop-filter: blur(10px);
     }
     /* The inner SVG/canvas must still stay clipped to its own bounds */
     [data-testid="stPlotlyChart"] > div {
@@ -1186,7 +1182,7 @@ def apply_style():
         overflow: hidden !important;
     }
 
-    /* ── Floating background orb ── */
+    /* ── Floating background orb (static & hardware accelerated for scrolling performance) ── */
     [data-testid="stAppViewContainer"]::after {
         content: '';
         position: fixed;
@@ -1194,15 +1190,12 @@ def apply_style():
         height: 600px;
         border-radius: 50%;
         background: radial-gradient(circle,
-            rgba(59,130,246,0.04) 0%, transparent 70%);
+            rgba(16,185,129,0.04) 0%, transparent 70%);
         bottom: -200px; right: -100px;
         pointer-events: none;
         z-index: 0;
-        animation: orbFloat 8s ease-in-out infinite;
-    }
-    @keyframes orbFloat {
-        0%, 100% { transform: translateY(0) scale(1); }
-        50%       { transform: translateY(-30px) scale(1.05); }
+        transform: translate3d(0, 0, 0);
+        will-change: transform;
     }
 
     /* ── Success message styling ── */
@@ -1257,7 +1250,6 @@ def apply_style():
         background: transparent !important;
         border: 1px solid var(--border-color) !important;
         color: var(--text-color) !important;
-        backdrop-filter: blur(8px) !important;
     }
     [data-testid="stBaseButton-secondary"]:hover {
         border-color: rgba(16,185,129,0.3) !important;

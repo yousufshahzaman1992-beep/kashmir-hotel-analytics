@@ -813,7 +813,7 @@ with tab_risk:
     _w_vis  = weather["visibility_km"] if isinstance(weather["visibility_km"], (int, float)) else 10
     weather_icon = "❄️" if _w_snow > 0 else ("🌧️" if _w_rain > 0 else ("🌫️" if _w_vis < 2 else "☀️"))
     st.markdown(f"""
-    <div style='background:var(--secondary-bg-color); border:1px solid var(--border-card); border-radius:12px; padding:16px; margin-bottom:20px; backdrop-filter:blur(10px); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap;'>
+    <div style='background:var(--secondary-bg-color); border:1px solid var(--border-card); border-radius:12px; padding:16px; margin-bottom:20px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap;'>
         <div>
             <div style='font-size:0.75rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; font-weight:600;'>📍 Srinagar International Airport (SXR)</div>
             <div style='font-size:1.15rem; font-weight:700; color:var(--text-color); display:flex; align-items:center; gap:8px; margin-top:2px;'>
