@@ -68,12 +68,42 @@ def apply_style():
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap');
 
-    [data-testid="stAppViewContainer"] {
-        opacity: 0 !important;
+    /* ── FLASH PREVENTION OVERLAY ──────────────────────────────────────────
+       A solid-color panel covers the entire viewport instantly on page load.
+       It is positioned above everything (z-index: 99999) so no Streamlit
+       default colours, loading bars, or blank frames are ever visible.
+       The overlay fades out (0.25s) as soon as Python finishes rendering and
+       appends <div class="app-unlocked"></div> to the DOM.
+       Using a cover overlay (not opacity on the container) is critical because
+       `opacity: 0` on a container still lets the browser paint the background
+       behind it — the overlay approach blocks that entirely.
+    ────────────────────────────────────────────────────────────────────── */
+
+    /* Default cover — visible until .app-unlocked appears */
+    body::before {
+        content: '';
+        position: fixed;
+        inset: 0;
+        background: #050e0b;   /* matches --bg-color dark default */
+        z-index: 99999;
+        pointer-events: none;
+        opacity: 1;
+        transition: opacity 0.25s ease-out;
     }
-    [data-testid="stAppViewContainer"]:has(.app-unlocked) {
+    /* Dismiss the overlay the moment .app-unlocked is in the DOM */
+    body:has(.app-unlocked)::before {
+        opacity: 0 !important;
+        pointer-events: none !important;
+    }
+
+    /* Light-mode: match light background so the flash is white, not dark */
+    html[data-theme="light"] body::before {
+        background: #ffffff;
+    }
+
+    /* Legacy opacity lock kept for backwards compat (no visual effect now) */
+    [data-testid="stAppViewContainer"] {
         opacity: 1 !important;
-        transition: opacity 0.3s ease-in-out !important;
     }
 
     /* Hard lock injected by ensure_auth() on redirect */
@@ -81,6 +111,20 @@ def apply_style():
     .auth-redirect-lock [data-testid="stMainBlockContainer"] {
         opacity: 0 !important;
         animation: none !important;
+    }
+
+    /* Hide Streamlit's native deprecation/warning banners and loading bar
+       that can flash through before the body::before overlay takes effect */
+    [data-testid="stStatusWidget"],
+    [data-testid="stAppDeployButton"],
+    div[class*="StatusWidget"],
+    div[class*="stDeployButton"],
+    [data-testid="stToolbar"] .stToolbarActionButton,
+    /* Streamlit's native top loading bar */
+    #stDecoration,
+    div[data-testid="stDecoration"] {
+        display: none !important;
+        visibility: hidden !important;
     }
 
     /* ═══════════════════════════════════════════════
@@ -518,14 +562,30 @@ def apply_style():
     /* ═══════════════════════════════════════════════
        LAYOUT
     ═══════════════════════════════════════════════ */
-    /* Narrow sidebar so the dashboard gets maximum horizontal space */
-    [data-testid="stSidebar"] {
-        min-width: 220px !important;
+    /* Narrow sidebar so the dashboard gets maximum horizontal space.
+       IMPORTANT: Do NOT set min-width here — it breaks Streamlit's sidebar
+       collapse animation, leaving a black gap where the sidebar was. */
+    [data-testid="stSidebar"][aria-expanded="true"] {
         max-width: 220px !important;
         width:     220px !important;
     }
-    [data-testid="stSidebar"] > div:first-child {
+    [data-testid="stSidebar"][aria-expanded="true"] > div:first-child {
         width: 220px !important;
+    }
+
+    /* When sidebar is collapsed, ensure the main content fills the full width */
+    [data-testid="stSidebar"][aria-expanded="false"] {
+        width: 0 !important;
+        min-width: 0 !important;
+        max-width: 0 !important;
+        overflow: hidden !important;
+    }
+
+    /* Main block always fills remaining horizontal space */
+    [data-testid="stMain"] {
+        flex: 1 1 0% !important;
+        min-width: 0 !important;
+        width: 100% !important;
     }
 
     .block-container {

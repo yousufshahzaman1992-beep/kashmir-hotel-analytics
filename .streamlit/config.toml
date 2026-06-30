@@ -1,9 +1,27 @@
 [client]
 showSidebarNavigation = false
-toolbarMode = "auto"
+toolbarMode            = "auto"
+
+[server]
+# Prevent Streamlit's file-watcher from triggering false restarts
+fileWatcherType = "poll"
 
 [theme]
-# Dark is the default. Switch via ⋮ → Settings → Theme.
-# Our JS reads Streamlit's --background-color to detect the theme
-# and stamps data-theme on <html>, driving our full CSS variable system.
-base = "dark"
+# ── Kashmir Analytics — Dark Theme ───────────────────────────────────────────
+# These colors are baked into the initial HTML Streamlit serves, so the
+# browser renders them INSTANTLY before any Python or JavaScript runs.
+# This eliminates the "blue flash" on first load because the native
+# Streamlit skeleton (loading screen, background) already uses our colors.
+#
+# These must exactly match the CSS variables in style.py:
+#   --bg-color           → backgroundColor
+#   --secondary-bg-color → secondaryBackgroundColor
+#   --text-color         → textColor
+#   --primary-color      → primaryColor
+# ─────────────────────────────────────────────────────────────────────────────
+base                   = "dark"
+backgroundColor        = "#050e0b"
+secondaryBackgroundColor = "#0a1814"
+textColor              = "#e2e8f0"
+primaryColor           = "#10b981"
+font                   = "sans serif"
