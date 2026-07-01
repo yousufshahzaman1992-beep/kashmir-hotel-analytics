@@ -383,16 +383,17 @@ def apply_style():
     }
 
 
-    /* Background mesh - promoted to composite layer for scrolling performance */
+    /* Background mesh — purely decorative, must NOT intercept scroll events */
     [data-testid="stAppViewContainer"]::before {
         content: '';
         position: fixed;
         inset: 0;
         background: var(--mesh-bg-gradient);
         pointer-events: none;
+        touch-action: none;
         z-index: 0;
-        transform: translate3d(0, 0, 0);
-        will-change: transform;
+        /* Removed will-change: transform — it creates an isolated compositor layer
+           that swallows scroll momentum on long pages (e.g. Reviews tab) */
     }
 
     /* ═══════════════════════════════════════════════
@@ -590,11 +591,13 @@ def apply_style():
 
     .block-container {
         padding-top:    3rem !important;
-        padding-bottom: 2rem !important;
+        padding-bottom: 4rem !important;
         padding-left:   1.5rem !important;
         padding-right:  1.5rem !important;
         max-width:      100% !important;
-        min-height:     100vh !important;
+        /* Removed min-height: 100vh — it caused scroll-height miscalculation
+           on tall content pages (Reviews tab), making the browser think
+           it had reached the bottom before it actually had. */
     }
 
     /* Ensure the scrollable content column always stretches to fill the
@@ -1253,7 +1256,7 @@ def apply_style():
         overflow: hidden !important;
     }
 
-    /* ── Floating background orb (static & hardware accelerated for scrolling performance) ── */
+    /* ── Floating background orb — decorative only, must NOT intercept scroll ── */
     [data-testid="stAppViewContainer"]::after {
         content: '';
         position: fixed;
@@ -1264,9 +1267,9 @@ def apply_style():
             rgba(16,185,129,0.04) 0%, transparent 70%);
         bottom: -200px; right: -100px;
         pointer-events: none;
+        touch-action: none;
         z-index: 0;
-        transform: translate3d(0, 0, 0);
-        will-change: transform;
+        /* Removed will-change: transform — causes scroll-event capture on long pages */
     }
 
     /* ── Success message styling ── */
