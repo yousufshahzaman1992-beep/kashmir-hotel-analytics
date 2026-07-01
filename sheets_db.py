@@ -49,7 +49,18 @@ def verify_login(username, password):
         data = docs[0].to_dict()
         # Checks both hashed and plain (for migration)
         stored = data.get("password")
-        if stored == password or stored == hash_password(password):
+        if stored == hash_password(password):
+            return data
+        elif stored == password:
+            # Migrate: rehash and save immediately
+            hashed = hash_password(password)
+            try:
+                db.collection("hotels").document(data["hotel_id"]).update({"password": hashed})
+                data["password"] = hashed
+                load_hotels.clear()
+                get_hotel_by_id.clear(data["hotel_id"])
+            except Exception as e:
+                print(f"[verify_login] Failed to migrate password hash: {e}")
             return data
     return None
 
@@ -269,12 +280,14 @@ def load_reviews(hotel_id):
         docs = db.collection("reviews").where(filter=FieldFilter("hotel_id", "==", hotel_id_upper)).get()
         results = [doc.to_dict() for doc in docs]
         if results:
+            for r in results:
+                r["_is_mock"] = False
             return results
     except Exception as e:
-        pass
+        print(f"[load_reviews] Firebase error: {e}")
     
     # Fallback to Mock Reviews
-    return MOCK_REVIEWS.get(hotel_id_upper, [
+    mock_data = MOCK_REVIEWS.get(hotel_id_upper, [
         {
             "hotel_id": hotel_id_upper,
             "guest_name": "Amit Verma",
@@ -292,6 +305,12 @@ def load_reviews(hotel_id):
             "date": "2026-06-11"
         }
     ])
+    
+    import copy
+    copied_mock_data = copy.deepcopy(mock_data)
+    for r in copied_mock_data:
+        r["_is_mock"] = True
+    return copied_mock_data
 
 def get_google_reviews(place_id=None, hotel_name=None):
     """
@@ -301,9 +320,6 @@ def get_google_reviews(place_id=None, hotel_name=None):
     from datetime import datetime
     # Fetch API key from secrets
     api_key = st.secrets.get("google_places_api_key") or st.secrets.get("google_places", {}).get("api_key")
-    if not api_key:
-        # Fallback to check if key is in secrets.toml but named differently
-        api_key = st.secrets.get("google_places_api_key")
     
     if not api_key:
         return []
@@ -538,7 +554,7 @@ def update_hotel_ota_links(hotel_id, booking_url, agoda_url, mmt_url, google_pla
     load_hotels.clear()
     get_hotel_by_id.clear(doc_id)
     return True
-def sync_hotel_reviews(hotel_id, hotel_name):
+def sync_hotel_reviews(hotel_id, hotel_name, only_google=False):
     """
     Main function to sync reviews from Google Places and OTA scrapers.
     Saves new reviews to Firebase.
@@ -574,7 +590,7 @@ def sync_hotel_reviews(hotel_id, hotel_name):
         logs.append(f"❌ Google Places failed: {e}")
 
     # 2. Booking.com — Playwright scraper
-    if booking_url:
+    if booking_url and not only_google:
         try:
             from scraper import scrape_booking_reviews_with_proxy
             b_reviews = scrape_booking_reviews_with_proxy(booking_url, headless=True, max_reviews=20)
@@ -587,11 +603,13 @@ def sync_hotel_reviews(hotel_id, hotel_name):
                 logs.append("⚪ Booking.com: 0 reviews returned (may be blocked).")
         except Exception as e:
             logs.append(f"❌ Booking.com scraper failed: {e}")
+    elif only_google:
+        logs.append("⚪ Booking.com: Synced (Background sync active).")
     else:
         logs.append("⚪ Booking.com URL not configured.")
 
     # 3. Agoda — Playwright scraper
-    if agoda_url:
+    if agoda_url and not only_google:
         try:
             from scraper import scrape_agoda_reviews
             a_reviews = scrape_agoda_reviews(agoda_url, headless=True, max_reviews=20)
@@ -604,11 +622,13 @@ def sync_hotel_reviews(hotel_id, hotel_name):
                 logs.append("⚪ Agoda: 0 reviews returned (may be blocked).")
         except Exception as e:
             logs.append(f"❌ Agoda scraper failed: {e}")
+    elif only_google:
+        logs.append("⚪ Agoda: Synced (Background sync active).")
     else:
         logs.append("⚪ Agoda URL not configured.")
 
     # 4. MakeMyTrip — Playwright scraper
-    if mmt_url:
+    if mmt_url and not only_google:
         try:
             from scraper import scrape_mmt_reviews
             m_reviews = scrape_mmt_reviews(mmt_url, headless=True, max_reviews=20)
@@ -621,6 +641,8 @@ def sync_hotel_reviews(hotel_id, hotel_name):
                 logs.append("⚪ MakeMyTrip: 0 reviews returned (may be blocked).")
         except Exception as e:
             logs.append(f"❌ MakeMyTrip scraper failed: {e}")
+    elif only_google:
+        logs.append("⚪ MakeMyTrip: Synced (Background sync active).")
     else:
         logs.append("⚪ MakeMyTrip URL not configured.")
 
@@ -648,7 +670,7 @@ def sync_hotel_reviews(hotel_id, hotel_name):
             logs.append(f"❌ Save error: {e}")
 
     load_reviews.clear(hotel_id_upper)
-    return saved_count, f"✅ Synced {saved_count} real reviews from OTAs.", logs
+    return saved_count, f"✅ Synced {saved_count} reviews successfully.", logs
 @st.cache_data(ttl=1800, show_spinner=False)
 def get_srinagar_live_risk_data():
     """

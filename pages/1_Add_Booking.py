@@ -1,19 +1,17 @@
 import streamlit as st
-
-st.set_page_config(page_title="Add Booking", page_icon="📝", layout="centered")
-
 from datetime import date
 import sys, os
+
 # Add the project root to sys.path to allow importing modules from the root directory
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
-from sheets_db import save_booking, get_hotel_by_id
-from style import apply_style, sidebar_logo
 
-# ── Restore session from query params on refresh ──────────
+from sheets_db import save_booking, get_hotel_by_id
+from style import apply_style, sidebar_logo, ensure_auth, render_sidebar
+
+st.set_page_config(page_title="Add Booking", page_icon="📝", layout="centered")
 apply_style()
-from style import ensure_auth, render_sidebar
 
 hotel = ensure_auth()
 hotel_id = hotel["hotel_id"]
@@ -111,8 +109,7 @@ if submit:
             "Notes":       notes,
             "hotel_id":    hotel_id,
             "booking_source": booking_source,
-            "commission_paid": commission_paid,
-            "status":      "active"
+            "commission_paid": commission_paid
         }
         save_booking(booking)
         if "form_error" in st.session_state:

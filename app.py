@@ -21,6 +21,7 @@ from sheets_db import (
     load_checklist,
     save_checklist,
     sync_hotel_reviews,
+    update_hotel_ota_links,
 )
 from login import show_login
 from style import apply_style, sidebar_logo, render_custom_navigation
@@ -236,7 +237,15 @@ avg_book     = int(fdf["Amount (₹)"].mean())  if total_book else 0
 total_commission = fdf["commission_paid"].sum()
 net_revenue      = total_rev - total_commission
 adr              = net_revenue / total_nights if total_nights > 0 else 0
-occupancy_rate   = (total_nights / (30 * 30)) * 100
+
+# Dynamic occupancy rate divisor based on rooms and selected season days
+ASSUMED_ROOMS = hotel.get("room_count", 30)
+season_day_counts = {
+    "Full Year": 365, "Winter (Jan–Mar)": 90, "Spring (Apr–Jun)": 91,
+    "Summer (Jul–Sep)": 92, "Autumn (Oct–Dec)": 92
+}
+season_days = season_day_counts.get(season, 30)
+occupancy_rate = (total_nights / (ASSUMED_ROOMS * season_days)) * 100 if ASSUMED_ROOMS > 0 else 0
 
 # ── Create top-level dashboard tabs ──
 tab_overview, tab_bookings, tab_reviews, tab_risk = st.tabs([
@@ -465,17 +474,14 @@ with tab_reviews:
             </div>
             """, unsafe_allow_html=True)
 
-            if st.button("🔄 Sync Live OTA Reviews", type="primary", use_container_width=True):
-                with st.spinner("Syncing reviews and executing sentiment classifier..."):
-                    saved_count, msg, sync_logs = sync_hotel_reviews(hotel_id, hotel_name)
-
-                    # Show nice results
+            sync_btn_label = "🔄 Sync Reviews Now"
+            if st.button(sync_btn_label, type="primary", use_container_width=True):
+                with st.spinner("Syncing reviews..."):
+                    saved_count, msg, sync_logs = sync_hotel_reviews(hotel_id, hotel_name, only_google=True)
                     st.success(msg)
-                    with st.expander("📄 View Sync Technical Logs", expanded=True):
+                    with st.expander("📄 View Sync Logs", expanded=True):
                         for log in sync_logs:
                             st.write(f"- {log}")
-
-                    # Wait a second and rerun
                     st.rerun()
         with col_manual:
             st.markdown("<p style='font-weight:600; color:var(--text-color); margin-bottom:8px; font-size:0.95rem;'>✍️ Real-Time Sentiment Analyzer Form</p>", unsafe_allow_html=True)
@@ -564,11 +570,7 @@ with tab_reviews:
 
     # Fetch reviews from database (with mock fallback)
     reviews_raw = load_reviews(hotel_id)
-    _using_mock_reviews = not bool(reviews_raw) or (
-        reviews_raw and reviews_raw[0].get("guest_name") in [
-            "Rohan Sharma", "Siddharth Goel", "John Doe", "Amit Verma"
-        ]
-    )
+    _using_mock_reviews = not bool(reviews_raw) or any(r.get("_is_mock", False) for r in reviews_raw)
     if _using_mock_reviews:
         st.markdown("""
         <div style='background:rgba(245,158,11,0.10); border:1px solid rgba(245,158,11,0.35); border-radius:10px;
@@ -1087,18 +1089,19 @@ with tab_risk:
     arriving_bookings = pd.DataFrame()
     if not df.empty and "Check-in" in df.columns:
         try:
-            df["Check-in-dt"] = pd.to_datetime(df["Check-in"], errors="coerce")
+            df_outreach = df.copy()
+            df_outreach["Check-in-dt"] = pd.to_datetime(df_outreach["Check-in"], errors="coerce")
 
             # Try upcoming (next 30 days) first
-            upcoming = df[
-                df["Check-in-dt"].dt.date >= today
+            upcoming = df_outreach[
+                df_outreach["Check-in-dt"].dt.date >= today
             ].copy().sort_values("Check-in-dt")
 
             if not upcoming.empty:
                 arriving_bookings = upcoming
             else:
                 # Fallback: show all bookings sorted by most recent check-in
-                arriving_bookings = df.dropna(subset=["Check-in-dt"]).copy().sort_values(
+                arriving_bookings = df_outreach.dropna(subset=["Check-in-dt"]).copy().sort_values(
                     "Check-in-dt", ascending=False
                 )
         except Exception:

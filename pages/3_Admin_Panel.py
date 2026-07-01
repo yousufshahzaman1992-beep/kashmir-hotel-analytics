@@ -8,7 +8,7 @@ project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
-from sheets_db import get_hotel_by_id, load_hotels, load_all_bookings, add_hotel, get_db, update_hotel_ota_links
+from sheets_db import get_hotel_by_id, load_hotels, load_all_bookings, add_hotel, get_db, update_hotel_ota_links, hash_password
 from style import apply_style, sidebar_logo, ensure_auth, render_custom_navigation
 
 st.set_page_config(page_title="Admin Panel · Kashmir Analytics", page_icon="⚙️", layout="wide")
@@ -195,7 +195,7 @@ with tab2:
                 "name": edit_name, "username": edit_username, "email": edit_email, "plan": edit_plan,
             })
             if edit_password:
-                db.collection("hotels").document(selected_id).update({"password": edit_password})
+                db.collection("hotels").document(selected_id).update({"password": hash_password(edit_password)})
             st.success(f"✅ **{edit_name}** updated successfully!")
             st.cache_data.clear()
             st.rerun()

@@ -61,13 +61,17 @@ with tab1:
     st.markdown("<div class='section-title'>Filters</div>", unsafe_allow_html=True)
     col1,col2,col3,col4 = st.columns(4)
     with col1:
-        sf  = st.multiselect("Status",    options=df["Status"].unique(),    default=df["Status"].unique())
+        _sf_opts = [x for x in df["Status"].unique() if pd.notna(x)]
+        sf  = st.multiselect("Status",    options=_sf_opts,    default=_sf_opts)
     with col2:
-        rf  = st.multiselect("Source",    options=df["Source"].unique(),    default=df["Source"].unique())
+        _rf_opts = [x for x in df["Source"].unique() if pd.notna(x)]
+        rf  = st.multiselect("Source",    options=_rf_opts,    default=_rf_opts)
     with col3:
-        rmf = st.multiselect("Room Type", options=df["Room Type"].unique(), default=df["Room Type"].unique())
+        _rmf_opts = [x for x in df["Room Type"].unique() if pd.notna(x)]
+        rmf = st.multiselect("Room Type", options=_rmf_opts, default=_rmf_opts)
     with col4:
-        bsf = st.multiselect("Booking Channel", options=df["booking_source"].unique(), default=df["booking_source"].unique())
+        _bsf_opts = [x for x in df["booking_source"].unique() if pd.notna(x)]
+        bsf = st.multiselect("Booking Channel", options=_bsf_opts, default=_bsf_opts)
 
     filtered = df[df["Status"].isin(sf) & df["Source"].isin(rf) & df["Room Type"].isin(rmf) & df["booking_source"].isin(bsf)].copy()
 
@@ -148,7 +152,9 @@ with tab1:
             pdf.set_font("helvetica", "", 8)
             for _, row in data.iterrows():
                 pdf.cell(widths[0], 8, str(row["Guest Name"])[:30], border=1)
-                pdf.cell(widths[1], 8, row["Check-in"].strftime('%Y-%m-%d'), border=1, align="C")
+                checkin_val = row["Check-in"]
+                checkin_str = checkin_val.strftime('%Y-%m-%d') if pd.notna(checkin_val) else "—"
+                pdf.cell(widths[1], 8, checkin_str, border=1, align="C")
                 pdf.cell(widths[2], 8, f"{int(row['Amount (₹)']):,}", border=1, align="R")
                 pdf.cell(widths[3], 8, str(row["Status"]), border=1, align="C")
                 pdf.ln()
@@ -167,7 +173,7 @@ with tab2:
     st.markdown("<div class='section-title'>Modify or Delete Booking</div>", unsafe_allow_html=True)
     
     # Create descriptive labels for selection
-    df['selector'] = df.apply(lambda r: f"{r['Guest Name']} (In: {r['Check-in'].strftime('%d %b')})", axis=1)
+    df['selector'] = df.apply(lambda r: f"{r['Guest Name']} (In: {r['Check-in'].strftime('%d %b') if pd.notna(r['Check-in']) else '—'})", axis=1)
     booking_map = {row['selector']: row['id'] for _, row in df.iterrows()}
     
     selected_label = st.selectbox("Select Booking to Edit", options=list(booking_map.keys()))
@@ -181,17 +187,24 @@ with tab2:
             e_phone = st.text_input("Phone Number", value=b["Phone"])
             e_in    = st.date_input("Check-in Date", value=b["Check-in"])
             e_out   = st.date_input("Check-out Date", value=b["Check-out"])
-            e_source = st.selectbox("Booking Source / Channel *", 
-                                    ["Direct Website", "Walk-In", "Local Travel Agent", "MakeMyTrip", 
-                                     "Booking.com", "Agoda", "Goibibo", "Yatra", "EaseMyTrip"],
-                                    index=["Direct Website", "Walk-In", "Local Travel Agent", "MakeMyTrip", 
-                                           "Booking.com", "Agoda", "Goibibo", "Yatra", "EaseMyTrip"].index(b["booking_source"]))
+            
+            _bs_opts = ["Direct Website", "Walk-In", "Local Travel Agent", "MakeMyTrip", 
+                        "Booking.com", "Agoda", "Goibibo", "Yatra", "EaseMyTrip"]
+            _bs_val = b.get("booking_source", "Direct Website")
+            _bs_idx = _bs_opts.index(_bs_val) if _bs_val in _bs_opts else 0
+            e_source = st.selectbox("Booking Source / Channel *", _bs_opts, index=_bs_idx)
         with c2:
             e_amt   = st.number_input("Amount Paid (₹)", value=int(b["Amount (₹)"]), step=500)
-            e_room  = st.selectbox("Room Type", ["Standard","Deluxe","Suite","Houseboat"], 
-                                   index=["Standard","Deluxe","Suite","Houseboat"].index(b["Room Type"]))
-            e_status = st.selectbox("Status", ["Confirmed","Pending","Cancelled"],
-                                    index=["Confirmed","Pending","Cancelled"].index(b["Status"]))
+            
+            _room_opts = ["Standard","Deluxe","Suite","Houseboat"]
+            _room_val = b.get("Room Type", "Standard")
+            _room_idx = _room_opts.index(_room_val) if _room_val in _room_opts else 0
+            e_room  = st.selectbox("Room Type", _room_opts, index=_room_idx)
+            
+            _status_opts = ["Confirmed","Pending","Cancelled"]
+            _status_val = b.get("Status", "Confirmed")
+            _status_idx = _status_opts.index(_status_val) if _status_val in _status_opts else 0
+            e_status = st.selectbox("Status", _status_opts, index=_status_idx)
             e_guests = st.number_input("Number of Guests", value=int(b["Guests"]), min_value=1)
             st.info(f"Current Commission: ₹{b['commission_paid']:.2f}")
 
