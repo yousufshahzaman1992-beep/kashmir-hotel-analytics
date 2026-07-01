@@ -5,7 +5,7 @@ DIRPATH = os.path.dirname(os.path.abspath(__file__))
 if DIRPATH not in sys.path:
     sys.path.insert(0, DIRPATH)
 
-from sheets_db import verify_login
+from sheets_db import verify_login, get_db
 from style import apply_style
 
 def show_login():
@@ -215,30 +215,76 @@ def show_login():
     </div>
     """, unsafe_allow_html=True)
 
-    with st.form("login_form"):
-        st.markdown("""
-            <div class='lg-card-title'>Sign In</div>
-            <div class='lg-card-sub'>Enter your hotel credentials to access the platform.</div>
-        """, unsafe_allow_html=True)
-        
-        username = st.text_input("Username", placeholder="your username")
-        password = st.text_input("Password", type="password",
-                                 placeholder="••••••••")
-        submit   = st.form_submit_button("Sign In", width='stretch')
+    if "forgot_password" not in st.session_state:
+        st.session_state["forgot_password"] = False
 
-    if submit:
-        if not username or not password:
-            st.error("Please enter both username and password.")
-        else:
-            hotel = verify_login(username, password)
-            if hotel:
-                st.session_state["logged_in"] = True
-                st.session_state["hotel"]     = hotel
-                if st.query_params.get("hid") != hotel["hotel_id"]:
-                    st.query_params["hid"] = hotel["hotel_id"]
-                st.rerun()
+    if st.session_state["forgot_password"]:
+        with st.form("forgot_password_form"):
+            st.markdown("""
+                <div class='lg-card-title'>Reset Password</div>
+                <div class='lg-card-sub'>Enter your registered email address to receive a secure reset link.</div>
+            """, unsafe_allow_html=True)
+            email_input = st.text_input("Email Address", placeholder="e.g. manager@hotel.com")
+            submit_reset = st.form_submit_button("Send Reset Link", width='stretch')
+
+        if submit_reset:
+            if not email_input:
+                st.error("Please enter your email address.")
             else:
-                st.error("❌ Incorrect username or password.")
+                from google.cloud.firestore_v1.base_query import FieldFilter
+                db = get_db()
+                docs = list(db.collection("hotels").where(filter=FieldFilter("email", "==", email_input.strip())).limit(1).get())
+                if docs:
+                    hotel_data = docs[0].to_dict()
+                    # Validate that the hotel already has an established user account
+                    if not hotel_data.get("username"):
+                        st.error("❌ This account setup is incomplete. Please contact the administrator or use your initial invitation email.")
+                    else:
+                        from email_utils import generate_invite_token, save_reset_token, send_reset_email
+                        token = generate_invite_token()
+                        save_reset_token(token, hotel_data["hotel_id"], hotel_data["email"])
+                        app_url = "https://kashmir-hotel-analytics.streamlit.app"
+                        success, message = send_reset_email(hotel_data["name"], hotel_data["email"], token, app_url)
+                        if success:
+                            st.success("✅ A password reset link has been sent to your email!")
+                        else:
+                            st.error(f"❌ Failed to send reset email: {message}")
+                else:
+                    st.error("❌ Email address not registered in the system.")
+
+        if st.button("← Back to Sign In", key="back_to_signin_btn", width='stretch'):
+            st.session_state["forgot_password"] = False
+            st.rerun()
+
+    else:
+        with st.form("login_form"):
+            st.markdown("""
+                <div class='lg-card-title'>Sign In</div>
+                <div class='lg-card-sub'>Enter your hotel credentials to access the platform.</div>
+            """, unsafe_allow_html=True)
+            
+            username = st.text_input("Username", placeholder="your username")
+            password = st.text_input("Password", type="password",
+                                     placeholder="••••••••")
+            submit   = st.form_submit_button("Sign In", width='stretch')
+
+        if submit:
+            if not username or not password:
+                st.error("Please enter both username and password.")
+            else:
+                hotel = verify_login(username, password)
+                if hotel:
+                    st.session_state["logged_in"] = True
+                    st.session_state["hotel"]     = hotel
+                    if st.query_params.get("hid") != hotel["hotel_id"]:
+                        st.query_params["hid"] = hotel["hotel_id"]
+                    st.rerun()
+                else:
+                    st.error("❌ Incorrect username or password.")
+
+        if st.button("🔑 Forgot Password?", key="forgot_password_btn", width='stretch'):
+            st.session_state["forgot_password"] = True
+            st.rerun()
 
     # ── Footer ────────────────────────────────────────────
     st.markdown("""

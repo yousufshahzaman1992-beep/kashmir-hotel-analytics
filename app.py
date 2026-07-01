@@ -104,6 +104,13 @@ if not st.session_state.get("logged_in"):
         st.switch_page("pages/4_Setup_Account.py")
         st.stop()
 
+    # Handle password reset link
+    reset_token = st.query_params.get("reset")
+    if reset_token:
+        st.session_state["reset_token"] = reset_token
+        st.switch_page("pages/4_Setup_Account.py")
+        st.stop()
+
     # Restore session from URL
     hid = st.query_params.get("hid")
     if hid:
