@@ -483,8 +483,16 @@ with tab_reviews:
             # Real-time text area
             m_review_text = st.text_area("Review Text", height=82, placeholder="Type/paste a guest review to analyze sentiment in real time...", key="m_review_text_val")
 
-            # Ratings slider
-            m_rating = st.slider("Guest Rating Stars", 1, 5, 5, key="m_rating_val")
+            # Ratings — using select_slider instead of slider to avoid
+            # scroll-event capture (st.slider intercepts mouse-wheel scrolling
+            # and freezes the page while the cursor is anywhere near it)
+            m_rating = st.select_slider(
+                "Guest Rating Stars",
+                options=[1, 2, 3, 4, 5],
+                value=5,
+                format_func=lambda x: "⭐" * x,
+                key="m_rating_val"
+            )
 
             # Interactive Real-Time Sentiment & Aspect Detection
             if m_review_text:
