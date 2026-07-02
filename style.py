@@ -64,9 +64,16 @@ def apply_style():
 </script>
 """, unsafe_allow_html=True)
 
+    # Non-blocking font preload — avoids render-blocking @import
+    st.markdown("""
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap"></noscript>
+    """, unsafe_allow_html=True)
+
     st.markdown("""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap');
 
     /* ── FLASH PREVENTION OVERLAY ──────────────────────────────────────────
        A solid-color panel covers the entire viewport instantly on page load.

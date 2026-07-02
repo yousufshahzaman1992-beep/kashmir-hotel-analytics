@@ -13,7 +13,6 @@ def show_login():
     # calling it again would re-inject the JS lock, resetting the timer.
     st.markdown("""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap');
 
     /* Aggressively hide all sidebar components on login */
     section[data-testid="stSidebar"], 
