@@ -45,7 +45,7 @@ with st.sidebar:
         unsafe_allow_html=True,
     )
     st.divider()
-    if st.button("🚪 Logout", width='stretch'):
+    if st.button("🚪 Logout", use_container_width=True):
         st.session_state.logged_in = False
         st.session_state.hotel = None
         st.query_params.clear()
@@ -75,7 +75,7 @@ with tab_hotels:
         st.info("No hotels registered yet.")
     else:
         display_cols = [c for c in ["hotel_id", "name", "username", "email", "plan"] if c in hotels_df.columns]
-        st.dataframe(hotels_df[display_cols], width='stretch', hide_index=True)
+        st.dataframe(hotels_df[display_cols], use_container_width=True, hide_index=True)
 
     st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
     st.markdown("### ➕ Add New Hotel")
@@ -91,7 +91,7 @@ with tab_hotels:
             new_email    = st.text_input("Email", placeholder="owner@hotel.com")
             new_plan     = st.selectbox("Plan", ["Basic", "Pro", "Enterprise"])
 
-        submitted = st.form_submit_button("✅ Create Hotel", width='stretch')
+        submitted = st.form_submit_button("✅ Create Hotel", use_container_width=True)
         if submitted:
             if not new_id or not new_name or not new_username or not new_password:
                 st.error("Hotel ID, Name, Username, and Password are required.")
@@ -165,7 +165,7 @@ with tab_ota:
                     help="Find it at: https://developers.google.com/maps/documentation/javascript/examples/places-placeid-finder",
                 )
 
-                if st.form_submit_button("💾 Save OTA Links", width='stretch'):
+                if st.form_submit_button("💾 Save OTA Links", use_container_width=True):
                     ok = update_hotel_ota_links(
                         hotel_id=selected_id,
                         booking_url=booking_url,
@@ -231,7 +231,7 @@ with tab_bookings:
             ]
             if c in filtered.columns
         ]
-        st.dataframe(filtered[display_cols], width='stretch', hide_index=True)
+        st.dataframe(filtered[display_cols], use_container_width=True, hide_index=True)
 
         total_rev = int(filtered["Amount (₹)"].sum()) if "Amount (₹)" in filtered else 0
         st.markdown(
@@ -264,7 +264,7 @@ with tab_sync:
         format_func=lambda hid: "All Hotels" if hid == "ALL" else f"{hotel_options.get(hid, hid)} ({hid})",
     )
 
-    if st.button("🔄 Run Sync Now", width='stretch'):
+    if st.button("🔄 Run Sync Now", use_container_width=True):
         import subprocess
         cmd = [sys.executable, os.path.join(project_root, "sync_worker.py")]
         if sync_hotel_id != "ALL":

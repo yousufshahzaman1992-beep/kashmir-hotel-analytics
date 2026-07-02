@@ -91,7 +91,7 @@ with tab1:
     # ── Table ─────────────────────────────────────────────────
     # Hide internal IDs and helper columns from display
     display_cols = [c for c in filtered.columns if c not in ["id", "hotel_id", "Month_Num", "selector"]]
-    st.dataframe(filtered[display_cols], width='stretch', hide_index=True, column_config={
+    st.dataframe(filtered[display_cols], use_container_width=True, hide_index=True, column_config={
         "WhatsApp": st.column_config.LinkColumn("Contact Guest", display_text="💬 WhatsApp"),
         "commission_paid": st.column_config.NumberColumn("Commission Paid (₹)", format="₹%.2f")
     })
@@ -117,7 +117,7 @@ with tab1:
                 plot_bgcolor="rgba(0,0,0,0)",
                 font=dict(family="Inter, sans-serif", color="#64748b", size=11)
             )
-            st.plotly_chart(fig_source, width='stretch')
+            st.plotly_chart(fig_source, use_container_width=True)
         else:
             st.info("Insufficient revenue data to generate distribution chart.")
     else:
@@ -131,7 +131,7 @@ with tab1:
             data=csv_data,
             file_name=f"{hotel_id}_bookings.csv",
             mime="text/csv",
-            width='stretch'
+            use_container_width=True
         )
     
     with c_pdf:
@@ -166,7 +166,7 @@ with tab1:
             data=pdf_bytes,
             file_name=f"{hotel_id}_report.pdf",
             mime="application/pdf",
-            width='stretch'
+            use_container_width=True
         )
 
 with tab2:
@@ -209,7 +209,7 @@ with tab2:
             st.info(f"Current Commission: ₹{b['commission_paid']:.2f}")
 
         e_notes = st.text_area("Notes", value=b["Notes"])
-        save_btn = st.form_submit_button("💾 Update Booking Details", width='stretch')
+        save_btn = st.form_submit_button("💾 Update Booking Details", use_container_width=True)
 
     if save_btn:
         if e_out <= e_in:
@@ -242,7 +242,7 @@ with tab2:
     with st.expander("🗑️ Delete Booking"):
         st.warning(f"Caution: This will permanently remove the booking for **{b['Guest Name']}**.")
         confirm_del = st.checkbox("I confirm I want to delete this booking")
-        if st.button("🗑️ Delete Permanently", width='stretch', disabled=not confirm_del):
+        if st.button("🗑️ Delete Permanently", use_container_width=True, disabled=not confirm_del):
             delete_booking(selected_id, hotel_id)
             st.success("Booking deleted!")
             st.rerun()

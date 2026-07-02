@@ -225,7 +225,7 @@ def show_login():
                 <div class='lg-card-sub'>Enter your registered email address to receive a secure reset link.</div>
             """, unsafe_allow_html=True)
             email_input = st.text_input("Email Address", placeholder="e.g. manager@hotel.com")
-            submit_reset = st.form_submit_button("Send Reset Link", width='stretch')
+            submit_reset = st.form_submit_button("Send Reset Link", use_container_width=True)
 
         if submit_reset:
             if not email_input:
@@ -252,7 +252,7 @@ def show_login():
                 else:
                     st.error("❌ Email address not registered in the system.")
 
-        if st.button("← Back to Sign In", key="back_to_signin_btn", width='stretch'):
+        if st.button("← Back to Sign In", key="back_to_signin_btn", use_container_width=True):
             st.session_state["forgot_password"] = False
             st.rerun()
 
@@ -266,7 +266,7 @@ def show_login():
             username = st.text_input("Username", placeholder="your username")
             password = st.text_input("Password", type="password",
                                      placeholder="••••••••")
-            submit   = st.form_submit_button("Sign In", width='stretch')
+            submit   = st.form_submit_button("Sign In", use_container_width=True)
 
         if submit:
             if not username or not password:
@@ -282,7 +282,7 @@ def show_login():
                 else:
                     st.error("❌ Incorrect username or password.")
 
-        if st.button("🔑 Forgot Password?", key="forgot_password_btn", width='stretch'):
+        if st.button("🔑 Forgot Password?", key="forgot_password_btn", use_container_width=True):
             st.session_state["forgot_password"] = True
             st.rerun()
 

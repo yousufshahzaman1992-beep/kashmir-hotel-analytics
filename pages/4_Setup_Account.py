@@ -78,7 +78,7 @@ with st.form("setup_form"):
                                placeholder="Repeat password")
     
     submit_label = "🔒 Reset My Password" if is_reset_mode else "✅ Create My Account"
-    submit    = st.form_submit_button(submit_label, width='stretch')
+    submit    = st.form_submit_button(submit_label, use_container_width=True)
 
 if submit:
     if (not is_reset_mode and not username) or not password:

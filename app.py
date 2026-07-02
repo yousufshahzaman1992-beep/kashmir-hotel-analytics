@@ -167,7 +167,7 @@ with st.sidebar:
     </div>
     """, unsafe_allow_html=True)
 
-    if st.button("↻ Refresh Data", width='stretch'):
+    if st.button("↻ Refresh Data", use_container_width=True):
         st.cache_data.clear()
         st.rerun()
 
@@ -188,7 +188,7 @@ with st.sidebar:
 
     st.divider()
 
-    if st.button("🚪 Logout", width='stretch'):
+    if st.button("🚪 Logout", use_container_width=True):
         st.session_state.logged_in = False
         st.session_state.hotel     = None
         st.query_params.clear()
@@ -289,7 +289,7 @@ with tab_overview:
                 hovertemplate="<b>%{x}</b><br>₹%{y:,}<extra></extra>"
             ))
             fig1.update_layout(**CHART)
-            st.plotly_chart(fig1, width='stretch')
+            st.plotly_chart(fig1, use_container_width=True)
 
         with c2:
             st.markdown("<div class='section-title'>Guest Origins</div>", unsafe_allow_html=True)
@@ -304,7 +304,7 @@ with tab_overview:
                 marker=dict(line=dict(color="#060b18", width=3))
             )
             fig2.update_layout(**CHART, showlegend=False)
-            st.plotly_chart(fig2, width='stretch')
+            st.plotly_chart(fig2, use_container_width=True)
 
         st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
 
@@ -327,7 +327,7 @@ with tab_overview:
                 hovertemplate="<b>%{y}</b>: %{x} bookings<extra></extra>"
             ))
             fig3.update_layout(**CHART)
-            st.plotly_chart(fig3, width='stretch')
+            st.plotly_chart(fig3, use_container_width=True)
 
         with c4:
             st.markdown("<div class='section-title'>Bookings Over Time</div>", unsafe_allow_html=True)
@@ -342,7 +342,7 @@ with tab_overview:
                 hovertemplate="<b>%{x}</b>: %{y}<extra></extra>"
             ))
             fig4.update_layout(**CHART)
-            st.plotly_chart(fig4, width='stretch')
+            st.plotly_chart(fig4, use_container_width=True)
 
 with tab_bookings:
     if total_book == 0:
@@ -392,7 +392,7 @@ with tab_bookings:
                 return f"https://wa.me/{phone}?text={urllib.parse.quote(msg)}"
 
             recent["WhatsApp"] = recent.apply(generate_wa_link, axis=1)
-            st.dataframe(recent, width='stretch', hide_index=True, column_config={
+            st.dataframe(recent, use_container_width=True, hide_index=True, column_config={
                 "WhatsApp": st.column_config.LinkColumn("Contact", display_text="💬 WhatsApp")
             })
 
@@ -883,7 +883,7 @@ with tab_risk:
 
     g1, g2 = st.columns([2, 3], gap="small")
     with g1:
-        st.plotly_chart(fig_gauge, width='stretch')
+        st.plotly_chart(fig_gauge, use_container_width=True)
         st.markdown(f"""
         <div style='background:var(--secondary-bg-color);border:1px solid var(--border-color);border-radius:10px;padding:14px;margin-top:-10px;'>
             <div style='font-size:1rem;font-weight:700;color:{gauge_color};margin-bottom:4px;'>⚠️ {risk_label}</div>
@@ -915,7 +915,7 @@ with tab_risk:
         ))
         fig_cancel.update_layout(**CHART)
         fig_cancel.update_yaxes(range=[0, 100], ticksuffix="%", gridcolor="rgba(255,255,255,0.05)", showline=False, zeroline=False)
-        st.plotly_chart(fig_cancel, width='stretch')
+        st.plotly_chart(fig_cancel, use_container_width=True)
         st.caption("📊 Historical probability estimates based on Srinagar Airport seasonal patterns (SXR). Not live flight data. Current month highlighted in purple.")
 
     st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
@@ -977,7 +977,7 @@ with tab_risk:
     }
 
     risk_df = pd.DataFrame(risk_data)
-    st.dataframe(risk_df, width='stretch', hide_index=True)
+    st.dataframe(risk_df, use_container_width=True, hide_index=True)
 
     st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
 

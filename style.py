@@ -1447,7 +1447,7 @@ def render_sidebar(hotel):
                 💬 Contact Support
             </button></a>""", unsafe_allow_html=True)
         st.markdown("<div style='height:8px;'></div>", unsafe_allow_html=True)
-        if st.button("🚪 Logout", width='stretch'):
+        if st.button("🚪 Logout", use_container_width=True):
             for key in list(st.session_state.keys()):
                 del st.session_state[key]
             st.query_params.clear()
