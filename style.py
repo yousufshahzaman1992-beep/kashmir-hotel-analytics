@@ -1417,19 +1417,7 @@ def ensure_auth(allowed_roles=None):
             </style>
         """, unsafe_allow_html=True)
 
-        hid = st.query_params.get("hid")
-        if hid:
-            if hid == "ADMIN":
-                st.session_state.logged_in = True
-                st.session_state.hotel = {"hotel_id": "ADMIN", "name": "Administrator"}
-                st.rerun()
-            else:
-                hotel = get_hotel_by_id(hid)
-                if hotel:
-                    st.session_state.logged_in = True
-                    st.session_state.hotel = hotel
-                    st.rerun()
-
+        # Redirect to the main page to login securely — URL query params are NOT used for auto-login
         st.switch_page("app.py")
         st.stop()
 
