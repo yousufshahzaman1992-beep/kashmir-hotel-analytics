@@ -696,8 +696,14 @@ def get_srinagar_live_risk_data():
             "current": "temperature_2m,relative_humidity_2m,precipitation,rain,snowfall,weather_code,cloud_cover,wind_speed_10m,visibility",
             "timezone": "Asia/Kolkata"
         }
-        resp = session.get(url, params=params, timeout=12).json()
-        current = resp.get("current", {})
+        resp = session.get(url, params=params, timeout=12)
+        if resp.status_code != 200:
+            raise Exception(f"Open-Meteo returned status code {resp.status_code}")
+        
+        resp_json = resp.json()
+        current = resp_json.get("current", {})
+        if not current:
+            raise Exception("Open-Meteo returned empty current data")
         
         # Extract variables
         temp = current.get("temperature_2m", 15)  # °C
@@ -750,82 +756,155 @@ def get_srinagar_live_risk_data():
             95: "Thunderstorm", 96: "Thunderstorm with Hail", 99: "Thunderstorm with Heavy Hail"
         }
         weather_desc = wmo_desc.get(wmo_code, "Fair Weather")
+
+    except Exception as e_primary:
+        # Fallback to MET Norway API (free, open, high rate limits, keyless but requires User-Agent)
+        try:
+            fallback_url = "https://api.met.no/weatherapi/locationforecast/2.0/complete?lat=34.0837&lon=74.7973"
+            headers = {
+                "User-Agent": "KashmirHotelAnalytics/2.0 contact@kashmirhotelanalytics.com"
+            }
+            fb_resp = session.get(fallback_url, headers=headers, timeout=12)
+            if fb_resp.status_code != 200:
+                raise Exception(f"MET Norway returned status code {fb_resp.status_code}")
+            fb_data = fb_resp.json()
+            
+            timeseries = fb_data["properties"]["timeseries"][0]
+            instant = timeseries["data"]["instant"]["details"]
+            next_1_hours = timeseries["data"].get("next_1_hours", {})
+            next_6_hours = timeseries["data"].get("next_6_hours", {})
+            
+            # Extract variables with Met.no keys
+            temp = instant.get("air_temperature", 15)
+            # Wind speed is in m/s, convert to km/h (multiply by 3.6)
+            wind_speed = round(instant.get("wind_speed", 1.39) * 3.6, 1)
+            
+            # Precipitation
+            precip = next_1_hours.get("details", {}).get("precipitation_amount")
+            if precip is None:
+                precip = next_6_hours.get("details", {}).get("precipitation_amount", 0)
+                
+            symbol_code = next_1_hours.get("summary", {}).get("symbol_code", "")
+            if not symbol_code:
+                symbol_code = next_6_hours.get("summary", {}).get("symbol_code", "clearsky")
+                
+            # Classify snow vs rain based on symbol code
+            if "snow" in symbol_code.lower():
+                snowfall = precip
+                rain = 0
+            else:
+                snowfall = 0
+                rain = precip
+                
+            # Visibility estimate (MET Norway complete endpoint returns fog_area_fraction)
+            fog_fraction = instant.get("fog_area_fraction", 0)
+            if "fog" in symbol_code.lower() or fog_fraction > 20: # 20% fog coverage
+                visibility = 800  # meters (low visibility alert)
+            elif fog_fraction > 5:
+                visibility = 1800 # moderate fog
+            else:
+                visibility = 10000 # clear
+                
+            # Synthesize a descriptive name from symbol code
+            weather_desc = symbol_code.replace("_day", "").replace("_night", "").replace("_polartwilight", "").replace("showers", " showers").replace("sky", " sky").replace("light", "light ").replace("heavy", "heavy ").title()
+            
+            # Dynamic risk calculation (replicated from main path)
+            risk_score = 15
+            if visibility < 1000:
+                risk_score += 45
+            elif visibility < 2000:
+                risk_score += 30
+            elif visibility < 5000:
+                risk_score += 15
+                
+            if snowfall > 0:
+                risk_score += 35
+            elif temp < 2 and rain > 0:
+                risk_score += 20
+                
+            if wind_speed > 25:
+                risk_score += 15
+            elif wind_speed > 15:
+                risk_score += 8
+                
+            risk_score = max(5, min(95, risk_score))
+            
+        except Exception as e_fallback:
+            print(f"Error fetching Srinagar weather risk: Primary: {e_primary}, Fallback: {e_fallback}")
+            return {
+                "success": False,
+                "risk_score": 35,  # Fallback moderate risk
+                "weather": {
+                    "temp": "—",
+                    "visibility_km": "—",
+                    "wind_speed": "—",
+                    "desc": "Weather feed offline — retrying in 30 min",
+                    "snow": 0,
+                    "rain": 0
+                },
+                "active_factors": [
+                    {
+                        "factor": "⚠️ Weather Feed Offline",
+                        "level": "Moderate",
+                        "mitigation": "Live weather data unavailable. Monitor SXR Airport authority updates manually. Data will retry automatically."
+                    }
+                ]
+            }
+
+    # Generate dynamic risk factors list based on active conditions
+    active_factors = []
+    if visibility < 2000:
+        active_factors.append({
+            "factor": f"🌫️ Low Visibility ({visibility/1000:.1f} km)",
+            "level": "Critical" if visibility < 1200 else "High",
+            "mitigation": "Review flight schedules; arrange backup road transfers from Jammu if flights divert."
+        })
+    if snowfall > 0:
+        active_factors.append({
+            "factor": f"❄️ Active Snowfall ({snowfall} mm)",
+            "level": "Critical",
+            "mitigation": "Expect runway snow clearance delays. Send check-in warning message to arriving guests."
+        })
+    elif temp < 2:
+        active_factors.append({
+            "factor": f"🥶 Sub-zero Temp ({temp}°C)",
+            "level": "Moderate",
+            "mitigation": "Activate heat-trace protocols on pipes; prep extra hot water boilers."
+        })
+    if wind_speed > 20:
+        active_factors.append({
+            "factor": f"💨 Strong Winds ({wind_speed} km/h)",
+            "level": "Moderate",
+            "mitigation": "Secure outdoor fixtures. Monitor flight arrivals."
+        })
+    if rain > 5:
+        active_factors.append({
+            "factor": f"🌧️ Heavy Rainfall ({rain} mm)",
+            "level": "Moderate",
+            "mitigation": "Check road statuses on NH44 highway for landslides."
+        })
         
-        # Generate dynamic risk factors list based on active conditions
-        active_factors = []
-        if visibility < 2000:
-            active_factors.append({
-                "factor": f"🌫️ Low Visibility ({visibility/1000:.1f} km)",
-                "level": "Critical" if visibility < 1200 else "High",
-                "mitigation": "Review flight schedules; arrange backup road transfers from Jammu if flights divert."
-            })
-        if snowfall > 0:
-            active_factors.append({
-                "factor": f"❄️ Active Snowfall ({snowfall} mm)",
-                "level": "Critical",
-                "mitigation": "Expect runway snow clearance delays. Send check-in warning message to arriving guests."
-            })
-        elif temp < 2:
-            active_factors.append({
-                "factor": f"🥶 Sub-zero Temp ({temp}°C)",
-                "level": "Moderate",
-                "mitigation": "Activate heat-trace protocols on pipes; prep extra hot water boilers."
-            })
-        if wind_speed > 20:
-            active_factors.append({
-                "factor": f"💨 Strong Winds ({wind_speed} km/h)",
-                "level": "Moderate",
-                "mitigation": "Secure outdoor fixtures. Monitor flight arrivals."
-            })
-        if rain > 5:
-            active_factors.append({
-                "factor": f"🌧️ Heavy Rainfall ({rain} mm)",
-                "level": "Moderate",
-                "mitigation": "Check road statuses on NH44 highway for landslides."
-            })
-            
-        # If no severe factors, add standard low-risk indicators
-        if not active_factors:
-            active_factors.append({
-                "factor": "☀️ Favorable Meteorological Conditions",
-                "level": "Low",
-                "mitigation": "No immediate weather threats. Standard operations."
-            })
-            
-        return {
-            "success": True,
-            "risk_score": int(risk_score),
-            "weather": {
-                "temp": temp,
-                "visibility_km": round(visibility / 1000.0, 1),
-                "wind_speed": wind_speed,
-                "desc": weather_desc,
-                "snow": snowfall,
-                "rain": rain
-            },
-            "active_factors": active_factors
-        }
-    except Exception as e:
-        print(f"Error fetching Srinagar weather risk: {e}")
-        return {
-            "success": False,
-            "risk_score": 35,  # Fallback moderate risk
-            "weather": {
-                "temp": "—",
-                "visibility_km": "—",
-                "wind_speed": "—",
-                "desc": "Weather feed offline — retrying in 30 min",
-                "snow": 0,
-                "rain": 0
-            },
-            "active_factors": [
-                {
-                    "factor": "⚠️ Weather Feed Offline",
-                    "level": "Moderate",
-                    "mitigation": "Live weather data unavailable. Monitor SXR Airport authority updates manually. Data will retry automatically."
-                }
-            ]
-        }
+    # If no severe factors, add standard low-risk indicators
+    if not active_factors:
+        active_factors.append({
+            "factor": "☀️ Favorable Meteorological Conditions",
+            "level": "Low",
+            "mitigation": "No immediate weather threats. Standard operations."
+        })
+        
+    return {
+        "success": True,
+        "risk_score": int(risk_score),
+        "weather": {
+            "temp": temp,
+            "visibility_km": round(visibility / 1000.0, 1),
+            "wind_speed": wind_speed,
+            "desc": weather_desc,
+            "snow": snowfall,
+            "rain": rain
+        },
+        "active_factors": active_factors
+    }
 # ── Operational Checklist ─────────────────────────────────
 def load_checklist(hotel_id: str) -> dict:
     db = get_db()
