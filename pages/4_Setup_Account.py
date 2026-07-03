@@ -73,7 +73,7 @@ with st.form("setup_form"):
         username  = st.text_input("Choose Username", placeholder="e.g. dallake")
     
     password  = st.text_input("New Password" if is_reset_mode else "Choose Password", type="password",
-                               placeholder="Min 6 characters")
+                               placeholder="Min 8 chars, include a number e.g. Hotel@123")
     password2 = st.text_input("Confirm New Password" if is_reset_mode else "Confirm Password", type="password",
                                placeholder="Repeat password")
     
@@ -83,8 +83,10 @@ with st.form("setup_form"):
 if submit:
     if (not is_reset_mode and not username) or not password:
         st.error("❌ Please fill in all fields.")
-    elif len(password) < 6:
-        st.error("❌ Password must be at least 6 characters.")
+    elif len(password) < 8:
+        st.error("❌ Password must be at least 8 characters.")
+    elif not any(c.isdigit() for c in password):
+        st.error("❌ Password must contain at least one number (e.g. Hotel@123).")
     elif password != password2:
         st.error("❌ Passwords do not match.")
     else:

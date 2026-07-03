@@ -217,6 +217,12 @@ def show_login():
     if "forgot_password" not in st.session_state:
         st.session_state["forgot_password"] = False
 
+    # ── Brute-force lockout state ─────────────────────────
+    if "login_attempts" not in st.session_state:
+        st.session_state["login_attempts"] = 0
+    if "lockout_until" not in st.session_state:
+        st.session_state["lockout_until"] = None
+
     if st.session_state["forgot_password"]:
         with st.form("forgot_password_form"):
             st.markdown("""
@@ -256,30 +262,57 @@ def show_login():
             st.rerun()
 
     else:
-        with st.form("login_form"):
-            st.markdown("""
-                <div class='lg-card-title'>Sign In</div>
-                <div class='lg-card-sub'>Enter your hotel credentials to access the platform.</div>
-            """, unsafe_allow_html=True)
-            
-            username = st.text_input("Username", placeholder="your username")
-            password = st.text_input("Password", type="password",
-                                     placeholder="••••••••")
-            submit   = st.form_submit_button("Sign In", use_container_width=True)
+        import datetime as _dt
 
-        if submit:
-            if not username or not password:
-                st.error("Please enter both username and password.")
+        # ── Check if currently locked out ──
+        _locked = False
+        if st.session_state["lockout_until"]:
+            _remaining = (st.session_state["lockout_until"] - _dt.datetime.now()).total_seconds()
+            if _remaining > 0:
+                _locked = True
+                _mins = int(_remaining // 60)
+                _secs = int(_remaining % 60)
+                st.error(f"🔒 Too many failed attempts. Please wait **{_mins}m {_secs}s** before trying again.")
             else:
-                hotel = verify_login(username, password)
-                if hotel:
-                    st.session_state["logged_in"] = True
-                    st.session_state["hotel"]     = hotel
-                    if st.query_params.get("hid") != hotel["hotel_id"]:
-                        st.query_params["hid"] = hotel["hotel_id"]
-                    st.rerun()
+                # Lockout expired — reset
+                st.session_state["login_attempts"] = 0
+                st.session_state["lockout_until"]  = None
+
+        if not _locked:
+            with st.form("login_form"):
+                st.markdown("""
+                    <div class='lg-card-title'>Sign In</div>
+                    <div class='lg-card-sub'>Enter your hotel credentials to access the platform.</div>
+                """, unsafe_allow_html=True)
+
+                username = st.text_input("Username", placeholder="your username")
+                password = st.text_input("Password", type="password",
+                                         placeholder="••••••••")
+                # Show attempt warning when close to lockout
+                if st.session_state["login_attempts"] >= 3:
+                    st.warning(f"⚠️ {5 - st.session_state['login_attempts']} attempt(s) remaining before 15-minute lockout.")
+                submit = st.form_submit_button("Sign In", use_container_width=True)
+
+            if submit:
+                if not username or not password:
+                    st.error("Please enter both username and password.")
                 else:
-                    st.error("❌ Incorrect username or password.")
+                    hotel = verify_login(username, password)
+                    if hotel:
+                        # Successful login — reset attempt counter
+                        st.session_state["login_attempts"] = 0
+                        st.session_state["lockout_until"]  = None
+                        st.session_state["logged_in"] = True
+                        st.session_state["hotel"]     = hotel
+                        st.rerun()
+                    else:
+                        st.session_state["login_attempts"] += 1
+                        if st.session_state["login_attempts"] >= 5:
+                            st.session_state["lockout_until"] = _dt.datetime.now() + _dt.timedelta(minutes=15)
+                            st.error("🔒 Too many failed attempts. You are locked out for **15 minutes**.")
+                        else:
+                            _left = 5 - st.session_state["login_attempts"]
+                            st.error(f"❌ Incorrect username or password. {_left} attempt(s) remaining.")
 
         if st.button("🔑 Forgot Password?", key="forgot_password_btn", use_container_width=True):
             st.session_state["forgot_password"] = True
