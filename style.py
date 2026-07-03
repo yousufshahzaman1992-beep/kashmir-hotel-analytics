@@ -114,6 +114,7 @@ def apply_style():
     body:has(.app-unlocked)::before {
         opacity: 0 !important;
         pointer-events: none !important;
+        visibility: hidden !important;
         transition: opacity 0.25s ease-out 0s !important;
     }
 
@@ -144,6 +145,7 @@ def apply_style():
         opacity: 0 !important;
         animation: none !important;
         pointer-events: none !important;
+        visibility: hidden !important;
         transition: opacity 0.2s ease-out 0s !important;
     }
     /* Light theme spinner adaptation */
@@ -668,7 +670,6 @@ def apply_style():
     [data-testid="stMain"] {
         min-height: 100vh !important;
         -webkit-overflow-scrolling: touch;
-        overscroll-behavior-y: contain;
     }
 
     /* ═══════════════════════════════════════════════
