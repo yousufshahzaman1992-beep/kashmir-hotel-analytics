@@ -836,10 +836,18 @@ with tab_reviews:
 with tab_risk:
     st.markdown("<div class='section-title'>✈️ Srinagar Air Connectivity & Demand Risk Matrix</div>", unsafe_allow_html=True)
 
-    # Fetch live Srinagar air connectivity risk data — shown with spinner
-    # so the rest of the dashboard is not blocked during API calls.
-    with st.spinner("🌤️ Loading live weather & risk data..."):
-        live_risk = get_srinagar_live_risk_data()
+    # Fetch live Srinagar air connectivity risk data — cached to prevent blocking
+    @st.cache_data(ttl=300, show_spinner=False)
+    def _fetch_cached_risk():
+        return get_srinagar_live_risk_data()
+
+    # Load with lightweight spinner in an empty container (non-blocking)
+    risk_placeholder = st.empty()
+    with risk_placeholder.container():
+        with st.spinner("🌤️ Loading live weather & risk data..."):
+            live_risk = _fetch_cached_risk()
+    risk_placeholder.empty()  # Remove spinner immediately after load
+
     risk_score = live_risk["risk_score"]
     weather = live_risk["weather"]
 
@@ -848,32 +856,15 @@ with tab_risk:
     _w_rain = weather["rain"] if isinstance(weather["rain"], (int, float)) else 0
     _w_vis  = weather["visibility_km"] if isinstance(weather["visibility_km"], (int, float)) else 10
     weather_icon = "❄️" if _w_snow > 0 else ("🌧️" if _w_rain > 0 else ("🌫️" if _w_vis < 2 else "☀️"))
-    st.markdown(f"""
-    <div style='background:var(--secondary-bg-color); border:1px solid var(--border-card); border-radius:12px; padding:16px; margin-bottom:20px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap;'>
-        <div>
-            <div style='font-size:0.75rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; font-weight:600;'>📍 Srinagar International Airport (SXR)</div>
-            <div style='font-size:1.15rem; font-weight:700; color:var(--text-color); display:flex; align-items:center; gap:8px; margin-top:2px;'>
-                <span>{weather_icon} {weather["desc"]}</span>
-                <span style='color:var(--text-muted);'>•</span>
-                <span style='color:var(--primary-color);'>{weather["temp"]}°C</span>
-            </div>
-        </div>
-        <div style='display:flex; gap:20px; margin-top:10px;'>
-            <div>
-                <div style='font-size:0.7rem; color:var(--text-muted);'>Visibility</div>
-                <div style='font-size:0.9rem; font-weight:600; color:var(--text-color);'>{weather["visibility_km"]} km</div>
-            </div>
-            <div>
-                <div style='font-size:0.7rem; color:var(--text-muted);'>Wind Speed</div>
-                <div style='font-size:0.9rem; font-weight:600; color:var(--text-color);'>{weather["wind_speed"]} km/h</div>
-            </div>
-            <div>
-                <div style='font-size:0.7rem; color:var(--text-muted);'>Active Snow/Rain</div>
-                <div style='font-size:0.9rem; font-weight:600; color:var(--text-color);'>{max(weather["snow"], weather["rain"])} mm</div>
-            </div>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
+
+    # Use native st.metric columns instead of heavy HTML for better scroll performance
+    wcol1, wcol2, wcol3, wcol4 = st.columns(4)
+    wcol1.metric("Condition", f"{weather_icon} {weather['desc']}")
+    wcol2.metric("Temperature", f"{weather['temp']}°C")
+    wcol3.metric("Visibility", f"{weather['visibility_km']} km")
+    wcol4.metric("Wind / Precip", f"{weather['wind_speed']} km/h | {max(weather['snow'], weather['rain'])} mm")
+
+    st.markdown("<div style='margin:8px 0;'></div>", unsafe_allow_html=True)
 
     # ── Risk index gauge ──
     risk_label = "Moderate Risk" if 40 <= risk_score < 70 else ("High Risk" if risk_score >= 70 else "Low Risk")
@@ -902,7 +893,7 @@ with tab_risk:
     g1, g2 = st.columns([2, 3], gap="small")
     with g1:
         st.markdown("<div class='scroll-through-chart'>", unsafe_allow_html=True)
-        st.plotly_chart(fig_gauge, use_container_width=True, config={'displayModeBar': False})
+        st.plotly_chart(fig_gauge, use_container_width=True, config={'displayModeBar': False}, key="risk_gauge_chart")
         st.markdown("</div>", unsafe_allow_html=True)
         st.markdown(f"""
         <div style='background:var(--secondary-bg-color);border:1px solid var(--border-color);border-radius:10px;padding:14px;margin-top:-10px;'>
@@ -936,7 +927,7 @@ with tab_risk:
         fig_cancel.update_layout(**CHART)
         fig_cancel.update_yaxes(range=[0, 100], ticksuffix="%", gridcolor="rgba(255,255,255,0.05)", showline=False, zeroline=False)
         st.markdown("<div class='scroll-through-chart'>", unsafe_allow_html=True)
-        st.plotly_chart(fig_cancel, use_container_width=True, config={'displayModeBar': False})
+        st.plotly_chart(fig_cancel, use_container_width=True, config={'displayModeBar': False}, key="cancel_prob_chart")
         st.markdown("</div>", unsafe_allow_html=True)
         st.caption("📊 Historical probability estimates based on Srinagar Airport seasonal patterns (SXR). Not live flight data. Current month highlighted in purple.")
 
@@ -959,7 +950,7 @@ with tab_risk:
         matrix_impact.append("High" if f["level"] in ["Critical", "High"] else "Medium")
         matrix_level.append("🔴 Critical" if f["level"] == "Critical" else ("🟠 High" if f["level"] == "High" else "🟡 Moderate"))
         matrix_mitigation.append(f["mitigation"])
-        
+
     # Only show static risk factors that are relevant to the current month
     _cm = date.today().month  # 1–12
     _all_static = [
@@ -1009,11 +1000,11 @@ with tab_risk:
     st.markdown("<div class='section-title'>📋 Pre-Season Operational Checklist</div>", unsafe_allow_html=True)
     st.markdown(
         "<p style='font-size:0.82rem;color:var(--text-muted);margin-bottom:14px;'>"
-        "Check off items as your team completes them — progress updates live and is saved per hotel.</p>",
+        "Check off items as your team completes them — click Save Checklist to persist.</p>",
         unsafe_allow_html=True
     )
 
-    # Load saved state from Firebase
+    # Load saved state from Firebase once
     _saved_chk = load_checklist(hotel_id)
 
     _chk_items = [
@@ -1029,86 +1020,92 @@ with tab_risk:
         ("chk_generator",  "Verify generator fuel stock for winter months"),
     ]
 
-    # ── Step 1: Render checkboxes first → collect live state ──
-    chk1, chk2 = st.columns(2)
-    _new_state = {}
-    for i, (key, label) in enumerate(_chk_items):
-        col = chk1 if i < 5 else chk2
-        with col:
-            _new_state[key] = st.checkbox(
-                label,
-                value=bool(_saved_chk.get(key, False)),
-                key=f"risk_chk_{key}"
-            )
+    # ── Step 1: Render checkboxes inside st.form to batch changes ──
+    # This prevents a full rerun on every checkbox click, which was causing scroll freeze
+    with st.form(key=f"checklist_form_{hotel_id}", border=False):
+        chk1, chk2 = st.columns(2)
+        _new_state = {}
+        for i, (key, label) in enumerate(_chk_items):
+            col = chk1 if i < 5 else chk2
+            with col:
+                _new_state[key] = st.checkbox(
+                    label,
+                    value=bool(_saved_chk.get(key, False)),
+                    key=f"risk_chk_{key}_form"
+                )
+        
+        # ── Step 2: Compute progress from form state ──
+        _total_items = len(_chk_items)
+        _done_items  = sum(1 for key, _ in _chk_items if _new_state.get(key, False))
+        _pct         = int((_done_items / _total_items) * 100)
+        _remaining   = _total_items - _done_items
 
-    # ── Step 2: Compute progress from live checkbox state ──
-    _total_items = len(_chk_items)
-    _done_items  = sum(1 for key, _ in _chk_items if _new_state.get(key, False))
-    _pct         = int((_done_items / _total_items) * 100)
-    _remaining   = _total_items - _done_items
+        if _pct == 100:
+            _bar_color = "#10b981"
+            _milestone = "🏆 All tasks complete — your hotel is fully prepared!"
+            _badge     = "  ✅ ACHIEVED"
+        elif _pct >= 70:
+            _bar_color = "#3b82f6"
+            _milestone = f"⭐ Great progress — {_remaining} task{'s' if _remaining > 1 else ''} left"
+            _badge     = ""
+        elif _pct >= 40:
+            _bar_color = "#f59e0b"
+            _milestone = f"🔧 Getting there — {_remaining} tasks remaining"
+            _badge     = ""
+        else:
+            _bar_color = "#ef4444"
+            _milestone = f"⚠️ {_remaining} tasks need attention before season opens"
+            _badge     = ""
 
-    if _pct == 100:
-        _bar_color = "#10b981"
-        _milestone = "🏆 All tasks complete — your hotel is fully prepared!"
-        _badge     = "  ✅ ACHIEVED"
-    elif _pct >= 70:
-        _bar_color = "#3b82f6"
-        _milestone = f"⭐ Great progress — {_remaining} task{'s' if _remaining > 1 else ''} left"
-        _badge     = ""
-    elif _pct >= 40:
-        _bar_color = "#f59e0b"
-        _milestone = f"🔧 Getting there — {_remaining} tasks remaining"
-        _badge     = ""
-    else:
-        _bar_color = "#ef4444"
-        _milestone = f"⚠️ {_remaining} tasks need attention before season opens"
-        _badge     = ""
+        # ── Step 3: Render progress bar using native widgets ──
+        st.markdown("<div style='height:12px;'></div>", unsafe_allow_html=True)
 
-    # ── Step 3: Render progress bar using native widgets ──
-    st.markdown("<div style='height:12px;'></div>", unsafe_allow_html=True)
-
-    _col_label, _col_pct = st.columns([5, 1])
-    with _col_label:
-        st.markdown(
-            f"<p style='font-size:0.75rem;font-weight:700;color:var(--text-muted);"
-            f"text-transform:uppercase;letter-spacing:1px;margin:0;padding:0;'>"
-            f"Season Readiness{_badge}</p>",
-            unsafe_allow_html=True
-        )
-    with _col_pct:
-        st.markdown(
-            f"<p style='font-size:1.25rem;font-weight:800;color:{_bar_color};"
-            f"text-align:right;margin:0;padding:0;'>{_pct}%</p>",
-            unsafe_allow_html=True
-        )
-
-    st.progress(_pct / 100)
-
-    # Tick labels under the bar
-    _ticks = st.columns(5)
-    for _i, _mark in enumerate([0, 25, 50, 75, 100]):
-        with _ticks[_i]:
-            _align = "left" if _i == 0 else ("right" if _i == 4 else "center")
-            _col   = _bar_color if _pct >= _mark else "#475569"
+        _col_label, _col_pct = st.columns([5, 1])
+        with _col_label:
             st.markdown(
-                f"<p style='font-size:0.65rem;font-weight:600;color:{_col};"
-                f"text-align:{_align};margin:0;'>{_mark}%</p>",
+                f"<p style='font-size:0.75rem;font-weight:700;color:var(--text-muted);"
+                f"text-transform:uppercase;letter-spacing:1px;margin:0;padding:0;'>"
+                f"Season Readiness{_badge}</p>",
+                unsafe_allow_html=True
+            )
+        with _col_pct:
+            st.markdown(
+                f"<p style='font-size:1.25rem;font-weight:800;color:{_bar_color};"
+                f"text-align:right;margin:0;padding:0;'>{_pct}%</p>",
                 unsafe_allow_html=True
             )
 
-    st.markdown(
-        f"<p style='font-size:0.8rem;color:var(--text-muted);margin-top:6px;'>"
-        f"{_milestone} &nbsp;&nbsp;"
-        f"<strong style='color:{_bar_color};'>{_done_items}/{_total_items} done</strong></p>",
-        unsafe_allow_html=True
-    )
+        st.progress(_pct / 100)
 
-    # ── Step 4: Save button ──
-    st.markdown("<div style='height:8px;'></div>", unsafe_allow_html=True)
-    if st.button("💾 Save Checklist", key="save_checklist_btn"):
+        # Tick labels under the bar
+        _ticks = st.columns(5)
+        for _i, _mark in enumerate([0, 25, 50, 75, 100]):
+            with _ticks[_i]:
+                _align = "left" if _i == 0 else ("right" if _i == 4 else "center")
+                _col   = _bar_color if _pct >= _mark else "#475569"
+                st.markdown(
+                    f"<p style='font-size:0.65rem;font-weight:600;color:{_col};"
+                    f"text-align:{_align};margin:0;'>{_mark}%</p>",
+                    unsafe_allow_html=True
+                )
+
+        st.markdown(
+            f"<p style='font-size:0.8rem;color:var(--text-muted);margin-top:6px;'>"
+            f"{_milestone} &nbsp;&nbsp;"
+            f"<strong style='color:{_bar_color};'>{_done_items}/{_total_items} done</strong></p>",
+            unsafe_allow_html=True
+        )
+
+        # ── Step 4: Save button inside form ──
+        st.markdown("<div style='height:8px;'></div>", unsafe_allow_html=True)
+        save_submitted = st.form_submit_button("💾 Save Checklist", use_container_width=True)
+    
+    # Handle save outside the form
+    if save_submitted:
         save_checklist(hotel_id, _new_state)
         st.success("✅ Checklist saved!")
-
+        st.cache_data.clear()  # Clear cache so next load reflects changes
+        st.rerun()
 
     st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
 
@@ -1144,7 +1141,8 @@ with tab_risk:
             options=arriving_bookings.index.tolist(),
             format_func=lambda i: (
                 f"📅 {arriving_bookings.loc[i, 'Guest Name']} — Check-in: {arriving_bookings.loc[i, 'Check-in']}"
-            )
+            ),
+            key="outreach_guest_select"
         )
         guest_row = arriving_bookings.loc[selected_guest]
         guest_name = guest_row.get("Guest Name", "Guest")
@@ -1154,7 +1152,8 @@ with tab_risk:
         msg_type = st.radio(
             "Message type:",
             ["✈️ Flight Delay Alert", "🌡️ Weather Warning", "🏨 Arrival Reminder", "✏️ Custom"],
-            horizontal=True
+            horizontal=True,
+            key="outreach_msg_type"
         )
 
         if msg_type == "✈️ Flight Delay Alert":
@@ -1178,7 +1177,7 @@ with tab_risk:
         else:
             custom_message = f"Dear {guest_name}, "
 
-        edited_message = st.text_area("✏️ Edit before sending:", value=custom_message, height=120)
+        edited_message = st.text_area("✏️ Edit before sending:", value=custom_message, height=120, key="outreach_msg_text")
 
         if guest_phone and guest_phone != "nan":
             encoded_msg = urllib.parse.quote(edited_message)
