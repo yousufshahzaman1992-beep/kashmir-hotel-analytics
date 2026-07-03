@@ -41,8 +41,9 @@ def get_hotel_by_id(hotel_id):
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
-@st.cache_data(ttl=600, show_spinner=False)
 def verify_login(username, password):
+    # NOTE: intentionally NOT cached — caching auth allows revoked
+    # passwords to remain valid until TTL expires (security risk).
     db   = get_db()
     docs = list(db.collection("hotels").where(filter=FieldFilter("username", "==", username)).limit(1).get())
     if docs:
