@@ -22,6 +22,8 @@ from sheets_db import (
     save_checklist,
     sync_hotel_reviews,
     update_hotel_ota_links,
+    verify_session_token,
+    generate_session_token,
 )
 from login import show_login
 from style import apply_style, sidebar_logo, render_custom_navigation
@@ -29,6 +31,18 @@ from style import apply_style, sidebar_logo, render_custom_navigation
 # ── Init session state ────────────────────────────────────
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
+
+# ── Restore session from secure URL token if present ─────
+if not st.session_state.logged_in:
+    session_token = st.query_params.get("session")
+    if session_token:
+        hotel = verify_session_token(session_token)
+        if hotel:
+            st.session_state.logged_in = True
+            st.session_state.hotel = hotel
+        else:
+            # Token invalid or expired, clear it
+            st.query_params.pop("session", None)
 if "hotel" not in st.session_state:
     st.session_state.hotel = None
 
@@ -125,8 +139,11 @@ hotel      = st.session_state.hotel
 hotel_id   = hotel["hotel_id"]
 hotel_name = hotel["name"]
 
-# Persist session in URL
-st.query_params["hid"] = hotel_id
+# Persist session in URL securely
+if "session" not in st.query_params:
+    st.query_params["session"] = generate_session_token(hotel_id)
+if "hid" in st.query_params:
+    st.query_params.pop("hid", None)
 
 # Hide admin pages from non-admin users
 if hotel_id != "ADMIN":

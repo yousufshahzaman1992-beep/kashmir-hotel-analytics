@@ -1401,6 +1401,18 @@ def ensure_auth(allowed_roles=None):
     from sheets_db import get_hotel_by_id
 
     if not st.session_state.get("logged_in"):
+        # Try to restore session securely from session token
+        session_token = st.query_params.get("session")
+        if session_token:
+            from sheets_db import verify_session_token
+            hotel = verify_session_token(session_token)
+            if hotel:
+                st.session_state.logged_in = True
+                st.session_state.hotel = hotel
+                st.rerun()
+            else:
+                st.query_params.pop("session", None)
+
         # INSTANT LOCK: kill the reveal animation and freeze opacity at 0
         # This fires synchronously before st.switch_page(), so no content flash.
         st.markdown("""
@@ -1417,7 +1429,6 @@ def ensure_auth(allowed_roles=None):
             </style>
         """, unsafe_allow_html=True)
 
-        # Redirect to the main page to login securely — URL query params are NOT used for auto-login
         st.switch_page("app.py")
         st.stop()
 
@@ -1428,8 +1439,13 @@ def ensure_auth(allowed_roles=None):
         if "ADMIN" in allowed_roles and hotel.get("hotel_id") != "ADMIN":
             st.switch_page("app.py")
             st.stop()
-    if st.query_params.get("hid") != hotel["hotel_id"]:
-        st.query_params["hid"] = hotel["hotel_id"]
+            
+    # Ensure session token is in URL parameters on sub-pages as well
+    if "session" not in st.query_params:
+        from sheets_db import generate_session_token
+        st.query_params["session"] = generate_session_token(hotel["hotel_id"])
+    if "hid" in st.query_params:
+        st.query_params.pop("hid", None)
     return hotel
 
 

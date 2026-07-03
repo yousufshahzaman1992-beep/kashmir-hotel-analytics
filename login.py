@@ -5,7 +5,7 @@ DIRPATH = os.path.dirname(os.path.abspath(__file__))
 if DIRPATH not in sys.path:
     sys.path.insert(0, DIRPATH)
 
-from sheets_db import verify_login, get_db
+from sheets_db import verify_login, get_db, generate_session_token
 from style import apply_style
 
 def show_login():
@@ -304,6 +304,7 @@ def show_login():
                         st.session_state["lockout_until"]  = None
                         st.session_state["logged_in"] = True
                         st.session_state["hotel"]     = hotel
+                        st.query_params["session"] = generate_session_token(hotel["hotel_id"])
                         st.rerun()
                     else:
                         st.session_state["login_attempts"] += 1

@@ -65,6 +65,47 @@ def verify_login(username, password):
             return data
     return None
 
+# ── Secure Session Tokens ─────────────────────────────────
+def get_session_secret_key():
+    try:
+        pk = st.secrets["firebase"]["private_key"]
+        return hashlib.sha256(pk.encode()).hexdigest()
+    except Exception:
+        return "local_dev_fallback_secret_key_123"
+
+def generate_session_token(hotel_id):
+    import hmac
+    import time
+    secret = get_session_secret_key()
+    expiry = int(time.time()) + 21600  # 6 hours
+    msg = f"{hotel_id}:{expiry}"
+    sig = hmac.new(secret.encode(), msg.encode(), hashlib.sha256).hexdigest()
+    return f"{hotel_id}:{expiry}:{sig}"
+
+def verify_session_token(token):
+    if not token:
+        return None
+    try:
+        import hmac
+        import time
+        parts = token.split(":")
+        if len(parts) != 3:
+            return None
+        hotel_id, expiry_str, sig = parts
+        expiry = int(expiry_str)
+        if time.time() > expiry:
+            return None
+        secret = get_session_secret_key()
+        msg = f"{hotel_id}:{expiry}"
+        expected_sig = hmac.new(secret.encode(), msg.encode(), hashlib.sha256).hexdigest()
+        if hmac.compare_digest(sig, expected_sig):
+            if hotel_id == "ADMIN":
+                return {"hotel_id": "ADMIN", "name": "Administrator"}
+            return get_hotel_by_id(hotel_id)
+    except Exception:
+        pass
+    return None
+
 # ── Load bookings for a hotel ────────────────────────────
 @st.cache_data(ttl=300, show_spinner=False)
 def load_bookings(hotel_id):
