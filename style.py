@@ -138,9 +138,11 @@ def apply_style():
     @keyframes loading-spin {
         to { transform: rotate(360deg); }
     }
-    /* Hide spinner instantly when unlocked */
+    /* Hide spinner instantly when unlocked — AND stop the animation
+       so the GPU compositor layer is fully removed, preventing scroll jank. */
     body:has(.app-unlocked)::after {
         opacity: 0 !important;
+        animation: none !important;
         pointer-events: none !important;
         transition: opacity 0.2s ease-out 0s !important;
     }
@@ -661,9 +663,12 @@ def apply_style():
        (e.g. Admin Panel, or after a tab switch shortens visible content)
        the page background renders but the content column stays short,
        leaving empty unstyled space below when scrolling on desktop. */
+    /* Core scrollable containers — smooth momentum scrolling on mobile */
     [data-testid="stAppViewContainer"],
     [data-testid="stMain"] {
         min-height: 100vh !important;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior-y: contain;
     }
 
     /* ═══════════════════════════════════════════════
@@ -1163,18 +1168,20 @@ def apply_style():
        richer cards, styled progress, checkboxes
     ═══════════════════════════════════════════════ */
 
-    /* Smooth page-entry fade+slide for main block */
+    /* Page entry animation — runs ONCE then stops to release compositor layer */
     [data-testid="stMainBlockContainer"] {
         animation: pageEntry 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+        animation-fill-mode: forwards;
     }
     @keyframes pageEntry {
         from { opacity: 0; transform: translateY(14px); }
         to   { opacity: 1; transform: translateY(0); }
     }
 
-    /* Stagger-fade for vertical blocks inside main */
+    /* Stagger-fade — use will-change only during animation to hint GPU */
     [data-testid="stVerticalBlock"] > [data-testid="stVerticalBlock"] {
         animation: fadeUp 0.4s ease both;
+        animation-fill-mode: forwards;
     }
     @keyframes fadeUp {
         from { opacity: 0; transform: translateY(10px); }
@@ -1225,6 +1232,31 @@ def apply_style():
     @keyframes progressShimmer {
         0%   { background-position: 200% center; }
         100% { background-position: -200% center; }
+    }
+
+    /* ── Mobile: disable continuous GPU animations to prevent scroll jank ── */
+    @media (max-width: 768px) {
+        body::before,
+        body::after {
+            /* On mobile, always display overlay as plain block — no animation layer */
+            animation: none !important;
+        }
+        body:has(.app-unlocked)::before,
+        body:has(.app-unlocked)::after {
+            display: none !important;
+        }
+        [data-testid="stProgressBar"] > div > div {
+            animation: none !important;
+            background: linear-gradient(90deg, #059669 0%, #10b981 100%) !important;
+        }
+        .glow-red {
+            animation: none !important;
+            box-shadow: 0 0 8px rgba(239, 68, 68, 0.4) !important;
+        }
+        [data-testid="stMainBlockContainer"],
+        [data-testid="stVerticalBlock"] > [data-testid="stVerticalBlock"] {
+            animation: none !important;
+        }
     }
 
     /* ── Checkboxes — larger, coloured, satisfying ── */
