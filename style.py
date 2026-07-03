@@ -1235,7 +1235,7 @@ def apply_style():
         100% { background-position: -200% center; }
     }
 
-    /* ── Mobile: disable continuous GPU animations to prevent scroll jank ── */
+    /* ── Mobile: disable continuous GPU animations & touch capture to prevent scroll jank ── */
     @media (max-width: 768px) {
         body::before,
         body::after {
@@ -1257,6 +1257,13 @@ def apply_style():
         [data-testid="stMainBlockContainer"],
         [data-testid="stVerticalBlock"] > [data-testid="stVerticalBlock"] {
             animation: none !important;
+        }
+        /* Touch scroll-through: prevent charts and static dataframes from catching scroll touches */
+        .scroll-through-chart [data-testid="stPlotlyChart"],
+        .scroll-through-chart [data-testid="stPlotlyChart"] *,
+        .scroll-through-table [data-testid="stDataFrame"],
+        .scroll-through-table [data-testid="stDataFrame"] * {
+            pointer-events: none !important;
         }
     }
 
