@@ -17,7 +17,9 @@ from style import apply_style, ensure_auth, render_sidebar
 
 apply_style()
 # ── Hide admin pages from non-admin users ─────────────────
-if st.session_state.get("hotel", {}).get("hotel_id") != "ADMIN":
+# FIX: Safe check for when hotel session state is None
+_hotel = st.session_state.get("hotel")
+if not _hotel or _hotel.get("hotel_id") != "ADMIN":
     st.markdown("""
     <style>
     [data-testid="stSidebarNav"] a[href*="3_Admin"],
@@ -100,7 +102,7 @@ with tab1:
 
     # ── Revenue Distribution Analysis ─────────────────────────
     st.markdown("<div class='section-title'>Revenue Leakage vs Direct Sales</div>", unsafe_allow_html=True)
-    
+
     if not filtered.empty:
         # Aggregate gross revenue by booking source
         source_revenue = filtered.groupby("booking_source", as_index=False)["Amount (₹)"].sum()
@@ -122,7 +124,7 @@ with tab1:
             st.info("Insufficient revenue data to generate distribution chart.")
     else:
         st.info("No bookings match your current filters.")
-    
+
     c_csv, c_pdf = st.columns(2)
     with c_csv:
         csv_data = filtered.to_csv(index=False).encode("utf-8")
@@ -133,7 +135,7 @@ with tab1:
             mime="text/csv",
             use_container_width=True
         )
-    
+
     with c_pdf:
         def create_pdf(data, h_name):
             pdf = FPDF()
@@ -157,6 +159,7 @@ with tab1:
                 pdf.cell(widths[1], 8, checkin_str, border=1, align="C")
                 pdf.cell(widths[2], 8, f"{int(row['Amount (₹)']):,}", border=1, align="R")
                 pdf.cell(widths[3], 8, str(row["Status"]), border=1, align="C")
+                pdf.lnC")
                 pdf.ln()
             return bytes(pdf.output())
 
@@ -171,11 +174,11 @@ with tab1:
 
 with tab2:
     st.markdown("<div class='section-title'>Modify or Delete Booking</div>", unsafe_allow_html=True)
-    
+
     # Create descriptive labels for selection
     df['selector'] = df.apply(lambda r: f"{r['Guest Name']} (In: {r['Check-in'].strftime('%d %b') if pd.notna(r['Check-in']) else '—'})", axis=1)
     booking_map = {row['selector']: row['id'] for _, row in df.iterrows()}
-    
+
     selected_label = st.selectbox("Select Booking to Edit", options=list(booking_map.keys()))
     selected_id = booking_map[selected_label]
     b = df[df['id'] == selected_id].iloc[0]
@@ -187,7 +190,7 @@ with tab2:
             e_phone = st.text_input("Phone Number", value=b["Phone"])
             e_in    = st.date_input("Check-in Date", value=b["Check-in"])
             e_out   = st.date_input("Check-out Date", value=b["Check-out"])
-            
+
             _bs_opts = ["Direct Website", "Walk-In", "Local Travel Agent", "MakeMyTrip", 
                         "Booking.com", "Agoda", "Goibibo", "Yatra", "EaseMyTrip"]
             _bs_val = b.get("booking_source", "Direct Website")
@@ -195,12 +198,12 @@ with tab2:
             e_source = st.selectbox("Booking Source / Channel *", _bs_opts, index=_bs_idx)
         with c2:
             e_amt   = st.number_input("Amount Paid (₹)", value=int(b["Amount (₹)"]), step=500)
-            
+
             _room_opts = ["Standard","Deluxe","Suite","Houseboat"]
             _room_val = b.get("Room Type", "Standard")
             _room_idx = _room_opts.index(_room_val) if _room_val in _room_opts else 0
             e_room  = st.selectbox("Room Type", _room_opts, index=_room_idx)
-            
+
             _status_opts = ["Confirmed","Pending","Cancelled"]
             _status_val = b.get("Status", "Confirmed")
             _status_idx = _status_opts.index(_status_val) if _status_val in _status_opts else 0
