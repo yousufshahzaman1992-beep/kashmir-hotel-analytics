@@ -15,6 +15,14 @@ def apply_style():
 <script>
 (function(){
   'use strict';
+  // Remove any stale unlocked indicators from previous runs to re-lock the screen during load
+  try {
+    var stale = document.querySelectorAll('.app-unlocked');
+    for (var i = 0; i < stale.length; i++) {
+      stale[i].parentNode.removeChild(stale[i]);
+    }
+  } catch(e){}
+
   var _last = null;
 
   function _lum(hex) {
@@ -101,6 +109,38 @@ def apply_style():
     body:has(.app-unlocked)::before {
         opacity: 0 !important;
         pointer-events: none !important;
+    }
+
+    /* Premium loading spinner on top of the cover overlay */
+    body::after {
+        content: '';
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        width: 36px;
+        height: 36px;
+        margin: -18px 0 0 -18px;
+        border: 3px solid rgba(16, 185, 129, 0.1);
+        border-radius: 50%;
+        border-top-color: #10b981;
+        animation: loading-spin 0.8s linear infinite;
+        z-index: 100000;
+        pointer-events: none;
+        opacity: 1;
+        transition: opacity 0.2s ease-out;
+    }
+    @keyframes loading-spin {
+        to { transform: rotate(360deg); }
+    }
+    /* Hide the spinner when unlocked */
+    body:has(.app-unlocked)::after {
+        opacity: 0 !important;
+        pointer-events: none !important;
+    }
+    /* Light theme spinner adaptation */
+    html[data-theme="light"] body::after {
+        border-color: rgba(4, 120, 87, 0.1);
+        border-top-color: #047857;
     }
 
     /* Light-mode: match light background so the flash is white, not dark */
