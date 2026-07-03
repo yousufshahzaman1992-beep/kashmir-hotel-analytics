@@ -5,7 +5,7 @@ from email_utils import get_invite, mark_invite_used, get_reset, mark_reset_used
 from style import apply_style
 
 st.set_page_config(page_title="Setup / Reset Account", page_icon="🔐", layout="centered")
-completion_lock = apply_style()
+apply_style()
 
 # Hide sidebar
 st.markdown("""
@@ -24,20 +24,20 @@ token = reset_token if is_reset_mode else invite_token
 
 if not token:
     st.error("❌ Invalid or missing invite/reset link.")
-    completion_lock.markdown("<div class='app-unlocked'></div>", unsafe_allow_html=True)
+    st.markdown("<div class='app-unlocked'></div>", unsafe_allow_html=True)
     st.stop()
 
 record = get_reset(token) if is_reset_mode else get_invite(token)
 
 if not record:
     st.error("❌ Reset link not found." if is_reset_mode else "❌ Invite link not found.")
-    completion_lock.markdown("<div class='app-unlocked'></div>", unsafe_allow_html=True)
+    st.markdown("<div class='app-unlocked'></div>", unsafe_allow_html=True)
     st.stop()
 
 if record.get("used"):
     st.warning("⚠️ This link has already been used. Please login normally.")
     st.page_link("app.py", label="Go to Login →")
-    completion_lock.markdown("<div class='app-unlocked'></div>", unsafe_allow_html=True)
+    st.markdown("<div class='app-unlocked'></div>", unsafe_allow_html=True)
     st.stop()
 
 hotel_id = record["hotel_id"]
@@ -120,4 +120,4 @@ if submit:
             st.error(f"❌ Failed to update account: {str(e)}")
 
 # CSS Unlock — triggers the dynamic has-selector to reveal the page
-completion_lock.markdown("<div class='app-unlocked'></div>", unsafe_allow_html=True)
+st.markdown("<div class='app-unlocked'></div>", unsafe_allow_html=True)

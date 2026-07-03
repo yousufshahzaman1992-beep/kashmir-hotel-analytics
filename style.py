@@ -94,24 +94,30 @@ def apply_style():
        behind it — the overlay approach blocks that entirely.
     ────────────────────────────────────────────────────────────────────── */
 
-    /* Default cover — visible until .app-unlocked appears */
+    /* Default cover — visible until .app-unlocked appears.
+       KEY: transition delay of 900ms when going opaque (on rerun start).
+       This means fast reruns (<900ms) never show the overlay at all.
+       The overlay IS visible on first/slow loads (initial state = opacity:1, no transition in).
+       When .app-unlocked appears, it dismisses instantly (0ms delay, 0.25s fade). */
     body::before {
         content: '';
         position: fixed;
         inset: 0;
-        background: #050e0b;   /* matches --bg-color dark default */
+        background: #050e0b;
         z-index: 99999;
         pointer-events: none;
         opacity: 1;
-        transition: opacity 0.25s ease-out;
+        /* delay before appearing: fast reruns won't trigger this */
+        transition: opacity 0.25s ease-out 0.9s;
     }
-    /* Dismiss the overlay the moment .app-unlocked is in the DOM */
+    /* Dismiss overlay instantly (no delay) when content is ready */
     body:has(.app-unlocked)::before {
         opacity: 0 !important;
         pointer-events: none !important;
+        transition: opacity 0.25s ease-out 0s !important;
     }
 
-    /* Premium loading spinner on top of the cover overlay */
+    /* Premium loading spinner — same delay logic as the overlay */
     body::after {
         content: '';
         position: fixed;
@@ -127,15 +133,16 @@ def apply_style():
         z-index: 100000;
         pointer-events: none;
         opacity: 1;
-        transition: opacity 0.2s ease-out;
+        transition: opacity 0.2s ease-out 0.9s;
     }
     @keyframes loading-spin {
         to { transform: rotate(360deg); }
     }
-    /* Hide the spinner when unlocked */
+    /* Hide spinner instantly when unlocked */
     body:has(.app-unlocked)::after {
         opacity: 0 !important;
         pointer-events: none !important;
+        transition: opacity 0.2s ease-out 0s !important;
     }
     /* Light theme spinner adaptation */
     html[data-theme="light"] body::after {
@@ -1386,11 +1393,13 @@ def apply_style():
         opacity: 0.6;
         transition: opacity 0.2s;
     }
-    [data-testid="stTooltipHoverTarget"]:hover svg { opacity: 1; }
+    [data-testid="stTooltipHoverTarget"]:hover svg { 
+        opacity: 1;
+        transition: opacity 0.2s 0.3s;
+    }
 
     </style>
     """, unsafe_allow_html=True)
-
 
 
 def ensure_auth(allowed_roles=None):

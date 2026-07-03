@@ -72,7 +72,7 @@ if not st.session_state.get("logged_in"):
         </style>
     """, unsafe_allow_html=True)
 
-completion_lock = apply_style()
+apply_style()
 
 CHART = dict(
     paper_bgcolor="rgba(0,0,0,0)",
@@ -130,7 +130,7 @@ if not st.session_state.get("logged_in"):
     # security vulnerability — any person with the URL would get full access.
     # Users must always authenticate via the login form.
     show_login()
-    completion_lock.markdown("<div class='app-unlocked'></div>", unsafe_allow_html=True)
+    st.markdown("<div class='app-unlocked'></div>", unsafe_allow_html=True)
     st.stop()
 
 # ══════════════════════════════════════════════════════════
@@ -1185,4 +1185,4 @@ with tab_risk:
         st.info("No bookings found. Add your first booking via the **Add Booking** page to enable guest outreach.")
 
 # CSS Unlock — triggers the dynamic has-selector to reveal the page
-completion_lock.markdown("<div class='app-unlocked'></div>", unsafe_allow_html=True)
+st.markdown("<div class='app-unlocked'></div>", unsafe_allow_html=True)

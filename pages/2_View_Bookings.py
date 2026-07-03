@@ -15,7 +15,7 @@ if project_root not in sys.path:
 from sheets_db import load_bookings, get_hotel_by_id, update_booking, delete_booking
 from style import apply_style, ensure_auth, render_sidebar
 
-completion_lock = apply_style()
+apply_style()
 # ── Hide admin pages from non-admin users ─────────────────
 if st.session_state.get("hotel", {}).get("hotel_id") != "ADMIN":
     st.markdown("""
@@ -43,7 +43,7 @@ df = load_bookings(hotel_id)
 
 if df is None or len(df) == 0:
     st.info("No bookings yet. Go to **Add Booking** to enter your first one.")
-    completion_lock.markdown("<div class='app-unlocked'></div>", unsafe_allow_html=True)
+    st.markdown("<div class='app-unlocked'></div>", unsafe_allow_html=True)
     st.stop()
 
 tab1, tab2 = st.tabs(["📊 View & Filter", "✏️ Edit / Delete"])
@@ -248,4 +248,4 @@ with tab2:
             st.rerun()
 
 # CSS Unlock — triggers the dynamic has-selector to reveal the page
-completion_lock.markdown("<div class='app-unlocked'></div>", unsafe_allow_html=True)
+st.markdown("<div class='app-unlocked'></div>", unsafe_allow_html=True)

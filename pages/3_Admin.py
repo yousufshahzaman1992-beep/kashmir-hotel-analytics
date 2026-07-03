@@ -23,7 +23,7 @@ st.set_page_config(
     layout="wide",
 )
 
-completion_lock = apply_style()
+apply_style()
 hotel = ensure_auth(allowed_roles=["ADMIN"])
 
 with st.sidebar:
@@ -324,4 +324,4 @@ with tab_sync:
         language="bash",
     )
 
-completion_lock.markdown("<div class='app-unlocked'></div>", unsafe_allow_html=True)
+st.markdown("<div class='app-unlocked'></div>", unsafe_allow_html=True)
