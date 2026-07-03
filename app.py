@@ -111,20 +111,10 @@ if not st.session_state.get("logged_in"):
         st.switch_page("pages/4_Setup_Account.py")
         st.stop()
 
-    # Restore session from URL
-    hid = st.query_params.get("hid")
-    if hid:
-        if hid == "ADMIN":
-            st.session_state["logged_in"] = True
-            st.session_state["hotel"]     = {"hotel_id": "ADMIN", "name": "Administrator", "plan": "admin"}
-            st.rerun()
-        else:
-            hotel = get_hotel_by_id(hid)
-            if hotel:
-                st.session_state["logged_in"] = True
-                st.session_state["hotel"]     = hotel
-                st.rerun()
-
+    # NOTE: ?hid= in URL is intentionally NOT used to restore auth.
+    # Granting login from a URL parameter alone (no password) is a critical
+    # security vulnerability — any person with the URL would get full access.
+    # Users must always authenticate via the login form.
     show_login()
     st.stop()
 
