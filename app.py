@@ -828,8 +828,10 @@ with tab_reviews:
 with tab_risk:
     st.markdown("<div class='section-title'>✈️ Srinagar Air Connectivity & Demand Risk Matrix</div>", unsafe_allow_html=True)
 
-    # Fetch live Srinagar air connectivity risk data
-    live_risk = get_srinagar_live_risk_data()
+    # Fetch live Srinagar air connectivity risk data — shown with spinner
+    # so the rest of the dashboard is not blocked during API calls.
+    with st.spinner("🌤️ Loading live weather & risk data..."):
+        live_risk = get_srinagar_live_risk_data()
     risk_score = live_risk["risk_score"]
     weather = live_risk["weather"]
 

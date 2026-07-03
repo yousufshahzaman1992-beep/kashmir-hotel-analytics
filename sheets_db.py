@@ -725,7 +725,7 @@ def get_srinagar_live_risk_data():
     from urllib3.util.retry import Retry
 
     session = requests.Session()
-    retry = Retry(total=2, backoff_factor=1, status_forcelist=[500, 502, 503, 504])
+    retry = Retry(total=1, backoff_factor=0.5, status_forcelist=[500, 502, 503, 504])
     session.mount("https://", HTTPAdapter(max_retries=retry))
 
     try:
@@ -737,7 +737,7 @@ def get_srinagar_live_risk_data():
             "current": "temperature_2m,relative_humidity_2m,precipitation,rain,snowfall,weather_code,cloud_cover,wind_speed_10m,visibility",
             "timezone": "Asia/Kolkata"
         }
-        resp = session.get(url, params=params, timeout=12)
+        resp = session.get(url, params=params, timeout=5)
         if resp.status_code != 200:
             raise Exception(f"Open-Meteo returned status code {resp.status_code}")
         
@@ -805,7 +805,7 @@ def get_srinagar_live_risk_data():
             headers = {
                 "User-Agent": "KashmirHotelAnalytics/2.0 contact@kashmirhotelanalytics.com"
             }
-            fb_resp = session.get(fallback_url, headers=headers, timeout=12)
+            fb_resp = session.get(fallback_url, headers=headers, timeout=5)
             if fb_resp.status_code != 200:
                 raise Exception(f"MET Norway returned status code {fb_resp.status_code}")
             fb_data = fb_resp.json()
