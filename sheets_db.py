@@ -20,7 +20,7 @@ def get_db():
     return firestore.client()
 
 # ── Load all hotels ───────────────────────────────────────
-@st.cache_data(ttl=600, show_spinner=False)
+@st.cache_data(ttl=1800, show_spinner=False)
 def load_hotels():
     db   = get_db()
     docs = db.collection("hotels").get()
@@ -30,7 +30,7 @@ def load_hotels():
     )
 
 # ── Get hotel by ID ───────────────────────────────────────
-@st.cache_data(ttl=600, show_spinner=False)
+@st.cache_data(ttl=1800, show_spinner=False)
 def get_hotel_by_id(hotel_id):
     db  = get_db()
     hotel_id = str(hotel_id).strip().upper()
@@ -107,7 +107,7 @@ def verify_session_token(token):
     return None
 
 # ── Load bookings for a hotel ────────────────────────────
-@st.cache_data(ttl=300, show_spinner=False)
+@st.cache_data(ttl=1800, show_spinner=False)
 def load_bookings(hotel_id):
     hotel_id = str(hotel_id).strip().upper()
     db   = get_db()
@@ -314,7 +314,7 @@ MOCK_REVIEWS = {
     ]
 }
 
-@st.cache_data(ttl=600, show_spinner=False)
+@st.cache_data(ttl=3600, show_spinner=False)
 def load_reviews(hotel_id):
     hotel_id_upper = str(hotel_id).strip().upper()
     try:
