@@ -148,9 +148,13 @@ def apply_style():
         background: #ffffff;
     }
 
-    /* Legacy opacity lock kept for backwards compat (no visual effect now) */
-    [data-testid="stAppViewContainer"] {
-        opacity: 1 !important;
+    /* Hide the entire app view container during loading to prevent content flashes,
+       stale login forms, and layout glitches, especially on slower mobile networks.
+       Uses visibility:hidden to keep layout sizes intact for Plotly/charts sizing. */
+    [data-testid="stAppViewContainer"]:not(:has(.app-unlocked)) {
+        opacity: 0 !important;
+        visibility: hidden !important;
+        pointer-events: none !important;
     }
 
     /* Hard lock injected by ensure_auth() on redirect */
