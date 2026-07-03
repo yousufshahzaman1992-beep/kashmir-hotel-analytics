@@ -11,7 +11,7 @@ from sheets_db import save_booking, get_hotel_by_id
 from style import apply_style, sidebar_logo, ensure_auth, render_sidebar
 
 st.set_page_config(page_title="Add Booking", page_icon="📝", layout="centered")
-apply_style()
+completion_lock = apply_style()
 
 hotel = ensure_auth()
 hotel_id = hotel["hotel_id"]
@@ -126,4 +126,4 @@ if st.session_state.get("form_success"):
     st.session_state["form_success"] = None
 
 # CSS Unlock — triggers the dynamic has-selector to reveal the page
-st.markdown("<div class='app-unlocked'></div>", unsafe_allow_html=True)
+completion_lock.markdown("<div class='app-unlocked'></div>", unsafe_allow_html=True)

@@ -12,7 +12,7 @@ from sheets_db import get_hotel_by_id, load_hotels, load_all_bookings, add_hotel
 from style import apply_style, sidebar_logo, ensure_auth, render_custom_navigation
 
 st.set_page_config(page_title="Admin Panel · Kashmir Analytics", page_icon="⚙️", layout="wide")
-apply_style()
+completion_lock = apply_style()
 
 hotel = ensure_auth(allowed_roles=["ADMIN"])
 
@@ -354,4 +354,4 @@ with tab4:
             })
         st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
 
-st.markdown("<div class='app-unlocked'></div>", unsafe_allow_html=True)
+completion_lock.markdown("<div class='app-unlocked'></div>", unsafe_allow_html=True)
