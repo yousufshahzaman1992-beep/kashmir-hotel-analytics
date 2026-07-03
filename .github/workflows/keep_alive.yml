@@ -1,0 +1,22 @@
+name: Keep Streamlit App Alive
+
+on:
+  schedule:
+    # Runs every 5 minutes, 24/7
+    - cron: '*/5 * * * *'
+  workflow_dispatch: # Also allows manual trigger from GitHub Actions tab
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Streamlit App
+        run: |
+          echo "Pinging Kashmir Hotel Analytics to prevent cold start..."
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 https://kashmir-hotel-analytics.streamlit.app)
+          echo "HTTP Status: $STATUS"
+          if [ "$STATUS" -ge 200 ] && [ "$STATUS" -lt 400 ]; then
+            echo "✅ App is awake and responding."
+          else
+            echo "⚠️ App returned status $STATUS — it may be waking up."
+          fi
