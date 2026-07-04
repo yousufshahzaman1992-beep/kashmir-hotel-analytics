@@ -41,6 +41,7 @@ if not st.session_state.logged_in:
             st.session_state.logged_in = True
             st.session_state.hotel = hotel
         else:
+            # Token invalid or expired, clear it
             st.query_params.pop("session", None)
 if "hotel" not in st.session_state:
     st.session_state.hotel = None
@@ -52,7 +53,7 @@ st.set_page_config(
     initial_sidebar_state="expanded" if st.session_state.get("logged_in") else "collapsed"
 )
 
-# ── Flash prevention: hide sidebar & nav instantly ──
+# ── Flash prevention: hide sidebar & nav instantly on every load ──
 if not st.session_state.get("logged_in"):
     st.markdown("""
         <style>
@@ -70,41 +71,6 @@ if not st.session_state.get("logged_in"):
     """, unsafe_allow_html=True)
 
 apply_style()
-
-# ══════════════════════════════════════════════════════════
-# GLOBAL SCROLL FIX — Prevent widgets from stealing scroll
-# ══════════════════════════════════════════════════════════
-st.markdown("""
-<style>
-/* Prevent ALL Streamlit widgets from capturing scroll events */
-[data-testid="stNumberInput"] input,
-[data-testid="stSlider"] > div,
-[data-testid="stSelectSlider"] > div,
-[data-testid="stRadio"] > div,
-[data-testid="stSelectbox"] > div {
-    overscroll-behavior: none !important;
-    touch-action: pan-y !important;
-}
-
-/* Ensure page scrolls smoothly on first attempt */
-.main .block-container {
-    overflow-y: auto !important;
-    scroll-behavior: smooth !important;
-}
-
-/* Disable wheel event capture on interactive elements */
-input[type="number"], 
-input[type="range"],
-select {
-    pointer-events: auto !important;
-}
-
-/* Mobile fix: ensure touch scroll always works */
-* {
-    touch-action: pan-y;
-}
-</style>
-""", unsafe_allow_html=True)
 
 CHART = dict(
     paper_bgcolor="rgba(0,0,0,0)",
@@ -131,9 +97,11 @@ VIBRANT_PURPLE = "#8b5cf6"
 COLOR_SEQ  = ["#3b82f6", "#8b5cf6", "#06b6d4", "#10b981", "#f59e0b", "#ef4444"]
 
 # ══════════════════════════════════════════════════════════
-# NOT LOGGED IN
+# NOT LOGGED IN — handle invite links + session restore
 # ══════════════════════════════════════════════════════════
 if not st.session_state.get("logged_in"):
+
+    # Hide sidebar while not logged in
     st.markdown("""
         <style>
             section[data-testid="stSidebar"],
@@ -141,12 +109,14 @@ if not st.session_state.get("logged_in"):
         </style>
     """, unsafe_allow_html=True)
 
+    # Handle invite link
     invite_token = st.query_params.get("invite")
     if invite_token:
         st.session_state["invite_token"] = invite_token
         st.switch_page("pages/4_Setup_Account.py")
         st.stop()
 
+    # Handle password reset link
     reset_token = st.query_params.get("reset")
     if reset_token:
         st.session_state["reset_token"] = reset_token
@@ -164,11 +134,13 @@ hotel      = st.session_state.hotel
 hotel_id   = hotel["hotel_id"]
 hotel_name = hotel["name"]
 
+# Persist session in URL securely
 if "session" not in st.query_params:
     st.query_params["session"] = generate_session_token(hotel_id)
 if "hid" in st.query_params:
     st.query_params.pop("hid", None)
 
+# Hide admin pages from non-admin users
 if hotel_id != "ADMIN":
     st.markdown("""
     <style>
@@ -236,7 +208,7 @@ if hotel_id == "ADMIN":
     st.stop()
 
 # ══════════════════════════════════════════════════════════
-# CACHED DATA LOADING
+# CACHED DATA LOADING — prevents blocking on every rerun
 # ══════════════════════════════════════════════════════════
 @st.cache_data(ttl=60, show_spinner=False)
 def _cached_load_bookings(hid):
@@ -250,6 +222,7 @@ def _cached_load_reviews(hid):
 def _fetch_cached_risk():
     return get_srinagar_live_risk_data()
 
+# ── Load data ─────────────────────────────────────────────
 df = _cached_load_bookings(hotel_id)
 
 # ── Header ────────────────────────────────────────────────
@@ -284,6 +257,7 @@ total_nights = int(fdf["Nights"].sum())
 avg_nights   = round(fdf["Nights"].mean(), 1) if total_book else 0
 avg_book     = int(fdf["Amount (₹)"].mean())  if total_book else 0
 
+# ── Premium KPIs ──────────────────────────────────────────
 total_commission = fdf["commission_paid"].sum()
 net_revenue      = total_rev - total_commission
 adr              = net_revenue / total_nights if total_nights > 0 else 0
@@ -317,6 +291,7 @@ with tab_overview:
     if total_book == 0:
         st.info("No bookings for this season.")
     else:
+        # ── Row 1: Revenue + Origins ──
         c1, c2 = st.columns([3,2], gap="small")
         with c1:
             st.markdown("<div class='section-title'>Monthly Revenue</div>", unsafe_allow_html=True)
@@ -353,6 +328,7 @@ with tab_overview:
 
         st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
 
+        # ── Row 2: Room Type + Trend ──
         c3, c4 = st.columns([2,3], gap="small")
         with c3:
             st.markdown("<div class='section-title'>Room Type</div>", unsafe_allow_html=True)
@@ -396,6 +372,7 @@ with tab_bookings:
     if total_book == 0:
         st.info("No bookings for this season.")
     else:
+        # ── Insights + Recent Bookings ──
         ci1, ci2 = st.columns([1,2])
         with ci1:
             st.markdown("<div class='section-title'>Quick Insights</div>", unsafe_allow_html=True)
@@ -444,6 +421,7 @@ with tab_bookings:
             })
 
 with tab_reviews:
+    # ── Row 3: OTA Reputation & Sentiment Analytics ──
     st.markdown("<p class='section-title'>⭐ OTA Reputation & Sentiment Analytics</p>", unsafe_allow_html=True)
 
     POSITIVE_WORDS = {
@@ -468,6 +446,7 @@ with tab_reviews:
         "Room & Cleanliness": ['room', 'clean', 'dirty', 'sheet', 'blanket', 'bed', 'spacious', 'dusty', 'comfortable', 'view', 'garden', 'cabin', 'wooden', 'heritage']
     }
 
+    # ── Live OTA Sync & Real-Time Sentiment Control Center ──
     with st.container():
         st.markdown("""
         <div style='background:rgba(59,130,246,0.08); border:1px solid rgba(59,130,246,0.2); border-radius:12px; padding:18px; margin-bottom:20px;'>
@@ -537,10 +516,10 @@ with tab_reviews:
 
             m_review_text = st.text_area("Review Text", height=82, placeholder="Type/paste a guest review to analyze sentiment in real time...", key="m_review_text_val")
 
-            # FIX: Replaced st.select_slider with st.selectbox to prevent scroll hijacking
-            m_rating = st.selectbox(
+            m_rating = st.select_slider(
                 "Guest Rating Stars",
-                options=[5, 4, 3, 2, 1],
+                options=[1, 2, 3, 4, 5],
+                value=5,
                 format_func=lambda x: "⭐" * x,
                 key="m_rating_val"
             )
@@ -611,6 +590,7 @@ with tab_reviews:
 
     st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
 
+    # CACHED reviews loading
     reviews_raw = _cached_load_reviews(hotel_id)
     _using_mock_reviews = not bool(reviews_raw) or any(r.get("_is_mock", False) for r in reviews_raw)
     if _using_mock_reviews:
@@ -845,6 +825,7 @@ with tab_reviews:
 with tab_risk:
     st.markdown("<div class='section-title'>✈️ Srinagar Air Connectivity & Demand Risk Matrix</div>", unsafe_allow_html=True)
 
+    # Non-blocking spinner with cleanup
     risk_placeholder = st.empty()
     with risk_placeholder.container():
         with st.spinner("🌤️ Loading live weather & risk data..."):
@@ -854,6 +835,7 @@ with tab_risk:
     risk_score = live_risk["risk_score"]
     weather = live_risk["weather"]
 
+    # Native metrics instead of heavy HTML
     _w_snow = weather["snow"] if isinstance(weather["snow"], (int, float)) else 0
     _w_rain = weather["rain"] if isinstance(weather["rain"], (int, float)) else 0
     _w_vis  = weather["visibility_km"] if isinstance(weather["visibility_km"], (int, float)) else 10
@@ -867,6 +849,7 @@ with tab_risk:
 
     st.markdown("<div style='margin:8px 0;'></div>", unsafe_allow_html=True)
 
+    # ── Risk index gauge ──
     risk_label = "Moderate Risk" if 40 <= risk_score < 70 else ("High Risk" if risk_score >= 70 else "Low Risk")
     gauge_color = "#f59e0b" if risk_label == "Moderate Risk" else ("#ef4444" if risk_label == "High Risk" else "#10b981")
 
@@ -933,6 +916,7 @@ with tab_risk:
 
     st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
 
+    # ── Risk matrix table ──
     st.markdown("<div class='section-title'>Risk Factor Matrix</div>", unsafe_allow_html=True)
 
     matrix_factors = []
@@ -993,7 +977,7 @@ with tab_risk:
 
     st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
 
-    # ── Operational Checklist ──
+    # ── Operational Checklist (persisted per hotel in Firebase) ──
     st.markdown("<div class='section-title'>📋 Pre-Season Operational Checklist</div>", unsafe_allow_html=True)
     st.markdown(
         "<p style='font-size:0.82rem;color:var(--text-muted);margin-bottom:14px;'>"
@@ -1136,19 +1120,12 @@ with tab_risk:
         guest_checkin = guest_row.get("Check-in", "soon")
         guest_phone = str(guest_row.get("Phone", "")).replace("+", "").strip()
 
-        # FIX: Replaced st.radio with st.button columns to prevent scroll hijacking
-        msg_options = ["✈️ Flight Delay Alert", "🌡️ Weather Warning", "🏨 Arrival Reminder", "✏️ Custom"]
-        if "msg_type_idx" not in st.session_state:
-            st.session_state.msg_type_idx = 0
-
-        msg_cols = st.columns(4)
-        for i, opt in enumerate(msg_options):
-            btn_type = "primary" if i == st.session_state.msg_type_idx else "secondary"
-            if msg_cols[i].button(opt, use_container_width=True, type=btn_type, key=f"msg_btn_{i}_{hotel_id}"):
-                st.session_state.msg_type_idx = i
-                st.rerun()
-
-        msg_type = msg_options[st.session_state.msg_type_idx]
+        msg_type = st.radio(
+            "Message type:",
+            ["✈️ Flight Delay Alert", "🌡️ Weather Warning", "🏨 Arrival Reminder", "✏️ Custom"],
+            horizontal=True,
+            key="outreach_msg_type"
+        )
 
         if msg_type == "✈️ Flight Delay Alert":
             custom_message = (
