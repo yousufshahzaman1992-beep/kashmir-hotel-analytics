@@ -54,8 +54,6 @@ st.set_page_config(
 )
 
 # ── Flash prevention: hide sidebar & nav instantly on every load ──
-# This runs synchronously before any Python auth logic, preventing
-# the sidebar from flickering visible for a frame on page refresh.
 if not st.session_state.get("logged_in"):
     st.markdown("""
         <style>
@@ -125,10 +123,6 @@ if not st.session_state.get("logged_in"):
         st.switch_page("pages/4_Setup_Account.py")
         st.stop()
 
-    # NOTE: ?hid= in URL is intentionally NOT used to restore auth.
-    # Granting login from a URL parameter alone (no password) is a critical
-    # security vulnerability — any person with the URL would get full access.
-    # Users must always authenticate via the login form.
     show_login()
     st.markdown("<div class='app-unlocked'></div>", unsafe_allow_html=True)
     st.stop()
@@ -213,8 +207,23 @@ if hotel_id == "ADMIN":
     st.markdown("<div class='app-unlocked'></div>", unsafe_allow_html=True)
     st.stop()
 
+# ══════════════════════════════════════════════════════════
+# CACHED DATA LOADING — prevents blocking on every rerun
+# ══════════════════════════════════════════════════════════
+@st.cache_data(ttl=60, show_spinner=False)
+def _cached_load_bookings(hid):
+    return load_bookings(hid)
+
+@st.cache_data(ttl=300, show_spinner=False)
+def _cached_load_reviews(hid):
+    return load_reviews(hid)
+
+@st.cache_data(ttl=300, show_spinner=False)
+def _fetch_cached_risk():
+    return get_srinagar_live_risk_data()
+
 # ── Load data ─────────────────────────────────────────────
-df = load_bookings(hotel_id)
+df = _cached_load_bookings(hotel_id)
 
 # ── Header ────────────────────────────────────────────────
 hc1, hc2 = st.columns([5,1])
@@ -253,7 +262,6 @@ total_commission = fdf["commission_paid"].sum()
 net_revenue      = total_rev - total_commission
 adr              = net_revenue / total_nights if total_nights > 0 else 0
 
-# Dynamic occupancy rate divisor based on rooms and selected season days
 ASSUMED_ROOMS = hotel.get("room_count", 30)
 season_day_counts = {
     "Full Year": 365, "Winter (Jan–Mar)": 90, "Spring (Apr–Jun)": 91,
@@ -298,7 +306,7 @@ with tab_overview:
             ))
             fig1.update_layout(**CHART)
             st.markdown("<div class='scroll-through-chart'>", unsafe_allow_html=True)
-            st.plotly_chart(fig1, use_container_width=True, config={'displayModeBar': False})
+            st.plotly_chart(fig1, use_container_width=True, config={'displayModeBar': False}, key="monthly_rev_chart")
             st.markdown("</div>", unsafe_allow_html=True)
 
         with c2:
@@ -315,7 +323,7 @@ with tab_overview:
             )
             fig2.update_layout(**CHART, showlegend=False)
             st.markdown("<div class='scroll-through-chart'>", unsafe_allow_html=True)
-            st.plotly_chart(fig2, use_container_width=True, config={'displayModeBar': False})
+            st.plotly_chart(fig2, use_container_width=True, config={'displayModeBar': False}, key="guest_origins_chart")
             st.markdown("</div>", unsafe_allow_html=True)
 
         st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
@@ -340,7 +348,7 @@ with tab_overview:
             ))
             fig3.update_layout(**CHART)
             st.markdown("<div class='scroll-through-chart'>", unsafe_allow_html=True)
-            st.plotly_chart(fig3, use_container_width=True, config={'displayModeBar': False})
+            st.plotly_chart(fig3, use_container_width=True, config={'displayModeBar': False}, key="room_type_chart")
             st.markdown("</div>", unsafe_allow_html=True)
 
         with c4:
@@ -357,7 +365,7 @@ with tab_overview:
             ))
             fig4.update_layout(**CHART)
             st.markdown("<div class='scroll-through-chart'>", unsafe_allow_html=True)
-            st.plotly_chart(fig4, use_container_width=True, config={'displayModeBar': False})
+            st.plotly_chart(fig4, use_container_width=True, config={'displayModeBar': False}, key="bookings_trend_chart")
             st.markdown("</div>", unsafe_allow_html=True)
 
 with tab_bookings:
@@ -416,7 +424,6 @@ with tab_reviews:
     # ── Row 3: OTA Reputation & Sentiment Analytics ──
     st.markdown("<p class='section-title'>⭐ OTA Reputation & Sentiment Analytics</p>", unsafe_allow_html=True)
 
-    # Word lexicons for rule-based sentiment classifier
     POSITIVE_WORDS = {
         'excellent', 'amazing', 'great', 'beautiful', 'clean', 'friendly', 'helpful',
         'good', 'love', 'perfect', 'comfortable', 'wonderful', 'delicious', 'nice',
@@ -455,7 +462,6 @@ with tab_reviews:
         with col_sync:
             st.markdown("<p style='font-weight:600; color:var(--text-color); margin-bottom:8px; font-size:0.95rem;'>⚡ OTA Connection & Live Sync</p>", unsafe_allow_html=True)
 
-            # Fetch current URLs from session state hotel info
             h_booking_url = hotel.get("booking_review_url", "")
             h_agoda_url = hotel.get("agoda_review_url", "")
             h_mmt_url = hotel.get("mmt_review_url", "") or hotel.get("mmt_url", "")
@@ -471,13 +477,11 @@ with tab_reviews:
                     success = update_hotel_ota_links(hotel_id, u_booking, u_agoda, u_mmt, u_google)
                     if success:
                         st.success("OTA URLs updated successfully!")
-                        # Update session state
                         st.session_state.hotel = get_hotel_by_id(hotel_id)
                         st.rerun()
                     else:
                         st.error("Failed to update URLs in database.")
 
-            # Status Indicator for connected platforms
             status_items = []
             if h_booking_url: status_items.append("🟢 Booking.com")
             else: status_items.append("⚪ Booking.com")
@@ -506,15 +510,12 @@ with tab_reviews:
                         for log in sync_logs:
                             st.write(f"- {log}")
                     st.rerun()
+
         with col_manual:
             st.markdown("<p style='font-weight:600; color:var(--text-color); margin-bottom:8px; font-size:0.95rem;'>✍️ Real-Time Sentiment Analyzer Form</p>", unsafe_allow_html=True)
 
-            # Real-time text area
             m_review_text = st.text_area("Review Text", height=82, placeholder="Type/paste a guest review to analyze sentiment in real time...", key="m_review_text_val")
 
-            # Ratings — using select_slider instead of slider to avoid
-            # scroll-event capture (st.slider intercepts mouse-wheel scrolling
-            # and freezes the page while the cursor is anywhere near it)
             m_rating = st.select_slider(
                 "Guest Rating Stars",
                 options=[1, 2, 3, 4, 5],
@@ -523,9 +524,7 @@ with tab_reviews:
                 key="m_rating_val"
             )
 
-            # Interactive Real-Time Sentiment & Aspect Detection
             if m_review_text:
-                # Live sentiment calculation
                 words = m_review_text.lower().split()
                 pos_count = sum(1 for w in words if w in POSITIVE_WORDS)
                 neg_count = sum(1 for w in words if w in NEGATIVE_WORDS)
@@ -544,7 +543,6 @@ with tab_reviews:
                     text_color = "#f59e0b"
                     bg_color = "rgba(245,158,11,0.1)"
 
-                # Live aspect detection
                 text_lower = m_review_text.lower()
                 live_aspects = []
                 for aspect, keywords in ASPECTS.items():
@@ -587,12 +585,13 @@ with tab_reviews:
                         }
                         save_review_to_firebase(review_data)
                         st.success("Review saved and live charts updated!")
+                        st.cache_data.clear()
                         st.rerun()
 
     st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
 
-    # Fetch reviews from database (with mock fallback)
-    reviews_raw = load_reviews(hotel_id)
+    # CACHED reviews loading
+    reviews_raw = _cached_load_reviews(hotel_id)
     _using_mock_reviews = not bool(reviews_raw) or any(r.get("_is_mock", False) for r in reviews_raw)
     if _using_mock_reviews:
         st.markdown("""
@@ -614,7 +613,6 @@ with tab_reviews:
         text = r.get("review_text", "")
         rating = r.get("rating", 3)
 
-        # Simple lexical sentiment analyzer
         words = str(text).lower().split()
         pos_count = sum(1 for w in words if w in POSITIVE_WORDS)
         neg_count = sum(1 for w in words if w in NEGATIVE_WORDS)
@@ -627,7 +625,6 @@ with tab_reviews:
         else:
             sentiment = "Neutral"
 
-        # Simple aspect detection
         text_lower = str(text).lower()
         aspects_found = []
         for aspect, keywords in ASPECTS.items():
@@ -649,7 +646,6 @@ with tab_reviews:
     rdf = pd.DataFrame(processed_reviews)
 
     if not rdf.empty:
-        # ── Summary KPIs ──
         total_count = len(rdf)
         avg_rating = rdf["rating"].mean()
         pos_count = len(rdf[rdf["sentiment"] == "Positive"])
@@ -660,7 +656,6 @@ with tab_reviews:
         m2.metric("📈 Avg Rating Score", f"{avg_rating:.1f} / 5.0", help="Average guest rating")
         m3.metric("❤️ Positive Sentiment", f"{pos_pct}%", help="Percentage of overall positive feedback")
 
-        # ── Sentiment Breakdown Bar ──
         neu_count = len(rdf[rdf["sentiment"] == "Neutral"])
         neg_count = len(rdf[rdf["sentiment"] == "Negative"])
 
@@ -682,7 +677,6 @@ with tab_reviews:
         </div>
         """, unsafe_allow_html=True)
 
-        # ── Aspect Breakdown Grid ──
         aspect_sentiment = {}
         for aspect in ASPECTS.keys():
             aspect_reviews = rdf[rdf["aspects"].apply(lambda x: aspect in x)]
@@ -698,7 +692,6 @@ with tab_reviews:
         res_col1, res_col2 = st.columns(2)
 
         with res_col1:
-            # Food & Dining
             score, count = aspect_sentiment["Food & Dining"]
             if score is not None:
                 color = "#10b981" if score >= 70 else "#fbbf24"
@@ -725,7 +718,6 @@ with tab_reviews:
                 </div>
                 """, unsafe_allow_html=True)
 
-            # Heating & Plumbing
             score, count = aspect_sentiment["Heating & Plumbing"]
             if score is not None:
                 color = "#10b981" if score >= 70 else "#ef4444"
@@ -753,7 +745,6 @@ with tab_reviews:
                 """, unsafe_allow_html=True)
 
         with res_col2:
-            # Service & Hospitality
             score, count = aspect_sentiment["Service & Hospitality"]
             if score is not None:
                 color = "#10b981" if score >= 70 else "#ef4444"
@@ -780,7 +771,6 @@ with tab_reviews:
                 </div>
                 """, unsafe_allow_html=True)
 
-            # Room & Cleanliness
             score, count = aspect_sentiment["Room & Cleanliness"]
             if score is not None:
                 color = "#10b981" if score >= 70 else "#fbbf24"
@@ -809,7 +799,6 @@ with tab_reviews:
 
         st.markdown("<br>", unsafe_allow_html=True)
 
-        # ── Full review list ──
         st.markdown("<div class='section-title'>All Guest Reviews</div>", unsafe_allow_html=True)
         for _, row in rdf.iterrows():
             stars = "⭐" * int(row["rating"])
@@ -836,28 +825,22 @@ with tab_reviews:
 with tab_risk:
     st.markdown("<div class='section-title'>✈️ Srinagar Air Connectivity & Demand Risk Matrix</div>", unsafe_allow_html=True)
 
-    # Fetch live Srinagar air connectivity risk data — cached to prevent blocking
-    @st.cache_data(ttl=300, show_spinner=False)
-    def _fetch_cached_risk():
-        return get_srinagar_live_risk_data()
-
-    # Load with lightweight spinner in an empty container (non-blocking)
+    # Non-blocking spinner with cleanup
     risk_placeholder = st.empty()
     with risk_placeholder.container():
         with st.spinner("🌤️ Loading live weather & risk data..."):
             live_risk = _fetch_cached_risk()
-    risk_placeholder.empty()  # Remove spinner immediately after load
+    risk_placeholder.empty()
 
     risk_score = live_risk["risk_score"]
     weather = live_risk["weather"]
 
-    # ── Live Airport Weather Status Card ──
+    # Native metrics instead of heavy HTML
     _w_snow = weather["snow"] if isinstance(weather["snow"], (int, float)) else 0
     _w_rain = weather["rain"] if isinstance(weather["rain"], (int, float)) else 0
     _w_vis  = weather["visibility_km"] if isinstance(weather["visibility_km"], (int, float)) else 10
     weather_icon = "❄️" if _w_snow > 0 else ("🌧️" if _w_rain > 0 else ("🌫️" if _w_vis < 2 else "☀️"))
 
-    # Use native st.metric columns instead of heavy HTML for better scroll performance
     wcol1, wcol2, wcol3, wcol4 = st.columns(4)
     wcol1.metric("Condition", f"{weather_icon} {weather['desc']}")
     wcol2.metric("Temperature", f"{weather['temp']}°C")
@@ -906,11 +889,11 @@ with tab_risk:
         st.markdown("<div class='section-title'>Route Cancellation Probability by Month</div>", unsafe_allow_html=True)
         months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
         cancel_prob = [72, 68, 45, 20, 15, 10, 8, 12, 18, 30, 55, 78]
-        _cur_month_idx = date.today().month - 1  # 0-indexed
+        _cur_month_idx = date.today().month - 1
         colors_bar = []
         for i, p in enumerate(cancel_prob):
             if i == _cur_month_idx:
-                colors_bar.append("#8b5cf6")  # Highlight current month in purple
+                colors_bar.append("#8b5cf6")
             elif p >= 60:
                 colors_bar.append("#ef4444")
             elif p >= 30:
@@ -951,10 +934,8 @@ with tab_risk:
         matrix_level.append("🔴 Critical" if f["level"] == "Critical" else ("🟠 High" if f["level"] == "High" else "🟡 Moderate"))
         matrix_mitigation.append(f["mitigation"])
 
-    # Only show static risk factors that are relevant to the current month
-    _cm = date.today().month  # 1–12
+    _cm = date.today().month
     _all_static = [
-        # (factor, likelihood, impact, level, mitigation, relevant_months)
         ("❄️ Winter Fog (Dec–Feb)", "High",   "High",   "🔴 Critical",
          "Flexible cancellation policy + proactive guest SMS alerts",
          [12, 1, 2]),
@@ -963,16 +944,16 @@ with tab_risk:
          [7, 8, 9]),
         ("🔌 Airport Power Outage", "Low",    "High",   "🟠 High",
          "Backup generator protocols; pre-check-in communication via WhatsApp",
-         list(range(1, 13))),  # year-round risk
+         list(range(1, 13))),
         ("🌐 Political Advisory / Alerts", "Medium", "High", "🔴 Critical",
          "Subscribe to MEA alerts; issue reassurance emails to confirmed bookings",
-         list(range(1, 13))),  # year-round risk
+         list(range(1, 13))),
         ("📉 Off-Season Demand Drop", "High",  "Medium", "🟡 Moderate",
          "Launch winter packages & early-bird discounts by October",
          [11, 12, 1, 2, 3]),
         ("🛫 Single-Runway Bottleneck", "Medium", "High", "🟠 High",
          "Offer Jammu transfer packages as contingency for diverted flights",
-         list(range(1, 13))),  # year-round risk
+         list(range(1, 13))),
     ]
     for _sf, _sl, _si, _slv, _sm, _months in _all_static:
         if _cm in _months:
@@ -1004,7 +985,6 @@ with tab_risk:
         unsafe_allow_html=True
     )
 
-    # Load saved state from Firebase once
     _saved_chk = load_checklist(hotel_id)
 
     _chk_items = [
@@ -1020,8 +1000,6 @@ with tab_risk:
         ("chk_generator",  "Verify generator fuel stock for winter months"),
     ]
 
-    # ── Step 1: Render checkboxes inside st.form to batch changes ──
-    # This prevents a full rerun on every checkbox click, which was causing scroll freeze
     with st.form(key=f"checklist_form_{hotel_id}", border=False):
         chk1, chk2 = st.columns(2)
         _new_state = {}
@@ -1034,7 +1012,6 @@ with tab_risk:
                     key=f"risk_chk_{key}_form"
                 )
         
-        # ── Step 2: Compute progress from form state ──
         _total_items = len(_chk_items)
         _done_items  = sum(1 for key, _ in _chk_items if _new_state.get(key, False))
         _pct         = int((_done_items / _total_items) * 100)
@@ -1057,7 +1034,6 @@ with tab_risk:
             _milestone = f"⚠️ {_remaining} tasks need attention before season opens"
             _badge     = ""
 
-        # ── Step 3: Render progress bar using native widgets ──
         st.markdown("<div style='height:12px;'></div>", unsafe_allow_html=True)
 
         _col_label, _col_pct = st.columns([5, 1])
@@ -1077,7 +1053,6 @@ with tab_risk:
 
         st.progress(_pct / 100)
 
-        # Tick labels under the bar
         _ticks = st.columns(5)
         for _i, _mark in enumerate([0, 25, 50, 75, 100]):
             with _ticks[_i]:
@@ -1096,15 +1071,13 @@ with tab_risk:
             unsafe_allow_html=True
         )
 
-        # ── Step 4: Save button inside form ──
         st.markdown("<div style='height:8px;'></div>", unsafe_allow_html=True)
         save_submitted = st.form_submit_button("💾 Save Checklist", use_container_width=True)
     
-    # Handle save outside the form
     if save_submitted:
         save_checklist(hotel_id, _new_state)
         st.success("✅ Checklist saved!")
-        st.cache_data.clear()  # Clear cache so next load reflects changes
+        st.cache_data.clear()
         st.rerun()
 
     st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
@@ -1120,7 +1093,6 @@ with tab_risk:
             df_outreach = df.copy()
             df_outreach["Check-in-dt"] = pd.to_datetime(df_outreach["Check-in"], errors="coerce")
 
-            # Try upcoming (next 30 days) first
             upcoming = df_outreach[
                 df_outreach["Check-in-dt"].dt.date >= today
             ].copy().sort_values("Check-in-dt")
@@ -1128,7 +1100,6 @@ with tab_risk:
             if not upcoming.empty:
                 arriving_bookings = upcoming
             else:
-                # Fallback: show all bookings sorted by most recent check-in
                 arriving_bookings = df_outreach.dropna(subset=["Check-in-dt"]).copy().sort_values(
                     "Check-in-dt", ascending=False
                 )
