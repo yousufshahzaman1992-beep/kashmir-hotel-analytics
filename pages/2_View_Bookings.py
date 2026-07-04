@@ -159,7 +159,6 @@ with tab1:
                 pdf.cell(widths[1], 8, checkin_str, border=1, align="C")
                 pdf.cell(widths[2], 8, f"{int(row['Amount (₹)']):,}", border=1, align="R")
                 pdf.cell(widths[3], 8, str(row["Status"]), border=1, align="C")
-                pdf.lnC")
                 pdf.ln()
             return bytes(pdf.output())
 
