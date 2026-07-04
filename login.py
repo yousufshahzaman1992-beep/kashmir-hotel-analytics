@@ -9,11 +9,8 @@ from sheets_db import verify_login, get_db, generate_session_token
 from style import apply_style
 
 def show_login():
-    # apply_style() is already called by app.py before show_login();
-    # calling it again would re-inject the JS lock, resetting the timer.
     st.markdown("""
     <style>
-
     /* Aggressively hide all sidebar components on login */
     section[data-testid="stSidebar"], 
     [data-testid="stSidebarNav"],
@@ -229,7 +226,7 @@ def show_login():
                 <div class='lg-card-title'>Reset Password</div>
                 <div class='lg-card-sub'>Enter your registered email address to receive a secure reset link.</div>
             """, unsafe_allow_html=True)
-            email_input = st.text_input("Email Address", placeholder="e.g. manager@hotel.com")
+            email_input = st.text_input("Email Address", placeholder="e.g. manager@hotel.com", key="forgot_email")
             submit_reset = st.form_submit_button("Send Reset Link", use_container_width=True)
 
         if submit_reset:
@@ -241,7 +238,6 @@ def show_login():
                 docs = list(db.collection("hotels").where(filter=FieldFilter("email", "==", email_input.strip())).limit(1).get())
                 if docs:
                     hotel_data = docs[0].to_dict()
-                    # Validate that the hotel already has an established user account
                     if not hotel_data.get("username"):
                         st.error("❌ This account setup is incomplete. Please contact the administrator or use your initial invitation email.")
                     else:
@@ -274,7 +270,6 @@ def show_login():
                 _secs = int(_remaining % 60)
                 st.error(f"🔒 Too many failed attempts. Please wait **{_mins}m {_secs}s** before trying again.")
             else:
-                # Lockout expired — reset
                 st.session_state["login_attempts"] = 0
                 st.session_state["lockout_until"]  = None
 
@@ -285,21 +280,23 @@ def show_login():
                     <div class='lg-card-sub'>Enter your hotel credentials to access the platform.</div>
                 """, unsafe_allow_html=True)
 
-                username = st.text_input("Username", placeholder="your username")
-                password = st.text_input("Password", type="password",
-                                         placeholder="••••••••")
+                username = st.text_input("Username", placeholder="your username", key="login_username")
+                password = st.text_input("Password", type="password", placeholder="••••••••", key="login_password")
+                
                 # Show attempt warning when close to lockout
                 if st.session_state["login_attempts"] >= 3:
                     st.warning(f"⚠️ {5 - st.session_state['login_attempts']} attempt(s) remaining before 15-minute lockout.")
+                
+                # Submit button MUST be the last element inside the form
                 submit = st.form_submit_button("Sign In", use_container_width=True)
 
+            # Form submission handling OUTSIDE the form
             if submit:
                 if not username or not password:
                     st.error("Please enter both username and password.")
                 else:
                     hotel = verify_login(username, password)
                     if hotel:
-                        # Successful login — reset attempt counter
                         st.session_state["login_attempts"] = 0
                         st.session_state["lockout_until"]  = None
                         st.session_state["logged_in"] = True
@@ -337,5 +334,4 @@ def show_login():
     </div>
     """, unsafe_allow_html=True)
 
-    # CSS Unlock — triggers the dynamic has-selector to reveal the page
     st.markdown("<div class='app-unlocked'></div>", unsafe_allow_html=True)
