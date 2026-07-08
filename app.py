@@ -821,6 +821,95 @@ with tab_reviews:
     else:
         st.info("No reviews found. Reviews will appear here once guests post on OTA platforms.")
 
+    st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
+
+    # ── REVIEW REQUEST AUTOMATION ──────────────────────────────
+    st.markdown("<div class='section-title'>📮 Review Request Automation</div>", unsafe_allow_html=True)
+    st.markdown(
+        "<p style='font-size:0.85rem;color:var(--text-muted);margin-bottom:16px;'>"
+        "Guests who checked out in the last few days are shown below — perfect timing to "
+        "ask for a review while their stay is still fresh in memory.</p>",
+        unsafe_allow_html=True
+    )
+
+    # Build the best available review link — Google preferred, else first configured OTA
+    _g_place_id = hotel.get("google_place_id", "")
+    _review_link = ""
+    if _g_place_id:
+        _review_link = f"https://search.google.com/local/writereview?placeid={_g_place_id}"
+    elif hotel.get("booking_review_url"):
+        _review_link = hotel.get("booking_review_url")
+    elif hotel.get("agoda_review_url"):
+        _review_link = hotel.get("agoda_review_url")
+    elif hotel.get("mmt_review_url") or hotel.get("mmt_url"):
+        _review_link = hotel.get("mmt_review_url") or hotel.get("mmt_url")
+
+    _review_window = st.slider(
+        "Show guests who checked out within the last (days):",
+        min_value=1, max_value=14, value=5, key="review_req_window"
+    )
+
+    _recent_checkouts = pd.DataFrame()
+    if not df.empty and "Check-in" in df.columns and "Nights" in df.columns:
+        try:
+            _rc = df.copy()
+            _rc["_checkin_dt"] = pd.to_datetime(_rc["Check-in"], errors="coerce")
+            _rc["_checkout_dt"] = _rc["_checkin_dt"] + pd.to_timedelta(_rc["Nights"].fillna(0), unit="D")
+            _rc["_days_since_checkout"] = (pd.Timestamp(date.today()) - _rc["_checkout_dt"]).dt.days
+            _rc["_phone_clean"] = _rc["Phone"].astype(str).str.replace("+", "", regex=False).str.strip()
+
+            _recent_checkouts = _rc[
+                (_rc["_days_since_checkout"] >= 0) &
+                (_rc["_days_since_checkout"] <= _review_window) &
+                (_rc["_phone_clean"].notna()) &
+                (_rc["_phone_clean"] != "nan") &
+                (_rc["_phone_clean"] != "")
+            ].sort_values("_days_since_checkout")
+        except Exception:
+            _recent_checkouts = pd.DataFrame()
+
+    if not _review_link:
+        st.warning("⚠️ No review link configured yet. Add your Google Place ID or an OTA review URL above (in ⚙️ Configure OTA URLs & Place ID) so guests can tap straight through to leave a review.")
+
+    if not _recent_checkouts.empty:
+        st.markdown(f"<div style='margin:10px 0;font-size:0.85rem;color:var(--text-muted);'>"
+                    f"📋 <b>{len(_recent_checkouts)}</b> recently checked-out guest(s) found:</div>",
+                    unsafe_allow_html=True)
+
+        for _, g_row in _recent_checkouts.iterrows():
+            g_name = g_row.get("Guest Name", "Guest")
+            g_phone = g_row.get("_phone_clean", "")
+            g_days = int(g_row.get("_days_since_checkout", 0))
+
+            review_msg = (
+                f"Dear {g_name}, thank you for staying with {hotel_name}! "
+                f"We hope you had a wonderful experience. "
+                f"Could you spare a minute to share your feedback? It means a lot to us. 🙏"
+            )
+            if _review_link:
+                review_msg += f"\n{_review_link}"
+
+            encoded = urllib.parse.quote(review_msg)
+            wa_link = f"https://wa.me/{g_phone}?text={encoded}"
+
+            rc1, rc2, rc3 = st.columns([3, 2, 2])
+            with rc1:
+                st.markdown(f"<div style='padding:10px 0;font-size:0.88rem;color:var(--text-color);'>👤 {g_name}</div>", unsafe_allow_html=True)
+            with rc2:
+                st.markdown(f"<div style='padding:10px 0;font-size:0.78rem;color:var(--text-muted);'>Checked out {g_days} day{'s' if g_days != 1 else ''} ago</div>", unsafe_allow_html=True)
+            with rc3:
+                st.markdown(f"""
+                    <a href="{wa_link}" target="_blank" style="text-decoration:none;">
+                        <button style="width:100%; border-radius:8px; padding:8px;
+                                       background:#25d366; color:white; border:none;
+                                       cursor:pointer; font-weight:600; font-size:0.85rem;">
+                            💬 Ask for Review
+                        </button>
+                    </a>
+                """, unsafe_allow_html=True)
+    else:
+        st.info(f"No guests checked out in the last {_review_window} day(s). Try widening the window above, or check back after your next checkout.")
+
 # ── TAB 4: Travel Risk & Demand ──────────────────────────
 with tab_risk:
     st.markdown("<div class='section-title'>✈️ Srinagar Air Connectivity & Demand Risk Matrix</div>", unsafe_allow_html=True)
