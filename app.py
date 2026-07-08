@@ -1011,7 +1011,7 @@ with tab_risk:
                     value=bool(_saved_chk.get(key, False)),
                     key=f"risk_chk_{key}_form"
                 )
-        
+
         _total_items = len(_chk_items)
         _done_items  = sum(1 for key, _ in _chk_items if _new_state.get(key, False))
         _pct         = int((_done_items / _total_items) * 100)
@@ -1053,16 +1053,16 @@ with tab_risk:
 
         st.progress(_pct / 100)
 
-        _ticks = st.columns(5)
-        for _i, _mark in enumerate([0, 25, 50, 75, 100]):
-            with _ticks[_i]:
-                _align = "left" if _i == 0 else ("right" if _i == 4 else "center")
-                _col   = _bar_color if _pct >= _mark else "#475569"
-                st.markdown(
-                    f"<p style='font-size:0.65rem;font-weight:600;color:{_col};"
-                    f"text-align:{_align};margin:0;'>{_mark}%</p>",
-                    unsafe_allow_html=True
-                )
+        # Tick labels — single HTML row so it never stacks on mobile
+        _tick_html = "<div style='display:flex;justify-content:space-between;margin-top:4px;'>"
+        for _mark in [0, 25, 50, 75, 100]:
+            _col = _bar_color if _pct >= _mark else "#475569"
+            _tick_html += (
+                f"<span style='font-size:0.65rem;font-weight:600;color:{_col};'>"
+                f"{_mark}%</span>"
+            )
+        _tick_html += "</div>"
+        st.markdown(_tick_html, unsafe_allow_html=True)
 
         st.markdown(
             f"<p style='font-size:0.8rem;color:var(--text-muted);margin-top:6px;'>"
@@ -1073,12 +1073,101 @@ with tab_risk:
 
         st.markdown("<div style='height:8px;'></div>", unsafe_allow_html=True)
         save_submitted = st.form_submit_button("💾 Save Checklist", use_container_width=True)
-    
+
     if save_submitted:
         save_checklist(hotel_id, _new_state)
         st.success("✅ Checklist saved!")
         st.cache_data.clear()
         st.rerun()
+
+    st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
+
+    # ── BULK GUEST PROMOTION BLASTER ──────────────────────────
+    st.markdown("<div class='section-title'>📢 Bulk Promotion Blaster</div>", unsafe_allow_html=True)
+    st.markdown(
+        "<p style='font-size:0.85rem;color:var(--text-muted);margin-bottom:16px;'>"
+        "Select multiple guests, write one offer message, and get a ready-to-send "
+        "WhatsApp button for each guest. Tap each button once to send.</p>",
+        unsafe_allow_html=True
+    )
+
+    if not df.empty and "Phone" in df.columns:
+        # Build a guest list with valid phone numbers only
+        _bulk_df = df.copy()
+        _bulk_df["_phone_clean"] = _bulk_df["Phone"].astype(str).str.replace("+", "", regex=False).str.strip()
+        _bulk_df = _bulk_df[_bulk_df["_phone_clean"].notna() & (_bulk_df["_phone_clean"] != "nan") & (_bulk_df["_phone_clean"] != "")]
+
+        if not _bulk_df.empty:
+            _bulk_options = _bulk_df.index.tolist()
+
+            selected_guests = st.multiselect(
+                "Select guests to include in this campaign:",
+                options=_bulk_options,
+                format_func=lambda i: f"👤 {_bulk_df.loc[i, 'Guest Name']} — {_bulk_df.loc[i, 'Phone']}",
+                key="bulk_promo_guest_select"
+            )
+
+            promo_template = st.selectbox(
+                "Choose a campaign type:",
+                ["🎉 Seasonal Discount", "⭐ Come Back Offer", "✏️ Custom Message"],
+                key="bulk_promo_template"
+            )
+
+            if promo_template == "🎉 Seasonal Discount":
+                default_promo_msg = (
+                    f"Dear {{guest_name}}, {hotel_name} is offering a special seasonal discount "
+                    f"just for you! Book your next stay this month and save 20%. "
+                    f"Reply to this message to reserve your dates. 🏔️"
+                )
+            elif promo_template == "⭐ Come Back Offer":
+                default_promo_msg = (
+                    f"Dear {{guest_name}}, we've missed having you at {hotel_name}! "
+                    f"As a valued past guest, enjoy an exclusive 15% welcome-back discount "
+                    f"on your next visit. We'd love to host you again soon. ❤️"
+                )
+            else:
+                default_promo_msg = f"Dear {{guest_name}}, "
+
+            st.caption("Use `{guest_name}` in your message — it will be automatically replaced with each guest's name.")
+            bulk_message = st.text_area(
+                "✏️ Campaign message (edit before sending):",
+                value=default_promo_msg,
+                height=100,
+                key="bulk_promo_message_text"
+            )
+
+            if selected_guests:
+                st.markdown(f"<div style='margin:10px 0;font-size:0.85rem;color:var(--text-muted);'>"
+                            f"📋 Ready to send to <b>{len(selected_guests)}</b> guest(s):</div>",
+                            unsafe_allow_html=True)
+
+                for idx in selected_guests:
+                    g_row = _bulk_df.loc[idx]
+                    g_name = g_row.get("Guest Name", "Guest")
+                    g_phone = g_row.get("_phone_clean", "")
+                    personalized_msg = bulk_message.replace("{guest_name}", str(g_name))
+                    encoded = urllib.parse.quote(personalized_msg)
+                    wa_link = f"https://wa.me/{g_phone}?text={encoded}"
+
+                    bc1, bc2 = st.columns([3, 2])
+                    with bc1:
+                        st.markdown(f"<div style='padding:10px 0;font-size:0.88rem;color:var(--text-color);'>👤 {g_name}</div>", unsafe_allow_html=True)
+                    with bc2:
+                        st.markdown(f"""
+                            <a href="{wa_link}" target="_blank" style="text-decoration:none;">
+                                <button style="width:100%; border-radius:8px; padding:8px;
+                                               background:#25d366; color:white; border:none;
+                                               cursor:pointer; font-weight:600; font-size:0.85rem;">
+                                    💬 Send to {g_name}
+                                </button>
+                            </a>
+                        """, unsafe_allow_html=True)
+            else:
+                st.info("👆 Select one or more guests above to build your campaign list.")
+        else:
+            st.info("No guests with valid phone numbers found for bulk outreach.")
+    else:
+        st.info("No bookings found. Add bookings first to enable bulk promotions.")
 
     st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
 
