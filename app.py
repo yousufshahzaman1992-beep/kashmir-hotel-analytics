@@ -1260,6 +1260,95 @@ with tab_risk:
 
     st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
 
+    # ── WIN-BACK CAMPAIGN ──────────────────────────────────────
+    st.markdown("<div class='section-title'>🎯 Win-Back Campaign</div>", unsafe_allow_html=True)
+    st.markdown(
+        "<p style='font-size:0.85rem;color:var(--text-muted);margin-bottom:16px;'>"
+        "Find past guests who haven't stayed in a while and send them a personalized "
+        "comeback offer to win their business back.</p>",
+        unsafe_allow_html=True
+    )
+
+    _winback_months = st.slider(
+        "Show guests whose last stay was more than (months ago):",
+        min_value=1, max_value=24, value=6, key="winback_months_slider"
+    )
+
+    _winback_list = pd.DataFrame()
+    if not df.empty and "Check-in" in df.columns and "Phone" in df.columns:
+        try:
+            _wb = df.copy()
+            _wb["_checkin_dt"] = pd.to_datetime(_wb["Check-in"], errors="coerce")
+            _wb["_phone_clean"] = _wb["Phone"].astype(str).str.replace("+", "", regex=False).str.strip()
+            _wb = _wb[
+                (_wb["_phone_clean"].notna()) &
+                (_wb["_phone_clean"] != "nan") &
+                (_wb["_phone_clean"] != "") &
+                (_wb["_checkin_dt"].notna())
+            ]
+
+            if not _wb.empty:
+                # Keep only each guest's MOST RECENT stay (group by phone number)
+                _last_stay = (
+                    _wb.sort_values("_checkin_dt")
+                       .groupby("_phone_clean")
+                       .last()
+                       .reset_index()
+                )
+                _last_stay["_months_since"] = (
+                    (pd.Timestamp(date.today()) - _last_stay["_checkin_dt"]).dt.days / 30.0
+                )
+                _winback_list = _last_stay[
+                    _last_stay["_months_since"] >= _winback_months
+                ].sort_values("_months_since", ascending=False)
+        except Exception:
+            _winback_list = pd.DataFrame()
+
+    if not _winback_list.empty:
+        st.markdown(f"<div style='margin:10px 0;font-size:0.85rem;color:var(--text-muted);'>"
+                    f"📋 <b>{len(_winback_list)}</b> guest(s) haven't stayed in {_winback_months}+ months:</div>",
+                    unsafe_allow_html=True)
+
+        winback_offer = st.text_area(
+            "✏️ Win-back message (use {guest_name} and {months} as placeholders):",
+            value=(
+                f"Dear {{guest_name}}, it's been a while since your last stay at {hotel_name} "
+                f"({{months}} months ago) — we've missed you! Come back and enjoy an exclusive "
+                f"15% welcome-back discount on your next visit. We'd love to host you again. ❤️"
+            ),
+            height=100,
+            key="winback_message_text"
+        )
+
+        for _, g_row in _winback_list.iterrows():
+            g_name = g_row.get("Guest Name", "Guest")
+            g_phone = g_row.get("_phone_clean", "")
+            g_months = int(g_row.get("_months_since", 0))
+
+            personalized = winback_offer.replace("{guest_name}", str(g_name)).replace("{months}", str(g_months))
+            encoded = urllib.parse.quote(personalized)
+            wa_link = f"https://wa.me/{g_phone}?text={encoded}"
+
+            wb1, wb2, wb3 = st.columns([3, 2, 2])
+            with wb1:
+                st.markdown(f"<div style='padding:10px 0;font-size:0.88rem;color:var(--text-color);'>👤 {g_name}</div>", unsafe_allow_html=True)
+            with wb2:
+                st.markdown(f"<div style='padding:10px 0;font-size:0.78rem;color:var(--text-muted);'>Last stay: {g_months} mo. ago</div>", unsafe_allow_html=True)
+            with wb3:
+                st.markdown(f"""
+                    <a href="{wa_link}" target="_blank" style="text-decoration:none;">
+                        <button style="width:100%; border-radius:8px; padding:8px;
+                                       background:#25d366; color:white; border:none;
+                                       cursor:pointer; font-weight:600; font-size:0.85rem;">
+                            💬 Send Offer
+                        </button>
+                    </a>
+                """, unsafe_allow_html=True)
+    else:
+        st.info(f"No guests found whose last stay was more than {_winback_months} months ago. Try lowering the threshold above.")
+
+    st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
+
     # ── WhatsApp Guest Outreach Panel ──
     st.markdown("<div class='section-title'>💬 Guest Outreach — Send WhatsApp Messages</div>", unsafe_allow_html=True)
     st.markdown("<p style='font-size:0.85rem;color:var(--text-muted);margin-bottom:16px;'>Select any guest to send them a proactive WhatsApp message. Upcoming bookings are shown first.</p>", unsafe_allow_html=True)
