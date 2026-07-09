@@ -821,6 +821,95 @@ with tab_reviews:
     else:
         st.info("No reviews found. Reviews will appear here once guests post on OTA platforms.")
 
+    st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
+
+    # ── REVIEW REQUEST AUTOMATION ──────────────────────────────
+    st.markdown("<div class='section-title'>📮 Review Request Automation</div>", unsafe_allow_html=True)
+    st.markdown(
+        "<p style='font-size:0.85rem;color:var(--text-muted);margin-bottom:16px;'>"
+        "Guests who checked out in the last few days are shown below — perfect timing to "
+        "ask for a review while their stay is still fresh in memory.</p>",
+        unsafe_allow_html=True
+    )
+
+    # Build the best available review link — Google preferred, else first configured OTA
+    _g_place_id = hotel.get("google_place_id", "")
+    _review_link = ""
+    if _g_place_id:
+        _review_link = f"https://search.google.com/local/writereview?placeid={_g_place_id}"
+    elif hotel.get("booking_review_url"):
+        _review_link = hotel.get("booking_review_url")
+    elif hotel.get("agoda_review_url"):
+        _review_link = hotel.get("agoda_review_url")
+    elif hotel.get("mmt_review_url") or hotel.get("mmt_url"):
+        _review_link = hotel.get("mmt_review_url") or hotel.get("mmt_url")
+
+    _review_window = st.slider(
+        "Show guests who checked out within the last (days):",
+        min_value=1, max_value=14, value=5, key="review_req_window"
+    )
+
+    _recent_checkouts = pd.DataFrame()
+    if not df.empty and "Check-in" in df.columns and "Nights" in df.columns:
+        try:
+            _rc = df.copy()
+            _rc["_checkin_dt"] = pd.to_datetime(_rc["Check-in"], errors="coerce")
+            _rc["_checkout_dt"] = _rc["_checkin_dt"] + pd.to_timedelta(_rc["Nights"].fillna(0), unit="D")
+            _rc["_days_since_checkout"] = (pd.Timestamp(date.today()) - _rc["_checkout_dt"]).dt.days
+            _rc["_phone_clean"] = _rc["Phone"].astype(str).str.replace("+", "", regex=False).str.strip()
+
+            _recent_checkouts = _rc[
+                (_rc["_days_since_checkout"] >= 0) &
+                (_rc["_days_since_checkout"] <= _review_window) &
+                (_rc["_phone_clean"].notna()) &
+                (_rc["_phone_clean"] != "nan") &
+                (_rc["_phone_clean"] != "")
+            ].sort_values("_days_since_checkout")
+        except Exception:
+            _recent_checkouts = pd.DataFrame()
+
+    if not _review_link:
+        st.warning("⚠️ No review link configured yet. Add your Google Place ID or an OTA review URL above (in ⚙️ Configure OTA URLs & Place ID) so guests can tap straight through to leave a review.")
+
+    if not _recent_checkouts.empty:
+        st.markdown(f"<div style='margin:10px 0;font-size:0.85rem;color:var(--text-muted);'>"
+                    f"📋 <b>{len(_recent_checkouts)}</b> recently checked-out guest(s) found:</div>",
+                    unsafe_allow_html=True)
+
+        for _, g_row in _recent_checkouts.iterrows():
+            g_name = g_row.get("Guest Name", "Guest")
+            g_phone = g_row.get("_phone_clean", "")
+            g_days = int(g_row.get("_days_since_checkout", 0))
+
+            review_msg = (
+                f"Dear {g_name}, thank you for staying with {hotel_name}! "
+                f"We hope you had a wonderful experience. "
+                f"Could you spare a minute to share your feedback? It means a lot to us. 🙏"
+            )
+            if _review_link:
+                review_msg += f"\n{_review_link}"
+
+            encoded = urllib.parse.quote(review_msg)
+            wa_link = f"https://wa.me/{g_phone}?text={encoded}"
+
+            rc1, rc2, rc3 = st.columns([3, 2, 2])
+            with rc1:
+                st.markdown(f"<div style='padding:10px 0;font-size:0.88rem;color:var(--text-color);'>👤 {g_name}</div>", unsafe_allow_html=True)
+            with rc2:
+                st.markdown(f"<div style='padding:10px 0;font-size:0.78rem;color:var(--text-muted);'>Checked out {g_days} day{'s' if g_days != 1 else ''} ago</div>", unsafe_allow_html=True)
+            with rc3:
+                st.markdown(f"""
+                    <a href="{wa_link}" target="_blank" style="text-decoration:none;">
+                        <button style="width:100%; border-radius:8px; padding:8px;
+                                       background:#25d366; color:white; border:none;
+                                       cursor:pointer; font-weight:600; font-size:0.85rem;">
+                            💬 Ask for Review
+                        </button>
+                    </a>
+                """, unsafe_allow_html=True)
+    else:
+        st.info(f"No guests checked out in the last {_review_window} day(s). Try widening the window above, or check back after your next checkout.")
+
 # ── TAB 4: Travel Risk & Demand ──────────────────────────
 with tab_risk:
     st.markdown("<div class='section-title'>✈️ Srinagar Air Connectivity & Demand Risk Matrix</div>", unsafe_allow_html=True)
@@ -1053,16 +1142,16 @@ with tab_risk:
 
         st.progress(_pct / 100)
 
-        _ticks = st.columns(5)
-        for _i, _mark in enumerate([0, 25, 50, 75, 100]):
-            with _ticks[_i]:
-                _align = "left" if _i == 0 else ("right" if _i == 4 else "center")
-                _col   = _bar_color if _pct >= _mark else "#475569"
-                st.markdown(
-                    f"<p style='font-size:0.65rem;font-weight:600;color:{_col};"
-                    f"text-align:{_align};margin:0;'>{_mark}%</p>",
-                    unsafe_allow_html=True
-                )
+        # Tick labels — single HTML row so it never stacks on mobile
+        _tick_html = "<div style='display:flex;justify-content:space-between;margin-top:4px;'>"
+        for _mark in [0, 25, 50, 75, 100]:
+            _col = _bar_color if _pct >= _mark else "#475569"
+            _tick_html += (
+                f"<span style='font-size:0.65rem;font-weight:600;color:{_col};'>"
+                f"{_mark}%</span>"
+            )
+        _tick_html += "</div>"
+        st.markdown(_tick_html, unsafe_allow_html=True)
 
         st.markdown(
             f"<p style='font-size:0.8rem;color:var(--text-muted);margin-top:6px;'>"
@@ -1079,6 +1168,95 @@ with tab_risk:
         st.success("✅ Checklist saved!")
         st.cache_data.clear()
         st.rerun()
+
+    st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
+
+    # ── BULK GUEST PROMOTION BLASTER ──────────────────────────
+    st.markdown("<div class='section-title'>📢 Bulk Promotion Blaster</div>", unsafe_allow_html=True)
+    st.markdown(
+        "<p style='font-size:0.85rem;color:var(--text-muted);margin-bottom:16px;'>"
+        "Select multiple guests, write one offer message, and get a ready-to-send "
+        "WhatsApp button for each guest. Tap each button once to send.</p>",
+        unsafe_allow_html=True
+    )
+
+    if not df.empty and "Phone" in df.columns:
+        # Build a guest list with valid phone numbers only
+        _bulk_df = df.copy()
+        _bulk_df["_phone_clean"] = _bulk_df["Phone"].astype(str).str.replace("+", "", regex=False).str.strip()
+        _bulk_df = _bulk_df[_bulk_df["_phone_clean"].notna() & (_bulk_df["_phone_clean"] != "nan") & (_bulk_df["_phone_clean"] != "")]
+
+        if not _bulk_df.empty:
+            _bulk_options = _bulk_df.index.tolist()
+
+            selected_guests = st.multiselect(
+                "Select guests to include in this campaign:",
+                options=_bulk_options,
+                format_func=lambda i: f"👤 {_bulk_df.loc[i, 'Guest Name']} — {_bulk_df.loc[i, 'Phone']}",
+                key="bulk_promo_guest_select"
+            )
+
+            promo_template = st.selectbox(
+                "Choose a campaign type:",
+                ["🎉 Seasonal Discount", "⭐ Come Back Offer", "✏️ Custom Message"],
+                key="bulk_promo_template"
+            )
+
+            if promo_template == "🎉 Seasonal Discount":
+                default_promo_msg = (
+                    f"Dear {{guest_name}}, {hotel_name} is offering a special seasonal discount "
+                    f"just for you! Book your next stay this month and save 20%. "
+                    f"Reply to this message to reserve your dates. 🏔️"
+                )
+            elif promo_template == "⭐ Come Back Offer":
+                default_promo_msg = (
+                    f"Dear {{guest_name}}, we've missed having you at {hotel_name}! "
+                    f"As a valued past guest, enjoy an exclusive 15% welcome-back discount "
+                    f"on your next visit. We'd love to host you again soon. ❤️"
+                )
+            else:
+                default_promo_msg = f"Dear {{guest_name}}, "
+
+            st.caption("Use `{guest_name}` in your message — it will be automatically replaced with each guest's name.")
+            bulk_message = st.text_area(
+                "✏️ Campaign message (edit before sending):",
+                value=default_promo_msg,
+                height=100,
+                key="bulk_promo_message_text"
+            )
+
+            if selected_guests:
+                st.markdown(f"<div style='margin:10px 0;font-size:0.85rem;color:var(--text-muted);'>"
+                            f"📋 Ready to send to <b>{len(selected_guests)}</b> guest(s):</div>",
+                            unsafe_allow_html=True)
+
+                for idx in selected_guests:
+                    g_row = _bulk_df.loc[idx]
+                    g_name = g_row.get("Guest Name", "Guest")
+                    g_phone = g_row.get("_phone_clean", "")
+                    personalized_msg = bulk_message.replace("{guest_name}", str(g_name))
+                    encoded = urllib.parse.quote(personalized_msg)
+                    wa_link = f"https://wa.me/{g_phone}?text={encoded}"
+
+                    bc1, bc2 = st.columns([3, 2])
+                    with bc1:
+                        st.markdown(f"<div style='padding:10px 0;font-size:0.88rem;color:var(--text-color);'>👤 {g_name}</div>", unsafe_allow_html=True)
+                    with bc2:
+                        st.markdown(f"""
+                            <a href="{wa_link}" target="_blank" style="text-decoration:none;">
+                                <button style="width:100%; border-radius:8px; padding:8px;
+                                               background:#25d366; color:white; border:none;
+                                               cursor:pointer; font-weight:600; font-size:0.85rem;">
+                                    💬 Send to {g_name}
+                                </button>
+                            </a>
+                        """, unsafe_allow_html=True)
+            else:
+                st.info("👆 Select one or more guests above to build your campaign list.")
+        else:
+            st.info("No guests with valid phone numbers found for bulk outreach.")
+    else:
+        st.info("No bookings found. Add bookings first to enable bulk promotions.")
 
     st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
 
