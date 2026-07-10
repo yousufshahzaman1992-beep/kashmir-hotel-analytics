@@ -1119,6 +1119,12 @@ def apply_style():
         overflow: visible !important;
         border: 1px solid var(--border-color) !important;
         background: var(--card-bg) !important;
+        /* FIX: mobile scroll freeze — Plotly's touch handler grabs vertical
+           swipes for its own pan/zoom by default, which blocks page scroll
+           when a swipe starts on top of a chart. touch-action: pan-y tells
+           the browser "let one-finger vertical swipes scroll the page" and
+           only hands horizontal/pinch gestures to Plotly's JS handler. */
+        touch-action: pan-y !important;
     }
     /* The inner SVG/canvas must still stay clipped to its own bounds */
     [data-testid="stPlotlyChart"] > div {
