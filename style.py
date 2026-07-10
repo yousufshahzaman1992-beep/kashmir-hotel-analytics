@@ -73,11 +73,14 @@ def apply_style():
 """, unsafe_allow_html=True)
 
     # Non-blocking font preload — avoids render-blocking @import
+    # NOTE: Swapped 'Outfit' (rounded/bubbly at heavy weights, reads as
+    # "comic-style" for headers) for 'Manrope' — a sharper geometric
+    # sans-serif that still feels modern but suits a finance/analytics tool.
     st.markdown("""
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" media="print" onload="this.media='all'">
-    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap"></noscript>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap"></noscript>
     """, unsafe_allow_html=True)
 
     st.markdown("""
@@ -720,9 +723,13 @@ def apply_style():
 
     /* ═══════════════════════════════════════════════
        TYPOGRAPHY
+       NOTE: Headers now use 'Manrope' instead of 'Outfit'.
+       Outfit at 700-800 weight has rounded, bubbly letterforms that
+       read as "comic/playful" — Manrope keeps a modern geometric feel
+       but with sharper, more serious terminals suited to a finance tool.
     ═══════════════════════════════════════════════ */
     .page-title {
-        font-family: 'Outfit', sans-serif;
+        font-family: 'Manrope', sans-serif;
         font-size: 2.6rem;
         font-weight: 800;
         background: var(--title-gradient);
@@ -741,7 +748,7 @@ def apply_style():
         letter-spacing: 0.3px;
     }
     .section-title {
-        font-family: 'Outfit', sans-serif;
+        font-family: 'Manrope', sans-serif;
         font-size: 0.78rem;
         font-weight: 700;
         color: var(--primary-color);
@@ -796,7 +803,7 @@ def apply_style():
             0 0 30px rgba(59, 130, 246, 0.1) !important;
     }
     [data-testid="stMetricValue"] {
-        font-family: 'Outfit', sans-serif !important;
+        font-family: 'Manrope', sans-serif !important;
         font-size: 2rem !important;
         font-weight: 700 !important;
         color: var(--metric-value) !important;
@@ -972,6 +979,30 @@ def apply_style():
     [data-baseweb="calendar"] [aria-selected="true"] {
         background-color: var(--primary-color) !important;
         color: #ffffff !important;
+    }
+
+    /* ═══════════════════════════════════════════════
+       MULTISELECT / SELECTBOX TAGS
+       FIX: default Streamlit/BaseWeb tags truncate long labels with an
+       ellipsis inside a fixed-width pill (e.g. "Darjeeling" → "Darj...").
+       We remove the width cap and let tags size to their content, wrapping
+       onto a new line if the filter row runs out of horizontal space.
+    ═══════════════════════════════════════════════ */
+    [data-baseweb="tag"] {
+        max-width: none !important;
+        height: auto !important;
+        white-space: normal !important;
+    }
+    [data-baseweb="tag"] span {
+        overflow: visible !important;
+        text-overflow: unset !important;
+        white-space: normal !important;
+        max-width: none !important;
+    }
+    /* Let the tag container wrap onto multiple lines instead of clipping */
+    [data-testid="stMultiSelect"] [data-baseweb="select"] > div {
+        flex-wrap: wrap !important;
+        height: auto !important;
     }
 
     /* ═══════════════════════════════════════════════
@@ -1490,7 +1521,7 @@ def ensure_auth(allowed_roles=None):
         if "ADMIN" in allowed_roles and hotel.get("hotel_id") != "ADMIN":
             st.switch_page("app.py")
             st.stop()
-            
+
     # Ensure session token is in URL parameters on sub-pages as well
     if "session" not in st.query_params:
         from sheets_db import generate_session_token
